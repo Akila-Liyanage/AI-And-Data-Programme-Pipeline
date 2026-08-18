@@ -1,4 +1,4 @@
-# AI & Data Programme Project Management System
+# AI & Data Programme Pipeline
 
 An initial project setup for the AI & Data Programme Project Management System, featuring a React + TypeScript frontend built with Vite and Tailwind CSS, and a Node.js + Express + TypeScript backend configured with MongoDB and Mongoose.
 
