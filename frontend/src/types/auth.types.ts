@@ -32,10 +32,14 @@ export type UserRole =
  */
 export interface AuthUser {
   id: string;
+  userId?: string;
+  username?: string;
   email: string;
   fullName?: string;
   role: UserRole;
+  designation?: string;
   department?: string;
+  accountStatus?: string;
   mustChangePassword?: boolean;
   isActivated?: boolean;
   avatarUrl?: string;
@@ -88,15 +92,15 @@ export interface ActivateAccountPayload {
  * Public methods and state exposed by the AuthContext to consumers.
  */
 export interface AuthContextValue extends AuthState {
-  /** Future login integration point */
-  login: (credentials: LoginCredentials) => Promise<void>;
-  /** Future logout integration point */
+  /** Login integration */
+  login: (credentials: LoginCredentials) => Promise<AuthUser>;
+  /** Logout integration */
   logout: () => Promise<void>;
-  /** Future session refresh / current user fetch integration point */
+  /** Session refresh / current user fetch integration */
   refreshCurrentUser: () => Promise<void>;
-  /** Future change password integration point */
+  /** Change password integration */
   changePassword: (payload: ChangePasswordPayload) => Promise<void>;
-  /** Future account activation integration point */
+  /** Account activation integration */
   activateAccount: (payload: ActivateAccountPayload) => Promise<void>;
   /** Clear any active authentication error state */
   clearError: () => void;

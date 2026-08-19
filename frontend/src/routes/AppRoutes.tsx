@@ -4,6 +4,10 @@ import LoginPage from '../pages/auth/LoginPage';
 import ActivationPage from '../pages/auth/ActivationPage';
 import ChangePasswordPage from '../pages/auth/ChangePasswordPage';
 import DashboardPreviewPage from '../pages/preview/DashboardPreviewPage';
+import AdminDashboardPage from '../pages/dashboard/AdminDashboardPage';
+import StaffDashboardPage from '../pages/dashboard/StaffDashboardPage';
+import InternDashboardPage from '../pages/dashboard/InternDashboardPage';
+import { ProtectedRoute } from './ProtectedRoute';
 
 export default function AppRoutes() {
   return (
@@ -14,9 +18,60 @@ export default function AppRoutes() {
       {/* Authentication */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/activate" element={<ActivationPage />} />
-      {/* Future: /activate/:token will validate the token against the backend API */}
       <Route path="/activate/:token" element={<ActivationPage />} />
       <Route path="/change-password" element={<ChangePasswordPage />} />
+
+      {/* Role-Based Protected Dashboards */}
+      <Route
+        path="/admin/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <AdminDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/*"
+        element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <AdminDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/staff/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['PERMANENT_STAFF']}>
+            <StaffDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff/*"
+        element={
+          <ProtectedRoute allowedRoles={['PERMANENT_STAFF']}>
+            <StaffDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/intern/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['INTERN']}>
+            <InternDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/intern/*"
+        element={
+          <ProtectedRoute allowedRoles={['INTERN']}>
+            <InternDashboardPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Development-only Visual Preview for Shared Dashboard Shell */}
       <Route path="/dashboard-preview/*" element={<DashboardPreviewPage />} />

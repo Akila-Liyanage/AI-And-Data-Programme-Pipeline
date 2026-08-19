@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 import { Button, Input, Alert, Badge } from '../../components/common';
 import { AuthLayout } from '../../components/layout/AuthLayout';
 import {
@@ -133,17 +135,33 @@ function LoginBrandPanel() {
 
 /* ── Login Page ────────────────────────────────────────── */
 export default function LoginPage() {
+  const { login, isAuthenticated, user, error: authError } = useAuth();
+  const navigate = useNavigate();
+
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
 
+  // If already authenticated, redirect to the appropriate dashboard
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.role === 'ADMIN') {
+        navigate('/admin/dashboard', { replace: true });
+      } else if (user.role === 'PERMANENT_STAFF') {
+        navigate('/staff/dashboard', { replace: true });
+      } else if (user.role === 'INTERN') {
+        navigate('/intern/dashboard', { replace: true });
+      }
+    }
+  }, [isAuthenticated, user, navigate]);
+
   const clearFieldError = (field: keyof FormErrors) => {
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setStatusNotice(null);
 
@@ -158,13 +176,26 @@ export default function LoginPage() {
 
     setErrors({});
     setIsSubmitting(true);
-    // UI-only — no backend call at this milestone
-    setTimeout(() => {
+
+    try {
+      const loggedUser = await login({ identifier, password });
+      
+      // Role-Based Navigation
+      if (loggedUser.role === 'ADMIN') {
+        navigate('/admin/dashboard');
+      } else if (loggedUser.role === 'PERMANENT_STAFF') {
+        navigate('/staff/dashboard');
+      } else if (loggedUser.role === 'INTERN') {
+        navigate('/intern/dashboard');
+      } else {
+        navigate('/admin/dashboard');
+      }
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Invalid login credentials.';
+      setStatusNotice(errorMessage);
+    } finally {
       setIsSubmitting(false);
-      setStatusNotice(
-        'Form interface verified. Backend authentication and role-based redirect will be connected in the upcoming milestone.'
-      );
-    }, 700);
+    }
   };
 
   return (
@@ -184,10 +215,10 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Status alert */}
-        {statusNotice && (
-          <Alert variant="info" title="Interface Status" onClose={() => setStatusNotice(null)}>
-            {statusNotice}
+        {/* Status / Error alert */}
+        {(statusNotice || authError) && (
+          <Alert variant="error" title="Authentication Error" onClose={() => setStatusNotice(null)}>
+            {statusNotice || authError}
           </Alert>
         )}
 
@@ -196,7 +227,7 @@ export default function LoginPage() {
           <Input
             id="login-identifier"
             label="Email or User ID"
-            placeholder="name@company.com or User ID"
+            placeholder="e.g. ADM-001 or admin@aidata.com"
             type="text"
             required
             autoComplete="username"
@@ -235,18 +266,16 @@ export default function LoginPage() {
           </div>
         </form>
 
-        {/* First-time access info */}
-        <div className="p-4 rounded-xl bg-[var(--color-surface-subtle)] border border-[var(--color-border-subtle)]">
-          <div className="flex items-start gap-2.5">
-            <Info className="w-4 h-4 text-[var(--color-brand-blue)] shrink-0 mt-0.5" aria-hidden="true" />
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-[var(--color-brand-navy)]">
-                First time accessing the platform?
-              </p>
-              <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                Use the activation link or temporary credentials sent to your registered email by the system administrator.
-              </p>
-            </div>
+        {/* Demo Quick Access Helper */}
+        <div className="p-4 rounded-xl bg-[var(--color-surface-subtle)] border border-[var(--color-border-subtle)] space-y-2">
+          <div className="flex items-center gap-2 text-xs font-semibold text-[var(--color-brand-navy)]">
+            <Info className="w-4 h-4 text-[var(--color-brand-blue)] shrink-0" />
+            <span>Demo Test Credentials:</span>
+          </div>
+          <div className="text-[11px] text-[var(--color-text-secondary)] space-y-1 font-mono">
+            <p>• Admin: <code>ADM-001</code> / <code>Admin@123</code></p>
+            <p>• Staff: <code>STF-101</code> / <code>Staff@123</code></p>
+            <p>• Intern: <code>INT-201</code> / <code>Intern@123</code></p>
           </div>
         </div>
 
