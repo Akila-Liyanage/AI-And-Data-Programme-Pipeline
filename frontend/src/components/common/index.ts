@@ -6,3 +6,4 @@ export * from './Alert';
 export * from './Loading';
 export * from './EmptyState';
 export * from './Brand';
+export * from './PasswordRequirements';
