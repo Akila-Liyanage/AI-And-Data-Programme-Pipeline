@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { Button, Input, Alert, Badge } from '../../components/common';
+import { Button, Input, Alert, Badge, BrandLogo } from '../../components/common';
 import { AuthLayout } from '../../components/layout/AuthLayout';
 import {
   ArrowRight,
@@ -31,20 +31,7 @@ function LoginBrandPanel() {
 
       <div className="relative space-y-7">
         {/* Product emblem */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center font-bold text-sm shrink-0">
-            <span className="text-[var(--color-brand-blue-light)]">AI</span>
-            <span className="text-[var(--color-brand-green)] font-extrabold">+</span>
-          </div>
-          <div>
-            <p className="font-bold text-sm tracking-tight text-white leading-tight">
-              AI & Data Programme Pipeline
-            </p>
-            <p className="text-[11px] text-slate-300 leading-tight">
-              Staff & Intern Progress Dashboard
-            </p>
-          </div>
-        </div>
+        <BrandLogo theme="dark" size="md" />
 
         <div className="space-y-3">
           <Badge variant="blue" dot size="sm" className="bg-white/10 text-blue-200 border-white/15">

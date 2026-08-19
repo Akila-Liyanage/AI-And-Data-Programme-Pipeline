@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { X, User as UserIcon } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 import { Badge } from '../../common/Badge';
+import { BrandLogo } from '../../common/Brand';
 import { isNavSection, type SidebarProps, type NavItem } from './types';
 
 /**
@@ -98,20 +99,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <div className="flex flex-col h-full bg-[var(--color-surface-white)] border-r border-[var(--color-border-subtle)]">
       {/* ── Brand Header ────────────────────────────────────── */}
       <div className="h-16 px-5 flex items-center justify-between border-b border-[var(--color-border-subtle)] shrink-0">
-        <div className="flex items-center gap-2.5 min-w-0">
-          {/* Text-based product emblem — strictly following branding rules */}
-          <div className="w-8 h-8 rounded-lg bg-[var(--color-brand-navy)] flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-            <span className="text-[var(--color-brand-blue-light)]">AI</span>
-            <span className="text-[var(--color-brand-green)] font-extrabold">+</span>
-          </div>
-          <div className="min-w-0">
-            <p className="font-bold text-xs tracking-tight text-[var(--color-brand-navy)] truncate leading-tight">
-              AI & Data Programme
-            </p>
-            <p className="text-[10px] text-[var(--color-text-secondary)] truncate leading-tight">
-              Pipeline Dashboard
-            </p>
-          </div>
+        <div className="flex items-center min-w-0">
+          <BrandLogo size="sm" showSubtitle={false} className="min-w-0" />
         </div>
 
         {/* Mobile close button */}
