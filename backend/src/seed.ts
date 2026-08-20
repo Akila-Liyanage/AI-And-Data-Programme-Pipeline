@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import mongoose from 'mongoose';
-import User, { IUser } from './models/User';
+import User from './models/User';
 
 const seedUsers = async (): Promise<void> => {
   const mongoURI = process.env.MONGO_URI;
@@ -19,7 +19,13 @@ const seedUsers = async (): Promise<void> => {
 
     // Remove existing seed users if they exist
     const userIds = ['ADM-001', 'STF-101', 'INT-201'];
-    await User.deleteMany({ userId: { $in: userIds } });
+    const phoneNumbers = ['0774943291', '0771234567', '0777654321'];
+    await User.deleteMany({
+      $or: [
+        { userId: { $in: userIds } },
+        { phoneNumber: { $in: phoneNumbers } },
+      ],
+    });
     console.log('🧹 Cleaned up existing demo users');
 
     const demoUsers = [
@@ -27,6 +33,7 @@ const seedUsers = async (): Promise<void> => {
         userId: 'ADM-001',
         username: 'admin',
         fullName: 'Akila Liyanage',
+        phoneNumber: '0774943291',
         email: 'admin@aidata.com',
         password: 'Admin@123',
         role: 'ADMIN' as const,
@@ -38,6 +45,7 @@ const seedUsers = async (): Promise<void> => {
         userId: 'STF-101',
         username: 'staff_kasun',
         fullName: 'Dr. Kasun Perera',
+        phoneNumber: '0771234567',
         email: 'kasun@aidata.com',
         password: 'Staff@123',
         role: 'PERMANENT_STAFF' as const,
@@ -49,6 +57,7 @@ const seedUsers = async (): Promise<void> => {
         userId: 'INT-201',
         username: 'intern_ayuni',
         fullName: 'Ayuni Sliit',
+        phoneNumber: '0777654321',
         email: 'ayuni@aidata.com',
         password: 'Intern@123',
         role: 'INTERN' as const,
@@ -61,7 +70,7 @@ const seedUsers = async (): Promise<void> => {
     for (const userData of demoUsers) {
       const user = new User(userData);
       await user.save();
-      console.log(`✅ Seeded user: ${user.fullName} (${user.role}) - ID: ${user.userId}`);
+      console.log(`✅ Seeded user: ${user.fullName} (${user.role}) - Phone: ${user.phoneNumber} - ID: ${user.userId}`);
     }
 
     console.log('🎉 Database seeding completed successfully!');
