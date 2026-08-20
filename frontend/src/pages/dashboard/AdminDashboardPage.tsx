@@ -1,11 +1,6 @@
 import { useState } from 'react';
 import {
-  LayoutDashboard,
   Users,
-  FolderKanban,
-  UserCheck,
-  TrendingUp,
-  History,
   ShieldCheck,
   Plus,
   ArrowUpRight,
@@ -13,65 +8,13 @@ import {
 import {
   DashboardLayout,
   PageHeader,
-  type NavSection,
   type UserDisplayInfo,
 } from '../../components/layout/DashboardLayout';
 import { Card, Button, Badge, Alert } from '../../components/common';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { ADMIN_NAVIGATION } from '../../config/adminNavigation';
 
-const ADMIN_NAVIGATION: NavSection[] = [
-  {
-    title: 'Administration',
-    items: [
-      {
-        id: 'admin-overview',
-        label: 'Admin Overview',
-        path: '/admin/dashboard',
-        icon: <LayoutDashboard className="w-4 h-4" />,
-      },
-      {
-        id: 'admin-users',
-        label: 'User Management',
-        path: '/admin/users',
-        icon: <Users className="w-4 h-4" />,
-        badge: '3 Users',
-        badgeVariant: 'blue',
-      },
-      {
-        id: 'admin-projects',
-        label: 'Projects Management',
-        path: '/admin/projects',
-        icon: <FolderKanban className="w-4 h-4" />,
-        badge: 'Live',
-        badgeVariant: 'success',
-      },
-      {
-        id: 'admin-assignments',
-        label: 'Project Assignments',
-        path: '/admin/assignments',
-        icon: <UserCheck className="w-4 h-4" />,
-      },
-    ],
-  },
-  {
-    title: 'Monitoring',
-    items: [
-      {
-        id: 'admin-progress',
-        label: 'Programme Progress',
-        path: '/admin/progress',
-        icon: <TrendingUp className="w-4 h-4" />,
-      },
-      {
-        id: 'admin-work-history',
-        label: 'Team Work History',
-        path: '/admin/work-history',
-        icon: <History className="w-4 h-4" />,
-      },
-    ],
-  },
-];
 
 export default function AdminDashboardPage() {
   const { user, logout } = useAuth();

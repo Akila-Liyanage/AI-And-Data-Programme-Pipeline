@@ -5,6 +5,10 @@ import ActivationPage from '../pages/auth/ActivationPage';
 import ChangePasswordPage from '../pages/auth/ChangePasswordPage';
 import DashboardPreviewPage from '../pages/preview/DashboardPreviewPage';
 import AdminDashboardPage from '../pages/dashboard/AdminDashboardPage';
+import UserManagementPage from '../pages/admin/UserManagementPage';
+import ProjectsManagementPage from '../pages/admin/ProjectsManagementPage';
+import ProjectAssignmentsPage from '../pages/admin/ProjectAssignmentsPage';
+import ProgrammeProgressPage from '../pages/admin/ProgrammeProgressPage';
 import StaffDashboardPage from '../pages/dashboard/StaffDashboardPage';
 import InternDashboardPage from '../pages/dashboard/InternDashboardPage';
 import { ProtectedRoute } from './ProtectedRoute';
@@ -27,6 +31,38 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['ADMIN']}>
             <AdminDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <UserManagementPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/projects"
+        element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <ProjectsManagementPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/assignments"
+        element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <ProjectAssignmentsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/progress"
+        element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <ProgrammeProgressPage />
           </ProtectedRoute>
         }
       />
