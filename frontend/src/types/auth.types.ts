@@ -1,23 +1,7 @@
 /**
  * Authentication and User Domain Types
- *
- * Designed to cleanly decouple the frontend UI architecture from
- * the future backend API implementation without prematurely hardcoding
- * unconfirmed backend schemas or enum values.
  */
 
-/**
- * Conceptual user roles within the AI & Data Programme Pipeline.
- *
- * Current business terminology:
- * - Administrator
- * - Permanent Staff
- * - Intern
- *
- * Defined as a flexible string union and string type to easily adapt
- * to whatever format the backend team confirms (e.g., 'ADMIN' | 'STAFF' | 'INTERN'
- * or 'admin' | 'permanent_staff' | 'intern').
- */
 export type UserRole =
   | 'ADMINISTRATOR'
   | 'PERMANENT_STAFF'
@@ -26,14 +10,11 @@ export type UserRole =
   | 'STAFF'
   | (string & {});
 
-/**
- * Conceptual user profile representing an authenticated identity.
- * Keep fields optional/flexible to prevent assumptions before backend finalization.
- */
 export interface AuthUser {
   id: string;
   userId?: string;
   username?: string;
+  phoneNumber?: string;
   email: string;
   fullName?: string;
   role: UserRole;
@@ -46,62 +27,63 @@ export interface AuthUser {
   createdAt?: string;
 }
 
-/**
- * Overall frontend authentication state.
- */
 export interface AuthState {
-  /** The currently authenticated user, or null if unauthenticated */
   user: AuthUser | null;
-  /** Verified role of the authenticated user, or null if unauthenticated */
   role: UserRole | null;
-  /** Whether there is an active, verified authenticated session */
   isAuthenticated: boolean;
-  /** Loading state during session restoration or auth operations */
   isLoading: boolean;
-  /** Last authentication-related error message, if any */
   error: string | null;
-  /** Whether the user must change password before full access */
   mustChangePassword: boolean;
 }
 
-/**
- * Expected credential payload structure for future login.
- */
 export interface LoginCredentials {
-  identifier: string; // Email or User ID
-  password: string;
+  identifier: string; // Phone, Email or User ID
+  password?: string;
 }
 
-/**
- * Expected payload structure for future change-password.
- */
+export interface SendOtpPayload {
+  phoneNumber: string;
+}
+
+export interface SendOtpResponse {
+  success: boolean;
+  message: string;
+  phoneNumber: string;
+  debugOtp?: string;
+  fullName?: string;
+  userRole?: UserRole;
+}
+
+export interface VerifyOtpPayload {
+  phoneNumber: string;
+  otp: string;
+}
+
 export interface ChangePasswordPayload {
   currentPassword: string;
   newPassword: string;
 }
 
-/**
- * Expected payload structure for future account activation.
- */
 export interface ActivateAccountPayload {
   token?: string;
   newPassword: string;
 }
 
-/**
- * Public methods and state exposed by the AuthContext to consumers.
- */
 export interface AuthContextValue extends AuthState {
-  /** Login integration */
+  /** Send OTP to phone number */
+  sendOtp: (phoneNumber: string) => Promise<SendOtpResponse>;
+  /** Verify OTP code and authenticate */
+  verifyOtp: (phoneNumber: string, otp: string) => Promise<AuthUser>;
+  /** Legacy/Fallback login */
   login: (credentials: LoginCredentials) => Promise<AuthUser>;
-  /** Logout integration */
+  /** Logout */
   logout: () => Promise<void>;
-  /** Session refresh / current user fetch integration */
+  /** Session refresh */
   refreshCurrentUser: () => Promise<void>;
-  /** Change password integration */
+  /** Change password */
   changePassword: (payload: ChangePasswordPayload) => Promise<void>;
-  /** Account activation integration */
+  /** Account activation */
   activateAccount: (payload: ActivateAccountPayload) => Promise<void>;
-  /** Clear any active authentication error state */
+  /** Clear any error */
   clearError: () => void;
 }
