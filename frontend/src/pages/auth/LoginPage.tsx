@@ -1,26 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { Button, Alert, Badge, BrandLogo, OtpInput } from '../../components/common';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import { Button, Input, Alert, Badge } from '../../components/common';
 import { AuthLayout } from '../../components/layout/AuthLayout';
 import {
   ArrowRight,
-  Phone,
-  ShieldCheck,
-  CheckCircle2,
+  ArrowLeft,
+  Smartphone,
+  KeyRound,
   FolderKanban,
   Users,
-  KeyRound,
-  RotateCcw,
-  Clock,
-  ArrowLeft,
+  ShieldCheck,
+  CheckCircle2,
+  Activity,
+  RefreshCw,
+  Sparkles,
 } from 'lucide-react';
-
-/* ── Types ─────────────────────────────────────────────── */
-type LoginStep = 'phone' | 'otp';
-
-interface FormErrors {
-  phoneNumber?: string;
-  otp?: string;
-}
 
 /* ── Left Brand Panel ──────────────────────────────────── */
 function LoginBrandPanel() {
@@ -31,18 +26,31 @@ function LoginBrandPanel() {
       <div className="absolute -bottom-10 -left-10 w-44 h-44 bg-[var(--color-brand-green)]/15 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative space-y-7">
-        {/* SLT-MOBITEL Emblem & Title */}
-        <BrandLogo theme="dark" size="md" />
+        {/* Product emblem */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center font-bold text-sm shrink-0">
+            <span className="text-[var(--color-brand-blue-light)]">AI</span>
+            <span className="text-[var(--color-brand-green)] font-extrabold">+</span>
+          </div>
+          <div>
+            <p className="font-bold text-sm tracking-tight text-white leading-tight">
+              AI & Data Programme Pipeline
+            </p>
+            <p className="text-[11px] text-slate-300 leading-tight">
+              Staff & Intern Progress Dashboard
+            </p>
+          </div>
+        </div>
 
         <div className="space-y-3">
           <Badge variant="blue" dot size="sm" className="bg-white/10 text-blue-200 border-white/15">
-            Verified Mobile Access
+            Instant Phone OTP Access
           </Badge>
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight leading-snug">
-            One secure workspace for projects, assignments and programme progress.
+            Passwordless, high-security phone authentication for programme leaders.
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-            Unified portal for Administrators, Permanent Staff, and Interns — authenticated securely via registered mobile verification.
+            Enter your authorized mobile phone number to receive a secure one-time verification code.
           </p>
         </div>
 
@@ -50,35 +58,26 @@ function LoginBrandPanel() {
         <div className="space-y-4 pt-1">
           {[
             {
-              icon: <FolderKanban className="w-4 h-4" />,
+              icon: <Smartphone className="w-4 h-4" />,
               color: 'text-[var(--color-brand-blue-light)]',
-              label: 'Centralized project visibility',
-              detail: 'Track all programme activities and milestones in one place.',
+              label: 'Passwordless One-Time Password (OTP)',
+              detail: 'No password to remember — instant SMS/OTP login directly linked to your phone.',
             },
             {
-              icon: <KeyRound className="w-4 h-4" />,
+              icon: <FolderKanban className="w-4 h-4" />,
               color: 'text-[var(--color-brand-green)]',
-              label: 'Registered mobile verification',
-              detail: 'Fast, secure passwordless sign-in via verified SMS code.',
+              label: 'Centralized project visibility',
+              detail: 'Track all programme activities and milestones in one secure place.',
             },
             {
               icon: <Users className="w-4 h-4" />,
               color: 'text-[var(--color-brand-blue-light)]',
-              label: 'Role-based workspace access',
-              detail: 'Contextual dashboard views tailored to your programme responsibilities.',
-            },
-            {
-              icon: <ShieldCheck className="w-4 h-4" />,
-              color: 'text-[var(--color-brand-green)]',
-              label: 'Admin-provisioned accounts',
-              detail: 'Strictly governed internal enterprise system.',
+              label: 'Role-based authorization',
+              detail: 'Tailored workspace for Administrators, Permanent Staff, and Interns.',
             },
           ].map(({ icon, color, label, detail }) => (
             <div key={label} className="flex items-start gap-3">
-              <div
-                className={`w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center shrink-0 mt-0.5 ${color}`}
-                aria-hidden="true"
-              >
+              <div className={`w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center shrink-0 mt-0.5 ${color}`} aria-hidden="true">
                 {icon}
               </div>
               <div>
@@ -89,15 +88,32 @@ function LoginBrandPanel() {
           ))}
         </div>
 
-        {/* Information box */}
-        <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2">
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-200">
-            <ShieldCheck className="w-4 h-4 text-[var(--color-brand-green)]" aria-hidden="true" />
-            Enterprise Mobile Authentication
+        {/* Mini stats */}
+        <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3">
+          <div className="flex items-center justify-between text-[11px] text-slate-300">
+            <span className="flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5 text-[var(--color-brand-green)]" />
+              Programme Activity
+            </span>
+            <span className="text-[var(--color-brand-green)] font-semibold">Live & Secured</span>
           </div>
-          <p className="text-[11px] text-slate-400 leading-relaxed">
-            Accounts are provisioned by Programme Administrators. Enter your registered phone number to receive your sign-in verification code.
-          </p>
+          <div className="space-y-2">
+            {[
+              { label: 'Active Projects', value: '82%', color: 'bg-[var(--color-brand-green)]', width: 'w-[82%]' },
+              { label: 'Assignments Complete', value: '64%', color: 'bg-[var(--color-brand-blue)]', width: 'w-[64%]' },
+              { label: 'Intern Progress', value: '71%', color: 'bg-blue-300', width: 'w-[71%]' },
+            ].map(({ label, value, color, width }) => (
+              <div key={label}>
+                <div className="flex justify-between text-[10px] text-slate-400 mb-1">
+                  <span>{label}</span>
+                  <span className="text-slate-200 font-medium">{value}</span>
+                </div>
+                <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full ${color} ${width}`} />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -106,410 +122,446 @@ function LoginBrandPanel() {
         <span>Internal Enterprise System</span>
         <span className="flex items-center gap-1 text-[var(--color-brand-green)] font-semibold">
           <CheckCircle2 className="w-3.5 h-3.5" />
-          Verified Access
+          OTP Secured
         </span>
       </div>
     </div>
   );
 }
 
-/* ── Login Page ────────────────────────────────────────── */
+/* ── Main Login Page Component ─────────────────────────── */
 export default function LoginPage() {
-  const [step, setStep] = useState<LoginStep>('phone');
-  const [rawPhone, setRawPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [errors, setErrors] = useState<FormErrors>({});
+  const { sendOtp, verifyOtp, isAuthenticated, user, error: authError, clearError } = useAuth();
+  const navigate = useNavigate();
+
+  // Authentication Step: 1 = Enter Phone, 2 = Enter OTP
+  const [step, setStep] = useState<1 | 2>(1);
+  const [phoneNumber, setPhoneNumber] = useState('0774943291'); // Default to Admin phone
+  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
+  const [receivedOtp, setReceivedOtp] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [statusNotice, setStatusNotice] = useState<{
-    type: 'info' | 'error' | 'success';
-    title: string;
-    message: string;
-  } | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [statusNotice, setStatusNotice] = useState<string | null>(null);
+  const [resendTimer, setResendTimer] = useState(0);
 
-  // Resend Countdown Timer (Visual presentation)
-  const [countdown, setCountdown] = useState<number>(45);
-  const [canResend, setCanResend] = useState<boolean>(false);
+  const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
+  // If already authenticated, redirect to the appropriate dashboard
   useEffect(() => {
-    let timer: number | undefined;
-    if (step === 'otp' && countdown > 0) {
-      timer = window.setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            setCanResend(true);
-            return 0;
-          }
-          return prev - 1;
-        });
+    if (isAuthenticated && user) {
+      if (user.role === 'ADMIN') {
+        navigate('/admin/dashboard', { replace: true });
+      } else if (user.role === 'PERMANENT_STAFF') {
+        navigate('/staff/dashboard', { replace: true });
+      } else if (user.role === 'INTERN') {
+        navigate('/intern/dashboard', { replace: true });
+      }
+    }
+  }, [isAuthenticated, user, navigate]);
+
+  // Resend OTP countdown timer
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
       }, 1000);
     }
     return () => {
-      if (timer) clearInterval(timer);
+      if (interval) clearInterval(interval);
     };
-  }, [step, countdown]);
+  }, [resendTimer]);
 
   /**
-   * Helper: Format phone number into clean display string
+   * Handle Step 1: Send OTP
    */
-  const formatPhoneNumberInput = (input: string) => {
-    // Keep only digits
-    const digitsOnly = input.replace(/\D/g, '');
-    // If starts with '0', remove the leading '0' for +94 format
-    const normalized = digitsOnly.startsWith('0') ? digitsOnly.slice(1) : digitsOnly;
-    return normalized.slice(0, 9);
-  };
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatPhoneNumberInput(e.target.value);
-    setRawPhone(formatted);
-    if (errors.phoneNumber) {
-      setErrors((prev) => ({ ...prev, phoneNumber: undefined }));
-    }
-  };
-
-  /**
-   * Helper: Mask the phone number for Step 2 display (e.g. +94 77 ••• ••89)
-   */
-  const getMaskedPhoneNumber = () => {
-    if (rawPhone.length >= 9) {
-      const prefix = rawPhone.slice(0, 2);
-      const suffix = rawPhone.slice(-2);
-      return `+94 ${prefix} ••• ••${suffix}`;
-    }
-    return `+94 ${rawPhone}`;
-  };
-
-  /**
-   * Step 1: Handle Send Verification Code Action
-   */
-  const handleRequestOtp = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSendOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setPhoneError(null);
     setStatusNotice(null);
+    clearError();
 
-    // Client-side format validation only (must be 9 digits for Sri Lankan mobile excluding country code)
-    if (!rawPhone || rawPhone.length < 9) {
-      setErrors({
-        phoneNumber: 'Please enter a valid 9-digit mobile number (e.g. 77 123 4567).',
-      });
+    const cleanPhone = phoneNumber.trim();
+    if (!cleanPhone) {
+      setPhoneError('Please enter your mobile phone number.');
       return;
     }
 
-    setErrors({});
-    setIsSubmitting(true);
-
-    // Transition to OTP step with explicit "Awaiting backend integration" notice
-    // Note: No fake API or mock OTP is generated.
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setStep('otp');
-      setCountdown(45);
-      setCanResend(false);
-      setStatusNotice({
-        type: 'info',
-        title: 'Awaiting backend integration',
-        message: 'The frontend OTP interface is ready. Real SMS dispatch will be triggered once the backend SMS gateway endpoint is connected.',
-      });
-    }, 400);
-  };
-
-  /**
-   * Step 2: Handle OTP Verification Action
-   */
-  const handleVerifyOtp = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setStatusNotice(null);
-
-    // Client-side format validation for 6-digit code
-    if (!otp || otp.length < 6) {
-      setErrors({
-        otp: 'Please enter the complete 6-digit verification code.',
-      });
+    if (cleanPhone.length < 9) {
+      setPhoneError('Please enter a valid phone number (e.g. 0774943291).');
       return;
     }
 
-    setErrors({});
     setIsSubmitting(true);
-
-    // Present action as frontend-ready awaiting real backend verification
-    // Note: No fake JWT token or mock user role is created.
-    setTimeout(() => {
+    try {
+      const response = await sendOtp(cleanPhone);
+      setReceivedOtp(response.debugOtp || null);
+      setStep(2);
+      setResendTimer(30); // 30s cooldown
+      // Reset OTP inputs
+      setOtpDigits(['', '', '', '', '', '']);
+      setTimeout(() => {
+        otpInputsRef.current[0]?.focus();
+      }, 100);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to send OTP.';
+      setPhoneError(message);
+    } finally {
       setIsSubmitting(false);
-      setStatusNotice({
-        type: 'info',
-        title: 'Awaiting backend integration',
-        message: 'OTP verification interface is verified. Real session generation and role-based redirect will activate once backend authentication API is integrated.',
-      });
-    }, 400);
+    }
   };
 
   /**
-   * Switch back to phone entry step
+   * Handle OTP input changes with auto-focus across 6 boxes
    */
-  const handleChangePhoneNumber = () => {
-    setStep('phone');
-    setOtp('');
-    setErrors({});
+  const handleOtpDigitChange = (index: number, value: string) => {
     setStatusNotice(null);
+    // Allow single digit
+    const digit = value.replace(/\D/g, '').slice(-1);
+    const newDigits = [...otpDigits];
+    newDigits[index] = digit;
+    setOtpDigits(newDigits);
+
+    // Auto move to next input
+    if (digit && index < 5) {
+      otpInputsRef.current[index + 1]?.focus();
+    }
   };
 
   /**
-   * Visual Resend Action (Does not trigger fake API)
+   * Handle OTP backspace navigation
    */
-  const handleResendOtp = () => {
-    if (!canResend) return;
-    setCountdown(45);
-    setCanResend(false);
-    setStatusNotice({
-      type: 'info',
-      title: 'Awaiting backend integration',
-      message: 'Resend request triggered in UI. Real SMS re-dispatch will be handled by the backend API.',
-    });
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
+      otpInputsRef.current[index - 1]?.focus();
+    }
+  };
+
+  /**
+   * Handle Paste of full 6-digit OTP
+   */
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (pastedData.length > 0) {
+      const newDigits = [...otpDigits];
+      for (let i = 0; i < 6; i++) {
+        newDigits[i] = pastedData[i] || '';
+      }
+      setOtpDigits(newDigits);
+      const nextFocus = Math.min(pastedData.length, 5);
+      otpInputsRef.current[nextFocus]?.focus();
+    }
+  };
+
+  /**
+   * Auto-fill OTP when user clicks the demo helper banner
+   */
+  const handleAutofillOtp = (otp: string) => {
+    const digits = otp.split('').slice(0, 6);
+    setOtpDigits(digits);
+    setStatusNotice(null);
+    otpInputsRef.current[5]?.focus();
+  };
+
+  /**
+   * Handle Step 2: Verify OTP
+   */
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatusNotice(null);
+    clearError();
+
+    const fullOtp = otpDigits.join('');
+    if (fullOtp.length !== 6) {
+      setStatusNotice('Please enter all 6 digits of the verification code.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const loggedUser = await verifyOtp(phoneNumber.trim(), fullOtp);
+      // Role-Based Navigation
+      if (loggedUser.role === 'ADMIN') {
+        navigate('/admin/dashboard');
+      } else if (loggedUser.role === 'PERMANENT_STAFF') {
+        navigate('/staff/dashboard');
+      } else if (loggedUser.role === 'INTERN') {
+        navigate('/intern/dashboard');
+      } else {
+        navigate('/admin/dashboard');
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Invalid or expired OTP code.';
+      setStatusNotice(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <AuthLayout leftPanel={<LoginBrandPanel />} backTo={{ to: '/', label: 'Back to Home' }}>
       <div className="max-w-md w-full mx-auto space-y-6">
-        {/* Status / Error / Integration alert */}
-        {statusNotice && (
+        {/* Header Badge & Title */}
+        <div className="space-y-1.5">
+          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-brand-blue)] mb-0.5">
+            {step === 1 ? (
+              <>
+                <Smartphone className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>Phone OTP Verification</span>
+              </>
+            ) : (
+              <>
+                <KeyRound className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>Enter Security Code</span>
+              </>
+            )}
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--color-brand-navy)]">
+            {step === 1 ? 'Sign In with Phone' : 'Verify Code'}
+          </h1>
+          <p className="text-sm text-[var(--color-text-secondary)]">
+            {step === 1
+              ? 'Enter your registered phone number to receive a secure OTP.'
+              : `We sent a 6-digit verification code to ${phoneNumber}.`}
+          </p>
+        </div>
+
+        {/* Status / Error alert */}
+        {(statusNotice || authError || phoneError) && (
           <Alert
-            variant={statusNotice.type}
-            title={statusNotice.title}
-            onClose={() => setStatusNotice(null)}
+            variant="error"
+            title="Authentication Error"
+            onClose={() => {
+              setStatusNotice(null);
+              setPhoneError(null);
+              clearError();
+            }}
           >
-            {statusNotice.message}
+            {statusNotice || authError || phoneError}
           </Alert>
         )}
 
-        {/* ────────────────────────────────────────────────────────── */}
-        {/* STEP 1: PHONE NUMBER ENTRY                                 */}
-        {/* ────────────────────────────────────────────────────────── */}
-        {step === 'phone' && (
-          <div className="space-y-6">
-            {/* Heading */}
-            <div className="space-y-1.5">
-              <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-brand-blue)] mb-0.5">
-                <Phone className="w-3.5 h-3.5" aria-hidden="true" />
-                <span>Authorized Mobile Sign In</span>
+        {/* STEP 1: PHONE NUMBER INPUT FORM */}
+        {step === 1 && (
+          <form onSubmit={handleSendOtp} noValidate className="space-y-5" aria-label="Phone number login form">
+            <Input
+              id="login-phone"
+              label="Mobile Phone Number"
+              placeholder="e.g. 0774943291"
+              type="tel"
+              required
+              autoFocus
+              autoComplete="tel"
+              value={phoneNumber}
+              onChange={(e) => {
+                setPhoneNumber(e.target.value);
+                setPhoneError(null);
+              }}
+              error={phoneError || undefined}
+              leftIcon={<Smartphone className="w-4 h-4 text-slate-500" aria-hidden="true" />}
+              disabled={isSubmitting}
+            />
+
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              fullWidth
+              isLoading={isSubmitting}
+              rightIcon={!isSubmitting ? <ArrowRight className="w-4 h-4" /> : undefined}
+            >
+              {isSubmitting ? 'Sending OTP Code…' : 'Send Verification OTP'}
+            </Button>
+
+            {/* Quick Demo Selector Chips */}
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+              <div className="flex items-center justify-between text-xs font-semibold text-[var(--color-brand-navy)]">
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[var(--color-brand-blue)]" />
+                  Select Quick Demo Account:
+                </span>
+                <Badge size="sm" variant="blue">Instant Test</Badge>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--color-brand-navy)]">
-                Welcome Back
-              </h1>
-              <p className="text-sm text-[var(--color-text-secondary)]">
-                Sign in using the mobile number registered with your programme account.
-              </p>
-            </div>
 
-            {/* Phone Form */}
-            <form onSubmit={handleRequestOtp} noValidate className="space-y-5" aria-label="Phone number sign in form">
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="login-phone"
-                  className="text-xs font-medium text-[var(--color-text-primary)] flex items-center gap-1 select-none"
-                >
-                  <span>Registered Mobile Number</span>
-                  <span className="text-[var(--color-status-error)]" aria-hidden="true">
-                    *
-                  </span>
-                </label>
-
-                {/* Country Code + Phone Input Group */}
-                <div
-                  className={`flex items-center h-10 w-full rounded-lg border bg-[var(--color-surface-white)] transition-all duration-150 ease-in-out shadow-2xs overflow-hidden ${
-                    errors.phoneNumber
-                      ? 'border-[var(--color-status-error)] ring-2 ring-[var(--color-status-error)]/20'
-                      : 'border-[var(--color-border-subtle)] hover:border-[var(--color-border-hover)] focus-within:border-[var(--color-brand-blue)] focus-within:ring-2 focus-within:ring-[var(--color-brand-blue)]/20'
+              <div className="grid grid-cols-1 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPhoneNumber('0774943291');
+                    setPhoneError(null);
+                  }}
+                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs border text-left transition-all ${
+                    phoneNumber === '0774943291'
+                      ? 'bg-blue-50 border-[var(--color-brand-blue)] text-[var(--color-brand-blue)] font-semibold shadow-xs'
+                      : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
                   }`}
                 >
-                  {/* Fixed Country Code Badge */}
-                  <div
-                    className="h-full px-3 bg-[var(--color-surface-subtle)] border-r border-[var(--color-border-subtle)] flex items-center gap-1.5 text-xs font-bold text-[var(--color-brand-navy)] select-none shrink-0"
-                    aria-label="Country code: Sri Lanka (+94)"
-                  >
-                    <span className="text-sm" aria-hidden="true">🇱🇰</span>
-                    <span>+94</span>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+                    <span><strong>0774943291</strong> — Admin (Akila Liyanage)</span>
                   </div>
+                  <Badge size="sm" variant="blue">Admin</Badge>
+                </button>
 
-                  {/* Number Input */}
-                  <input
-                    id="login-phone"
-                    type="tel"
-                    inputMode="numeric"
-                    autoComplete="tel-national"
-                    required
-                    placeholder="77 123 4567"
-                    disabled={isSubmitting}
-                    value={rawPhone}
-                    onChange={handlePhoneChange}
-                    aria-invalid={Boolean(errors.phoneNumber)}
-                    aria-describedby={errors.phoneNumber ? 'login-phone-error' : 'login-phone-helper'}
-                    className="h-full flex-1 px-3.5 text-sm bg-transparent text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-hidden font-medium tracking-wide"
-                  />
-                </div>
-
-                {errors.phoneNumber ? (
-                  <p id="login-phone-error" className="text-xs text-[var(--color-status-error)] font-medium mt-1">
-                    {errors.phoneNumber}
-                  </p>
-                ) : (
-                  <p id="login-phone-helper" className="text-xs text-[var(--color-text-secondary)] mt-1">
-                    Use the mobile number registered by your system administrator.
-                  </p>
-                )}
-              </div>
-
-              {/* Submit Button */}
-              <div className="pt-1">
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="lg"
-                  fullWidth
-                  isLoading={isSubmitting}
-                  rightIcon={!isSubmitting ? <ArrowRight className="w-4 h-4" /> : undefined}
-                >
-                  {isSubmitting ? 'Requesting Code…' : 'Send Verification Code'}
-                </Button>
-              </div>
-            </form>
-
-            {/* Security Footnote */}
-            <p className="text-xs text-[var(--color-text-secondary)] flex items-center justify-center gap-1.5 pt-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-[var(--color-brand-blue)] shrink-0" aria-hidden="true" />
-              <span>Authorized programme accounts only · Secure mobile verification</span>
-            </p>
-          </div>
-        )}
-
-        {/* ────────────────────────────────────────────────────────── */}
-        {/* STEP 2: OTP VERIFICATION ENTRY                             */}
-        {/* ────────────────────────────────────────────────────────── */}
-        {step === 'otp' && (
-          <div className="space-y-6">
-            {/* Heading */}
-            <div className="space-y-1.5">
-              <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-brand-blue)] mb-0.5">
-                <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
-                <span>Secure Verification</span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--color-brand-navy)]">
-                Verify Your Number
-              </h1>
-              <p className="text-sm text-[var(--color-text-secondary)]">
-                Enter the 6-digit verification code sent to your registered mobile number.
-              </p>
-            </div>
-
-            {/* Masked Phone Display & Change Action */}
-            <div className="p-3.5 rounded-xl bg-[var(--color-surface-subtle)] border border-[var(--color-border-subtle)] flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-lg bg-[var(--color-brand-blue-light)] text-[var(--color-brand-blue)] flex items-center justify-center shrink-0">
-                  <Phone className="w-4 h-4" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[11px] text-[var(--color-text-secondary)] font-medium">Verification sent to</p>
-                  <p className="text-xs font-bold text-[var(--color-brand-navy)] tracking-wide font-mono truncate">
-                    {getMaskedPhoneNumber()}
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleChangePhoneNumber}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue-hover)] hover:underline focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)]/30 rounded px-1.5 py-1 cursor-pointer transition-colors"
-                aria-label="Change mobile phone number"
-              >
-                <ArrowLeft className="w-3 h-3" />
-                <span>Change</span>
-              </button>
-            </div>
-
-            {/* OTP Form */}
-            <form onSubmit={handleVerifyOtp} noValidate className="space-y-5" aria-label="OTP verification form">
-              <div className="space-y-2">
-                <label
-                  htmlFor="otp-verification-input"
-                  className="text-xs font-medium text-[var(--color-text-primary)] flex items-center justify-between select-none"
-                >
-                  <span className="flex items-center gap-1">
-                    <span>Verification Code</span>
-                    <span className="text-[var(--color-status-error)]" aria-hidden="true">
-                      *
-                    </span>
-                  </span>
-                  <span className="text-[11px] text-[var(--color-text-muted)]">6 Digits</span>
-                </label>
-
-                {/* Segmented 6-Box OTP Input */}
-                <OtpInput
-                  id="otp-verification-input"
-                  value={otp}
-                  onChange={(val: string) => {
-                    setOtp(val);
-                    if (errors.otp) setErrors((prev) => ({ ...prev, otp: undefined }));
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPhoneNumber('0771234567');
+                    setPhoneError(null);
                   }}
-                  length={6}
-                  disabled={isSubmitting}
-                  hasError={Boolean(errors.otp)}
-                  aria-describedby={errors.otp ? 'otp-input-error' : undefined}
-                />
-
-                {errors.otp && (
-                  <p id="otp-input-error" className="text-xs text-[var(--color-status-error)] font-medium mt-1">
-                    {errors.otp}
-                  </p>
-                )}
-              </div>
-
-              {/* Resend Code Section */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs pt-1">
-                <span className="text-[var(--color-text-secondary)]">Didn't receive the code?</span>
-
-                {canResend ? (
-                  <button
-                    type="button"
-                    onClick={handleResendOtp}
-                    className="inline-flex items-center gap-1.5 font-semibold text-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue-hover)] hover:underline focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)]/30 rounded cursor-pointer transition-colors"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Resend Verification Code</span>
-                  </button>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-[var(--color-text-muted)] font-medium">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>Resend code in {String(countdown).padStart(2, '0')}s</span>
-                  </span>
-                )}
-              </div>
-
-              {/* Submit Button */}
-              <div className="pt-2">
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="lg"
-                  fullWidth
-                  isLoading={isSubmitting}
-                  rightIcon={!isSubmitting ? <ArrowRight className="w-4 h-4" /> : undefined}
+                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs border text-left transition-all ${
+                    phoneNumber === '0771234567'
+                      ? 'bg-emerald-50 border-emerald-500 text-emerald-700 font-semibold shadow-xs'
+                      : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
+                  }`}
                 >
-                  {isSubmitting ? 'Verifying Code…' : 'Verify & Sign In'}
-                </Button>
-              </div>
-            </form>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                    <span><strong>0771234567</strong> — Staff (Dr. Kasun)</span>
+                  </div>
+                  <Badge size="sm" variant="success">Staff</Badge>
+                </button>
 
-            {/* Back to Phone Entry */}
-            <div className="text-center pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPhoneNumber('0777654321');
+                    setPhoneError(null);
+                  }}
+                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs border text-left transition-all ${
+                    phoneNumber === '0777654321'
+                      ? 'bg-purple-50 border-purple-500 text-purple-700 font-semibold shadow-xs'
+                      : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-purple-600"></span>
+                    <span><strong>0777654321</strong> — Intern (Ayuni Sliit)</span>
+                  </div>
+                  <Badge size="sm" variant="neutral">Intern</Badge>
+                </button>
+              </div>
+            </div>
+          </form>
+        )}
+
+        {/* STEP 2: 6-DIGIT OTP VERIFICATION FORM */}
+        {step === 2 && (
+          <form onSubmit={handleVerifyOtp} noValidate className="space-y-5" aria-label="OTP verification form">
+            {/* Phone Info & Change button */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50/60 border border-blue-100 text-xs">
+              <div className="flex items-center gap-2 text-slate-700">
+                <Smartphone className="w-4 h-4 text-[var(--color-brand-blue)]" />
+                <span>Code sent to: <strong>{phoneNumber}</strong></span>
+              </div>
               <button
                 type="button"
-                onClick={handleChangePhoneNumber}
-                className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-brand-navy)] inline-flex items-center gap-1 transition-colors cursor-pointer"
+                onClick={() => {
+                  setStep(1);
+                  setReceivedOtp(null);
+                }}
+                className="text-[var(--color-brand-blue)] font-semibold hover:underline flex items-center gap-1"
               >
-                <ArrowLeft className="w-3 h-3" />
-                <span>Return to phone number entry</span>
+                <ArrowLeft className="w-3 h-3" /> Change
               </button>
             </div>
-          </div>
+
+            {/* Received OTP Simulation Helper Box */}
+            {receivedOtp && (
+              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 space-y-1.5 shadow-xs">
+                <div className="flex items-center justify-between text-xs font-semibold">
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                    Simulated SMS Delivery:
+                  </span>
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-200 text-amber-800">
+                    Live Demo
+                  </span>
+                </div>
+                <p className="text-xs text-amber-800">
+                  Your verification code is: <strong className="font-mono text-sm tracking-wider bg-white px-2 py-0.5 rounded border border-amber-300 text-amber-950">{receivedOtp}</strong>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleAutofillOtp(receivedOtp)}
+                  className="text-xs text-amber-900 font-bold underline hover:text-amber-950 pt-0.5 inline-block cursor-pointer"
+                >
+                  Click here to auto-fill code →
+                </button>
+              </div>
+            )}
+
+            {/* 6-Digit Boxes */}
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-[var(--color-brand-navy)] text-center">
+                Enter 6-Digit Verification Code
+              </label>
+              <div className="flex justify-between gap-2 sm:gap-3" onPaste={handleOtpPaste}>
+                {otpDigits.map((digit, idx) => (
+                  <input
+                    key={idx}
+                    ref={(el) => { otpInputsRef.current[idx] = el; }}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleOtpDigitChange(idx, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                    className="w-11 h-12 sm:w-12 sm:h-14 text-center text-xl font-bold font-mono rounded-xl border border-slate-300 focus:border-[var(--color-brand-blue)] focus:ring-2 focus:ring-[var(--color-brand-blue)]/20 outline-none transition-all bg-white shadow-xs"
+                    disabled={isSubmitting}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="space-y-3 pt-2">
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                fullWidth
+                isLoading={isSubmitting}
+                rightIcon={!isSubmitting ? <ArrowRight className="w-4 h-4" /> : undefined}
+              >
+                {isSubmitting ? 'Verifying Code…' : 'Verify & Sign In'}
+              </Button>
+
+              {/* Resend button */}
+              <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="hover:text-slate-800 transition-colors flex items-center gap-1"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" /> Back to Phone Input
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSendOtp()}
+                  disabled={resendTimer > 0 || isSubmitting}
+                  className={`font-semibold flex items-center gap-1 ${
+                    resendTimer > 0
+                      ? 'text-slate-400 cursor-not-allowed'
+                      : 'text-[var(--color-brand-blue)] hover:underline cursor-pointer'
+                  }`}
+                >
+                  <RefreshCw className={`w-3 h-3 ${resendTimer > 0 ? '' : 'hover:rotate-180 transition-transform'}`} />
+                  {resendTimer > 0 ? `Resend code in ${resendTimer}s` : 'Resend Code'}
+                </button>
+              </div>
+            </div>
+          </form>
         )}
+
+        {/* Security footnote */}
+        <p className="text-xs text-[var(--color-text-secondary)] flex items-center justify-center gap-1.5 pt-1">
+          <ShieldCheck className="w-3.5 h-3.5 text-[var(--color-brand-blue)] shrink-0" aria-hidden="true" />
+          <span>Strictly authorized internal system access · AI & Data Pipeline</span>
+        </p>
       </div>
     </AuthLayout>
   );

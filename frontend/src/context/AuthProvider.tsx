@@ -5,6 +5,7 @@ import type {
   AuthContextValue,
   AuthUser,
   LoginCredentials,
+  SendOtpResponse,
   ChangePasswordPayload,
   ActivateAccountPayload,
 } from '../types/auth.types';
@@ -89,7 +90,85 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [refreshCurrentUser]);
 
   /**
-   * Login Implementation
+   * Send OTP Implementation
+   */
+  const sendOtp = useCallback(async (phoneNumber: string): Promise<SendOtpResponse> => {
+    setState((prev) => ({ ...prev, error: null }));
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/send-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phoneNumber }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to send OTP to this phone number.');
+      }
+
+      return data;
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'An unexpected error occurred while sending OTP';
+      setState((prev) => ({
+        ...prev,
+        error: errorMessage,
+      }));
+      throw new Error(errorMessage);
+    }
+  }, []);
+
+  /**
+   * Verify OTP Implementation
+   */
+  const verifyOtp = useCallback(async (phoneNumber: string, otp: string): Promise<AuthUser> => {
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phoneNumber, otp }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Invalid or expired OTP code.');
+      }
+
+      // Save token and user details to localStorage
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      setState({
+        user: data.user,
+        role: data.user.role,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+        mustChangePassword: false,
+      });
+
+      return data.user;
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'An error occurred during OTP verification';
+      setState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: errorMessage,
+      }));
+      throw new Error(errorMessage);
+    }
+  }, []);
+
+  /**
+   * Fallback Login Implementation
    */
   const login = useCallback(
     async (credentials: LoginCredentials): Promise<AuthUser> => {
@@ -174,6 +253,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const value: AuthContextValue = useMemo(
     () => ({
       ...state,
+      sendOtp,
+      verifyOtp,
       login,
       logout,
       refreshCurrentUser,
@@ -181,7 +262,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       activateAccount,
       clearError,
     }),
-    [state, login, logout, refreshCurrentUser, changePassword, activateAccount, clearError]
+    [state, sendOtp, verifyOtp, login, logout, refreshCurrentUser, changePassword, activateAccount, clearError]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

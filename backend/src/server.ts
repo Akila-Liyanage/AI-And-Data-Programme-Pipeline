@@ -8,6 +8,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { connectDB } from './config/db';
 import authRoutes from './routes/authRoutes';
+import userRoutes from './routes/userRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -18,6 +19,7 @@ app.use(express.json());
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 // Basic health-check endpoint
 app.get('/', (_req: Request, res: Response) => {
