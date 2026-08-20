@@ -8,12 +8,15 @@ export interface IUser extends Document {
   userId: string;
   username: string;
   fullName: string;
+  phoneNumber: string;
   email: string;
-  password: string;
+  password?: string;
   role: UserRole;
   designation?: string;
   department: string;
   accountStatus: AccountStatus;
+  otpCode?: string;
+  otpExpiresAt?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -39,6 +42,13 @@ const UserSchema = new Schema<IUser>(
       required: [true, 'Full name is required'],
       trim: true,
     },
+    phoneNumber: {
+      type: String,
+      required: [true, 'Phone number is required'],
+      unique: true,
+      trim: true,
+      index: true,
+    },
     email: {
       type: String,
       required: [true, 'Email is required'],
@@ -52,8 +62,8 @@ const UserSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
       minlength: [6, 'Password must be at least 6 characters'],
+      default: undefined,
     },
     role: {
       type: String,
@@ -78,15 +88,22 @@ const UserSchema = new Schema<IUser>(
       enum: ['ACTIVE', 'INACTIVE', 'PENDING'],
       default: 'ACTIVE',
     },
+    otpCode: {
+      type: String,
+      trim: true,
+    },
+    otpExpiresAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-// Hash password before saving if modified
+// Hash password before saving if modified and present
 UserSchema.pre<IUser>('save', async function (next) {
-  if (!this.isModified('password')) {
+  if (!this.isModified('password') || !this.password) {
     return next();
   }
   const salt = await bcrypt.genSalt(10);
@@ -96,6 +113,7 @@ UserSchema.pre<IUser>('save', async function (next) {
 
 // Compare entered password with hashed password in database
 UserSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
+  if (!this.password) return false;
   return bcrypt.compare(candidatePassword, this.password);
 };
 
