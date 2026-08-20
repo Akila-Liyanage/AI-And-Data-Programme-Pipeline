@@ -1,10 +1,14 @@
 import { Router } from 'express';
-import { loginUser, getMe } from '../controllers/authController';
+import { sendOtp, verifyOtp, loginUser, getMe } from '../controllers/authController';
 import { protect } from '../middleware/authMiddleware';
 
 const router = Router();
 
-// Public routes
+// Phone Number + OTP Authentication routes
+router.post('/send-otp', sendOtp);
+router.post('/verify-otp', verifyOtp);
+
+// Fallback password login route
 router.post('/login', loginUser);
 
 // Protected routes
