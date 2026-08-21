@@ -47,24 +47,21 @@ const STAFF_NAVIGATION: NavSection[] = [
     items: [
       {
         id: 'staff-progress',
-        label: 'Progress Updates',
+        label: 'Work Progress',
         path: '/staff/progress',
         icon: <TrendingUp className="w-4 h-4" />,
-        disabled: true,
       },
       {
         id: 'staff-history',
         label: 'Work History',
         path: '/staff/work-history',
         icon: <History className="w-4 h-4" />,
-        disabled: true,
       },
       {
         id: 'staff-profile',
         label: 'My Profile',
         path: '/staff/profile',
         icon: <User className="w-4 h-4" />,
-        disabled: true,
       },
     ],
   },
@@ -225,7 +222,7 @@ export default function StaffDashboardPage() {
           title="Work Progress Overview"
           subtitle="Progress metrics derived from completed work item weights"
           headerAction={
-            <Button variant="outline" size="sm" disabled title="Awaiting frontend implementation">
+            <Button variant="outline" size="sm" onClick={() => navigate('/staff/progress')}>
               View Progress
             </Button>
           }
@@ -275,8 +272,7 @@ export default function StaffDashboardPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          disabled
-                          title="Awaiting frontend implementation"
+                          onClick={() => navigate('/staff/work-history')}
                         >
                           View Work History
                         </Button>

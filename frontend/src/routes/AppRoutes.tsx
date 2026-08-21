@@ -15,6 +15,9 @@ import TeamWorkHistoryPage from '../pages/admin/TeamWorkHistoryPage';
 import StaffDashboardPage from '../pages/dashboard/StaffDashboardPage';
 import StaffAssignedProjectsPage from '../pages/staff/StaffAssignedProjectsPage';
 import StaffWorkItemsPage from '../pages/staff/StaffWorkItemsPage';
+import StaffProgressPage from '../pages/staff/StaffProgressPage';
+import StaffWorkHistoryPage from '../pages/staff/StaffWorkHistoryPage';
+import StaffProfilePage from '../pages/staff/StaffProfilePage';
 import InternDashboardPage from '../pages/dashboard/InternDashboardPage';
 import { ProtectedRoute } from './ProtectedRoute';
 
@@ -111,6 +114,30 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['PERMANENT_STAFF']}>
             <StaffWorkItemsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff/progress"
+        element={
+          <ProtectedRoute allowedRoles={['PERMANENT_STAFF']}>
+            <StaffProgressPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff/work-history"
+        element={
+          <ProtectedRoute allowedRoles={['PERMANENT_STAFF']}>
+            <StaffWorkHistoryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff/profile"
+        element={
+          <ProtectedRoute allowedRoles={['PERMANENT_STAFF']}>
+            <StaffProfilePage />
           </ProtectedRoute>
         }
       />

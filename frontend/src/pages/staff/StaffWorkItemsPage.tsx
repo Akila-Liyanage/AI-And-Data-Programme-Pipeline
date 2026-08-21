@@ -51,24 +51,21 @@ const STAFF_NAVIGATION: NavSection[] = [
     items: [
       {
         id: 'staff-progress',
-        label: 'Progress Updates',
+        label: 'Work Progress',
         path: '/staff/progress',
         icon: <TrendingUp className="w-4 h-4" />,
-        disabled: true,
       },
       {
         id: 'staff-history',
         label: 'Work History',
         path: '/staff/work-history',
         icon: <History className="w-4 h-4" />,
-        disabled: true,
       },
       {
         id: 'staff-profile',
         label: 'My Profile',
         path: '/staff/profile',
         icon: <User className="w-4 h-4" />,
-        disabled: true,
       },
     ],
   },
