@@ -19,6 +19,7 @@ import StaffProgressPage from '../pages/staff/StaffProgressPage';
 import StaffWorkHistoryPage from '../pages/staff/StaffWorkHistoryPage';
 import StaffProfilePage from '../pages/staff/StaffProfilePage';
 import InternDashboardPage from '../pages/dashboard/InternDashboardPage';
+import InternAssignedProjectsPage from '../pages/intern/InternAssignedProjectsPage';
 import { ProtectedRoute } from './ProtectedRoute';
 
 export default function AppRoutes() {
@@ -155,6 +156,14 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['INTERN']}>
             <InternDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/intern/projects"
+        element={
+          <ProtectedRoute allowedRoles={['INTERN']}>
+            <InternAssignedProjectsPage />
           </ProtectedRoute>
         }
       />
