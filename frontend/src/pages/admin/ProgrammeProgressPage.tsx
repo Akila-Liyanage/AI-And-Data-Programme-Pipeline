@@ -64,7 +64,7 @@ export default function ProgrammeProgressPage() {
       {/* ── Page Header ────────────────────────────────────────── */}
       <PageHeader
         title="Programme Progress"
-        description="Monitor AI & Data programme project health, team participation, and milestone completion in real time."
+        description="Programme and project progress is calculated from completed work-item percentage weights."
         breadcrumbs={[
           { label: 'Administration', path: '/admin/dashboard' },
           { label: 'Programme Progress' },

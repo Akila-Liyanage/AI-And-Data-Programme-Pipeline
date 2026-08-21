@@ -4,7 +4,7 @@
  */
 
 export type UserCategory = 'ADMIN' | 'PERMANENT_STAFF' | 'INTERN';
-export type AccountStatus = 'PENDING' | 'ACTIVE' | 'INACTIVE';
+export type AccountStatus = 'PENDING' | 'PENDING_VERIFICATION' | 'VERIFIED' | 'REJECTED' | 'ACTIVE' | 'INACTIVE';
 
 export interface ManagedUser {
   id: string;

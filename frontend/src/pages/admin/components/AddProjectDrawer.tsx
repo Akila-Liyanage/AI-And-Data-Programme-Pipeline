@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { Button, Badge, Alert } from '../../../components/common';
+import WorkItemBuilder, { type WorkItem } from './WorkItemBuilder';
 
 export interface AddProjectDrawerProps {
   isOpen: boolean;
@@ -41,6 +42,8 @@ interface ProjectFormErrors {
   startDate?: string;
   targetDate?: string;
   priority?: string;
+  workItems?: string;
+  [key: string]: string | undefined;
 }
 
 const INITIAL_PROJECT_FORM: ProjectFormState = {
@@ -79,6 +82,7 @@ export const AddProjectDrawer: React.FC<AddProjectDrawerProps> = ({
   onClose,
 }) => {
   const [formData, setFormData] = useState<ProjectFormState>(INITIAL_PROJECT_FORM);
+  const [workItems, setWorkItems] = useState<WorkItem[]>([]);
   const [errors, setErrors] = useState<ProjectFormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusNotice, setStatusNotice] = useState<{
@@ -154,6 +158,26 @@ export const AddProjectDrawer: React.FC<AddProjectDrawerProps> = ({
       newErrors.targetDate = 'Target Date cannot be earlier than Start Date.';
     }
 
+    /* Work Items Validation */
+    const totalAllocated = workItems.reduce((sum, item) => sum + (Number(item.percentage) || 0), 0);
+    if (workItems.length === 0) {
+      newErrors.workItems = 'At least one Work Item is required.';
+    } else if (totalAllocated !== 100) {
+      newErrors.workItems = `Total Work Item allocation must equal exactly 100% (currently ${totalAllocated}%).`;
+    }
+
+    workItems.forEach((item) => {
+      if (!item.task.trim()) {
+        newErrors[`task-${item.id}`] = 'Task name is required';
+      }
+      if (!item.requiredRole) {
+        newErrors[`role-${item.id}`] = 'Role is required';
+      }
+      if (item.percentage <= 0) {
+        newErrors[`weight-${item.id}`] = 'Weight must be > 0%';
+      }
+    });
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -181,6 +205,7 @@ export const AddProjectDrawer: React.FC<AddProjectDrawerProps> = ({
 
   const handleResetForm = () => {
     setFormData(INITIAL_PROJECT_FORM);
+    setWorkItems([]);
     setErrors({});
     setStatusNotice(null);
     onClose();
@@ -594,7 +619,39 @@ export const AddProjectDrawer: React.FC<AddProjectDrawerProps> = ({
                   </select>
                 </div>
               </div>
+            </div>
 
+            {/* Section 4: Project Work Breakdown */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
+                <Code2 className="w-4 h-4 text-[var(--color-brand-blue)]" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
+                  Project Work Breakdown
+                </h3>
+              </div>
+              <p className="text-[11px] text-[var(--color-text-secondary)] leading-relaxed">
+                Define the work items required to complete this project. Each work item must have a required role and percentage weight. The total weight of all work items must equal exactly 100%. Project progress is calculated automatically from completed work items.
+              </p>
+
+              {errors.workItems && (
+                <Alert variant="error" title="Allocation Error" onClose={() => setErrors(prev => ({ ...prev, workItems: undefined }))}>
+                  {errors.workItems}
+                </Alert>
+              )}
+
+              <WorkItemBuilder
+                workItems={workItems}
+                onChange={(items) => {
+                  setWorkItems(items);
+                  if (errors.workItems) {
+                    setErrors((prev) => ({ ...prev, workItems: undefined }));
+                  }
+                }}
+                errors={errors}
+              />
+            </div>
+
+            <div className="space-y-4">
               {/* Live Draft Preview */}
               {formData.name && (
                 <div className="p-3.5 rounded-xl bg-blue-50/50 border border-blue-100 space-y-2">

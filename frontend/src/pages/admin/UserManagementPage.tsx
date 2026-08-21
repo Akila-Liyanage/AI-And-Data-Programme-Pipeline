@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   Users,
   UserCheck,
-  GraduationCap,
   Clock,
   Search,
   RotateCcw,
@@ -38,12 +37,14 @@ export default function UserManagementPage() {
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<ManagedUser | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'ALL' | 'PENDING_VERIFICATION' | 'VERIFIED' | 'REJECTED'>('ALL');
 
   // Search and Filter State
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [departmentFilter, setDepartmentFilter] = useState('ALL');
+  const [employmentFilter, setEmploymentFilter] = useState('ALL');
 
   const userDisplay: UserDisplayInfo = {
     name: user?.fullName || 'Akila Liyanage',
@@ -61,6 +62,7 @@ export default function UserManagementPage() {
     setCategoryFilter('ALL');
     setStatusFilter('ALL');
     setDepartmentFilter('ALL');
+    setEmploymentFilter('ALL');
   };
 
   return (
@@ -82,15 +84,20 @@ export default function UserManagementPage() {
         ]}
         badge={<Badge variant="blue">Administrator</Badge>}
         actions={
-          <Button
-            variant="primary"
-            size="sm"
-            leftIcon={<Plus className="w-4 h-4" />}
-            onClick={() => setIsAddUserOpen(true)}
-            aria-label="Add new user"
-          >
-            + Add User
-          </Button>
+          <div className="flex flex-col items-end gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<Plus className="w-4 h-4" />}
+              onClick={() => setIsAddUserOpen(true)}
+              aria-label="Manual user provisioning"
+            >
+              Manual User Provisioning
+            </Button>
+            <span className="text-[10px] text-[var(--color-text-secondary)] font-medium max-w-xs text-right leading-tight block">
+              Staff and Intern users can normally register through the public Create Account flow.
+            </span>
+          </div>
         }
       />
 
@@ -109,7 +116,7 @@ export default function UserManagementPage() {
                 </span>
               </div>
               <Badge size="sm" variant="neutral">
-                All Categories
+                All
               </Badge>
             </div>
             <p className="text-2xl font-bold text-[var(--color-brand-navy)] tracking-tight">
@@ -121,55 +128,7 @@ export default function UserManagementPage() {
             </p>
           </Card>
 
-          {/* Card 2: Permanent Staff */}
-          <Card padding="md" className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-blue-50 text-[var(--color-brand-blue)] flex items-center justify-center shrink-0">
-                  <UserCheck className="w-4 h-4" />
-                </div>
-                <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
-                  Permanent Staff
-                </span>
-              </div>
-              <Badge size="sm" variant="blue">
-                Staff Members
-              </Badge>
-            </div>
-            <p className="text-2xl font-bold text-[var(--color-brand-navy)] tracking-tight">
-              —
-            </p>
-            <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-300" aria-hidden="true" />
-              Awaiting data integration
-            </p>
-          </Card>
-
-          {/* Card 3: Interns */}
-          <Card padding="md" className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                  <GraduationCap className="w-4 h-4" />
-                </div>
-                <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
-                  Interns
-                </span>
-              </div>
-              <Badge size="sm" variant="info">
-                Programme Interns
-              </Badge>
-            </div>
-            <p className="text-2xl font-bold text-[var(--color-brand-navy)] tracking-tight">
-              —
-            </p>
-            <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-300" aria-hidden="true" />
-              Awaiting data integration
-            </p>
-          </Card>
-
-          {/* Card 4: Pending Activation */}
+          {/* Card 2: Pending Verification */}
           <Card padding="md" className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -177,11 +136,11 @@ export default function UserManagementPage() {
                   <Clock className="w-4 h-4" />
                 </div>
                 <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
-                  Pending Activation
+                  Pending Verification
                 </span>
               </div>
               <Badge size="sm" variant="warning">
-                Pending Review
+                Review Queue
               </Badge>
             </div>
             <p className="text-2xl font-bold text-[var(--color-brand-navy)] tracking-tight">
@@ -192,6 +151,83 @@ export default function UserManagementPage() {
               Awaiting data integration
             </p>
           </Card>
+
+          {/* Card 3: Verified Users */}
+          <Card padding="md" className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-emerald-50 text-[var(--color-brand-green)] flex items-center justify-center shrink-0">
+                  <UserCheck className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
+                  Verified Users
+                </span>
+              </div>
+              <Badge size="sm" variant="success">
+                Active Access
+              </Badge>
+            </div>
+            <p className="text-2xl font-bold text-[var(--color-brand-navy)] tracking-tight">
+              —
+            </p>
+            <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-300" aria-hidden="true" />
+              Awaiting data integration
+            </p>
+          </Card>
+
+          {/* Card 4: Rejected Registrations */}
+          <Card padding="md" className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                  <Clock className="w-4 h-4 text-rose-500" />
+                </div>
+                <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
+                  Rejected Registrations
+                </span>
+              </div>
+              <Badge size="sm" variant="neutral">
+                Declined
+              </Badge>
+            </div>
+            <p className="text-2xl font-bold text-[var(--color-brand-navy)] tracking-tight">
+              —
+            </p>
+            <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-300" aria-hidden="true" />
+              Awaiting data integration
+            </p>
+          </Card>
+        </div>
+
+        {/* ── Verification Tabs ──────────────────────────────── */}
+        <div className="border-b border-[var(--color-border-subtle)] bg-white px-4 py-1.5 rounded-xl shadow-2xs">
+          <nav className="flex flex-wrap gap-4" aria-label="Registration status views">
+            {[
+              { id: 'ALL', label: 'All Users' },
+              { id: 'PENDING_VERIFICATION', label: 'Pending Verification' },
+              { id: 'VERIFIED', label: 'Verified Users' },
+              { id: 'REJECTED', label: 'Rejected Registrations' },
+            ].map((tab) => {
+              const active = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id as 'ALL' | 'PENDING_VERIFICATION' | 'VERIFIED' | 'REJECTED')}
+                  aria-current={active ? 'page' : undefined}
+                  className={`py-2 px-1 text-xs font-bold border-b-2 transition-all focus:outline-none cursor-pointer ${
+                    active
+                      ? 'border-[var(--color-brand-blue)] text-[var(--color-brand-blue)]'
+                      : 'border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-brand-navy)] hover:border-slate-300'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </nav>
         </div>
 
         {/* ── Search & Filter Toolbar ─────────────────────────── */}
@@ -221,7 +257,6 @@ export default function UserManagementPage() {
                   aria-label="Filter by user category"
                 >
                   <option value="ALL">All Categories</option>
-                  <option value="ADMIN">Administrator</option>
                   <option value="PERMANENT_STAFF">Permanent Staff</option>
                   <option value="INTERN">Intern</option>
                 </select>
@@ -236,9 +271,26 @@ export default function UserManagementPage() {
                   aria-label="Filter by account status"
                 >
                   <option value="ALL">All Statuses</option>
-                  <option value="PENDING">Pending</option>
+                  <option value="PENDING_VERIFICATION">Pending Verification</option>
+                  <option value="VERIFIED">Verified</option>
+                  <option value="REJECTED">Rejected</option>
                   <option value="ACTIVE">Active</option>
                   <option value="INACTIVE">Inactive</option>
+                </select>
+              </div>
+
+              {/* Employment Type Filter */}
+              <div className="flex-1 sm:flex-initial min-w-[140px]">
+                <select
+                  value={employmentFilter}
+                  onChange={(e) => setEmploymentFilter(e.target.value)}
+                  className="w-full h-10 px-3 text-xs font-medium rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-white)] text-[var(--color-brand-navy)] focus:outline-hidden focus:border-[var(--color-brand-blue)] focus:ring-2 focus:ring-[var(--color-brand-blue)]/20 transition-all shadow-2xs cursor-pointer"
+                  aria-label="Filter by employment type"
+                >
+                  <option value="ALL">All Employment Types</option>
+                  <option value="Permanent">Permanent</option>
+                  <option value="Contract Based">Contract Based</option>
+                  <option value="Freelance">Freelance</option>
                 </select>
               </div>
 
@@ -298,23 +350,24 @@ export default function UserManagementPage() {
                 <tr className="bg-[var(--color-surface-subtle)]/70 border-b border-[var(--color-border-subtle)] text-[11px] font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">
                   <th scope="col" className="py-3 px-4 sm:px-6">User</th>
                   <th scope="col" className="py-3 px-4">User ID</th>
+                  <th scope="col" className="py-3 px-4">User Type</th>
+                  <th scope="col" className="py-3 px-4">Role / Professional Role</th>
+                  <th scope="col" className="py-3 px-4">Employment Type</th>
                   <th scope="col" className="py-3 px-4">Phone Number</th>
                   <th scope="col" className="py-3 px-4">Email</th>
-                  <th scope="col" className="py-3 px-4">Category</th>
-                  <th scope="col" className="py-3 px-4">Professional Role</th>
-                  <th scope="col" className="py-3 px-4">Department</th>
-                  <th scope="col" className="py-3 px-4">Account Status</th>
+                  <th scope="col" className="py-3 px-4">Verification Status</th>
+                  <th scope="col" className="py-3 px-4">Registered Date</th>
                   <th scope="col" className="py-3 px-4 sm:px-6 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border-subtle)] bg-[var(--color-surface-white)]">
                 {/* Empty State when no backend data is connected */}
                 <tr>
-                  <td colSpan={9} className="p-8">
+                  <td colSpan={10} className="p-8">
                     <EmptyState
                       icon={<Users className="w-6 h-6 text-[var(--color-brand-blue)]" />}
-                      title="No user data available"
-                      description="Programme users will appear here once the user management service is connected."
+                      title="No registration records available"
+                      description="Registered Staff and Intern users will appear here once the user service is connected."
                       action={
                         <Button
                           variant="outline"
@@ -322,7 +375,7 @@ export default function UserManagementPage() {
                           leftIcon={<Plus className="w-4 h-4" />}
                           onClick={() => setIsAddUserOpen(true)}
                         >
-                          Add First User
+                          Manual User Provisioning
                         </Button>
                       }
                       secondaryAction={

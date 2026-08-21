@@ -52,7 +52,6 @@ export const ADMIN_NAVIGATION: NavSection[] = [
         label: 'Team Work History',
         path: '/admin/work-history',
         icon: <History className="w-4 h-4" />,
-        disabled: true,
       },
     ],
   },

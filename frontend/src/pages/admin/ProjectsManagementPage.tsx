@@ -327,6 +327,7 @@ export default function ProjectsManagementPage() {
                   <th scope="col" className="py-3 px-4">Start Date</th>
                   <th scope="col" className="py-3 px-4">Target Date</th>
                   <th scope="col" className="py-3 px-4">Status</th>
+                  <th scope="col" className="py-3 px-4">Work Items</th>
                   <th scope="col" className="py-3 px-4">Progress</th>
                   <th scope="col" className="py-3 px-4 sm:px-6 text-right">Actions</th>
                 </tr>
@@ -334,7 +335,7 @@ export default function ProjectsManagementPage() {
               <tbody className="divide-y divide-[var(--color-border-subtle)] bg-[var(--color-surface-white)]">
                 {/* Empty State when no backend data is connected */}
                 <tr>
-                  <td colSpan={11} className="p-8">
+                  <td colSpan={12} className="p-8">
                     <EmptyState
                       icon={<FolderKanban className="w-6 h-6 text-[var(--color-brand-blue)]" />}
                       title="No project data available"

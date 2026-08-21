@@ -12,7 +12,7 @@ import {
   Edit3,
   UserCheck,
 } from 'lucide-react';
-import { Button, Badge, Alert } from '../../../components/common';
+import { Button, Badge, Alert, EmptyState } from '../../../components/common';
 import type { ManagedProject } from '../../../types/projectManagement.types';
 
 export interface ProjectDetailsDrawerProps {
@@ -382,21 +382,71 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
                     Overall Project Progress
                   </span>
                   <span className="font-bold text-[var(--color-brand-blue)]">
-                    {project?.progress !== undefined ? `${project.progress}%` : '0%'}
+                    —%
                   </span>
                 </div>
 
                 <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[var(--color-brand-blue)] transition-all duration-300 rounded-full"
-                    style={{ width: `${project?.progress || 0}%` }}
+                    className="h-full bg-slate-300 rounded-full"
+                    style={{ width: '0%' }}
                   />
                 </div>
 
-                <p className="text-[11px] text-[var(--color-text-secondary)] leading-relaxed">
-                  {project?.milestoneInfo ||
-                    'Milestone tracking will be updated automatically through project task completion.'}
-                </p>
+                <div className="p-3 bg-white rounded-lg border border-slate-100 space-y-1.5 text-[11px] text-slate-600">
+                  <p className="font-semibold text-[var(--color-brand-navy)]">
+                    Calculated automatically from completed work items:
+                  </p>
+                  <p className="flex items-center gap-2 text-slate-500 font-medium">
+                    <span>Completed Work Item Weights</span>
+                    <span>→</span>
+                    <span className="text-[var(--color-brand-blue)] font-bold">Project Progress</span>
+                  </p>
+                  <p className="text-[10px] text-slate-400 italic">
+                    Awaiting work items data integration.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* ── 5. PROJECT WORK BREAKDOWN ──────────────────────── */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
+                <Code2 className="w-4 h-4 text-[var(--color-brand-blue)]" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
+                  Work Breakdown
+                </h4>
+              </div>
+
+              {/* Table/List for Work Items Preview */}
+              <div className="border border-slate-100 rounded-xl overflow-hidden">
+                <table className="w-full text-left border-collapse text-xs" aria-label="Project Work Items Table">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                      <th scope="col" className="py-2 px-3">Work Item</th>
+                      <th scope="col" className="py-2 px-3">Required Role</th>
+                      <th scope="col" className="py-2 px-3">Weight</th>
+                      <th scope="col" className="py-2 px-3">Status</th>
+                      <th scope="col" className="py-2 px-3 text-right">Contribution</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td colSpan={5} className="p-6">
+                        <EmptyState
+                          icon={<Code2 className="w-6 h-6 text-[var(--color-brand-blue)]" />}
+                          title="No work items available"
+                          description="Project work items will appear here once work-breakdown data is connected."
+                          secondaryAction={
+                            <Badge size="sm" variant="neutral">
+                              Awaiting backend integration
+                            </Badge>
+                          }
+                        />
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>

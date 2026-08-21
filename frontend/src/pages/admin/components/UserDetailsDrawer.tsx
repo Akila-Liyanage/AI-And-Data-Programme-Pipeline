@@ -1,3 +1,15 @@
+/**
+ * UserDetailsDrawer.tsx
+ *
+ * STEP 4 ADMIN USER VERIFICATION drawer.
+ * Displays self-registered user details, verification status, and provides
+ * Verify / Reject actions for PENDING_VERIFICATION accounts.
+ *
+ * STRICT BOUNDARIES:
+ * - NO real verification or rejection database persistence.
+ * - NO local state mutation of the selected user status.
+ * - NO fake session manipulation.
+ */
 import React, { useState, useEffect } from 'react';
 import {
   X,
@@ -5,16 +17,13 @@ import {
   Mail,
   Phone,
   Briefcase,
-  Building2,
   IdCard,
   ShieldCheck,
   CheckCircle2,
   Clock,
-  KeyRound,
-  Edit3,
   Ban,
-  Check,
-  Smartphone,
+  Calendar,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button, Badge, Alert } from '../../../components/common';
 import type { ManagedUser } from '../../../types/userManagement.types';
@@ -23,7 +32,6 @@ export interface UserDetailsDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   user?: ManagedUser | null;
-  onEdit?: (user: ManagedUser) => void;
 }
 
 export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
@@ -31,7 +39,9 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
   onClose,
   user,
 }) => {
-  const [isConfirmingActivation, setIsConfirmingActivation] = useState(false);
+  const [isConfirmingVerification, setIsConfirmingVerification] = useState(false);
+  const [isConfirmingRejection, setIsConfirmingRejection] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
   const [statusNotice, setStatusNotice] = useState<{
     type: 'info' | 'error' | 'success';
     title: string;
@@ -42,8 +52,10 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
-        if (isConfirmingActivation) {
-          setIsConfirmingActivation(false);
+        if (isConfirmingVerification) {
+          setIsConfirmingVerification(false);
+        } else if (isConfirmingRejection) {
+          setIsConfirmingRejection(false);
         } else {
           onClose();
         }
@@ -51,7 +63,7 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isConfirmingActivation, onClose]);
+  }, [isOpen, isConfirmingVerification, isConfirmingRejection, onClose]);
 
   // Lock body scroll when drawer is open
   useEffect(() => {
@@ -65,7 +77,7 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
     };
   }, [isOpen]);
 
-  const currentStatus = user?.accountStatus || 'PENDING';
+  const currentStatus = user?.accountStatus || 'PENDING_VERIFICATION';
 
   const formatCategory = (cat?: string) => {
     if (!cat) return '—';
@@ -77,59 +89,70 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
 
   const getStatusBadge = (status: string) => {
     switch (status.toUpperCase()) {
+      case 'VERIFIED':
       case 'ACTIVE':
         return (
-          <Badge variant="success" size="sm">
-            Active
+          <Badge variant="success" size="sm" className="inline-flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3" />
+            Verified
           </Badge>
         );
+      case 'REJECTED':
       case 'INACTIVE':
         return (
-          <Badge variant="neutral" size="sm">
-            Inactive
+          <Badge variant="neutral" size="sm" className="inline-flex items-center gap-1">
+            <Ban className="w-3 h-3 text-slate-500" />
+            Rejected
           </Badge>
         );
+      case 'PENDING_VERIFICATION':
       case 'PENDING':
       default:
         return (
-          <Badge variant="warning" size="sm">
-            Pending Activation
+          <Badge variant="warning" size="sm" className="inline-flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            Pending Verification
           </Badge>
         );
     }
   };
 
   const handleActionClick = (actionName: string) => {
-    if (actionName === 'activate') {
-      setIsConfirmingActivation(true);
+    if (actionName === 'verify') {
+      setIsConfirmingVerification(true);
+      return;
+    }
+    if (actionName === 'reject') {
+      setIsConfirmingRejection(true);
       return;
     }
 
-    if (actionName === 'edit') {
-      setStatusNotice({
-        type: 'info',
-        title: 'Edit User Interface',
-        message: 'Edit user interface will be connected in the next frontend task.',
-      });
-      return;
-    }
-
-    // Deactivate / Reactivate
+    // Default other actions
     setStatusNotice({
       type: 'info',
       title: 'Awaiting backend integration',
       message:
-        'Account status changes will be processed by the user management API once connected.',
+        'Verification decisions will be processed by the user verification API once connected.',
     });
   };
 
-  const handleConfirmActivation = () => {
-    setIsConfirmingActivation(false);
+  const handleConfirmVerification = () => {
+    setIsConfirmingVerification(false);
+    setStatusNotice({
+      type: 'success',
+      title: 'Awaiting backend integration',
+      message:
+        'Awaiting backend integration. Verification decisions will be processed by the user verification API once connected.',
+    });
+  };
+
+  const handleConfirmRejection = () => {
+    setIsConfirmingRejection(false);
     setStatusNotice({
       type: 'info',
       title: 'Awaiting backend integration',
       message:
-        'Activation interface ready — awaiting backend integration. Real account activation and SMS notification dispatch will be executed by the backend service.',
+        'Awaiting backend integration. Registration rejection will be processed by the verification API once connected.',
     });
   };
 
@@ -152,12 +175,13 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
       {/* Slide-over panel */}
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-6 sm:pl-10">
         <div className="w-screen max-w-xl md:max-w-2xl bg-[var(--color-surface-white)] shadow-2xl flex flex-col h-full border-l border-[var(--color-border-subtle)]">
+          
           {/* ── Sticky Header ───────────────────────────────────── */}
           <div className="px-6 py-5 border-b border-[var(--color-border-subtle)] flex items-start justify-between gap-4 bg-[var(--color-surface-white)] shrink-0">
             <div className="space-y-1.5 min-w-0">
               <div className="flex items-center gap-2">
                 <Badge variant="blue" size="sm">
-                  Programme User
+                  Registration Review
                 </Badge>
                 {getStatusBadge(currentStatus)}
               </div>
@@ -165,17 +189,17 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
                 id="user-details-title"
                 className="text-lg sm:text-xl font-bold tracking-tight text-[var(--color-brand-navy)]"
               >
-                User Account Details
+                Registration Details
               </h2>
               <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                Review programme identity, access information and account status.
+                Review self-registered account parameters and verify or reject system access.
               </p>
             </div>
 
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-brand-navy)] hover:bg-[var(--color-surface-subtle)] transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)]/40"
+              className="p-2 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-brand-navy)] hover:bg-[var(--color-surface-subtle)] transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)]/40 cursor-pointer"
               aria-label="Close drawer"
             >
               <X className="w-5 h-5" />
@@ -184,6 +208,7 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
 
           {/* ── Scrollable Body ─────────────────────────────────── */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            
             {/* Status notice alert */}
             {statusNotice && (
               <Alert
@@ -195,28 +220,26 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
               </Alert>
             )}
 
-            {/* User Avatar Summary Header Card */}
+            {/* User Info Header Card */}
             <div className="p-4 rounded-xl bg-gradient-to-r from-blue-50/60 via-slate-50 to-white border border-[var(--color-border-subtle)] flex items-center gap-4 shadow-2xs">
               <div className="w-12 h-12 rounded-xl bg-[var(--color-brand-blue)] text-white flex items-center justify-center font-bold text-base shadow-sm shrink-0">
                 {user?.fullName ? user.fullName.charAt(0).toUpperCase() : <User className="w-6 h-6" />}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-base font-bold text-[var(--color-brand-navy)] truncate">
-                    {user?.fullName || '—'}
-                  </h3>
-                </div>
+                <h3 className="text-base font-bold text-[var(--color-brand-navy)] truncate">
+                  {user?.fullName || '—'}
+                </h3>
                 <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5 mt-0.5">
                   <span className="font-mono font-medium text-slate-700">
                     {user?.employeeId || '—'}
                   </span>
                   <span>•</span>
-                  <span>{user?.professionalRole || '—'}</span>
+                  <span>{formatCategory(user?.category)}</span>
                 </p>
               </div>
             </div>
 
-            {/* ── 1. PERSONAL INFORMATION ─────────────────────────── */}
+            {/* ── Section 1. PERSONAL INFORMATION ────────────────── */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
                 <User className="w-4 h-4 text-[var(--color-brand-blue)]" />
@@ -237,7 +260,7 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
 
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
                   <span className="text-[11px] text-[var(--color-text-secondary)] font-medium flex items-center gap-1">
-                    <IdCard className="w-3 h-3 text-[var(--color-text-muted)]" />
+                    <IdCard className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
                     Employee / Intern ID
                   </span>
                   <p className="font-mono font-semibold text-[var(--color-brand-navy)]">
@@ -247,7 +270,7 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
 
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
                   <span className="text-[11px] text-[var(--color-text-secondary)] font-medium flex items-center gap-1">
-                    <Mail className="w-3 h-3 text-[var(--color-text-muted)]" />
+                    <Mail className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
                     Email Address
                   </span>
                   <p className="font-semibold text-[var(--color-brand-navy)] truncate">
@@ -257,7 +280,7 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
 
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
                   <span className="text-[11px] text-[var(--color-text-secondary)] font-medium flex items-center gap-1">
-                    <Phone className="w-3 h-3 text-[var(--color-text-muted)]" />
+                    <Phone className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
                     Registered Mobile Number
                   </span>
                   <p className="font-mono font-semibold text-[var(--color-brand-navy)]">
@@ -267,19 +290,19 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
               </div>
             </div>
 
-            {/* ── 2. PROGRAMME INFORMATION ────────────────────────── */}
+            {/* ── Section 2. ACCOUNT TYPE ────────────────────────── */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
-                <Briefcase className="w-4 h-4 text-[var(--color-brand-green)]" />
+                <ShieldCheck className="w-4 h-4 text-[var(--color-brand-green)]" />
                 <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
-                  Programme Information
+                  Account Type & Status
                 </h4>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
                   <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
-                    User Category
+                    User Type
                   </span>
                   <p className="font-semibold text-[var(--color-brand-navy)]">
                     {formatCategory(user?.category)}
@@ -288,119 +311,102 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
 
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
                   <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
-                    Professional Role
+                    Verification Status
                   </span>
-                  <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {user?.professionalRole || '—'}
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium flex items-center gap-1">
-                    <Building2 className="w-3 h-3 text-[var(--color-text-muted)]" />
-                    Department / Team
-                  </span>
-                  <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {user?.department || '—'}
-                  </p>
+                  <div>{getStatusBadge(currentStatus)}</div>
                 </div>
               </div>
             </div>
 
-            {/* ── 3. ACCOUNT ACCESS & STATUS ──────────────────────── */}
+            {/* ── Section 3. ROLE INFORMATION ────────────────────── */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
-                <KeyRound className="w-4 h-4 text-[var(--color-brand-blue)]" />
+                <Briefcase className="w-4 h-4 text-[var(--color-brand-blue)]" />
                 <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
-                  Account Access & Security
+                  Role Information
+                </h4>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                {user?.category === 'INTERN' ? (
+                  <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1 sm:col-span-2">
+                    <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
+                      Intern Role
+                    </span>
+                    <p className="font-semibold text-[var(--color-brand-navy)]">
+                      {user?.professionalRole || '—'}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
+                      <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
+                        Professional Role
+                      </span>
+                      <p className="font-semibold text-[var(--color-brand-navy)]">
+                        {user?.professionalRole || '—'}
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
+                      <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
+                        Employment Type
+                      </span>
+                      <p className="font-semibold text-[var(--color-brand-navy)]">
+                        {/* We use department field as a fallback placeholder if employmentType is not on old model, or default to Permanent */}
+                        {user?.department === 'Contract Based' || user?.department === 'Freelance' || user?.department === 'Permanent'
+                          ? user.department
+                          : 'Permanent'}
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* ── Section 4. SYSTEM INFORMATION ──────────────────── */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
+                <Calendar className="w-4 h-4 text-slate-500" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
+                  System Audit
                 </h4>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
                   <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
-                    Account Status
-                  </span>
-                  <div>{getStatusBadge(currentStatus)}</div>
-                </div>
-
-                <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium flex items-center gap-1">
-                    <Smartphone className="w-3 h-3 text-[var(--color-brand-blue)]" />
-                    Mobile Verification Method
-                  </span>
-                  <p className="font-semibold text-[var(--color-brand-navy)]">
-                    SMS OTP Verification
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
-                    Access Method
-                  </span>
-                  <p className="font-semibold text-[var(--color-brand-navy)]">
-                    Phone Number + OTP
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-[var(--color-text-muted)]" />
-                    Created Date
+                    Registered Date
                   </span>
                   <p className="font-semibold text-[var(--color-brand-navy)]">
                     {user?.createdAt || '—'}
                   </p>
                 </div>
+
+                <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
+                    Last Updated
+                  </span>
+                  <p className="font-semibold text-[var(--color-brand-navy)]">
+                    {user?.updatedAt || '—'}
+                  </p>
+                </div>
               </div>
             </div>
 
-            {/* ── Pending Activation Informational Card ──────────── */}
-            {currentStatus === 'PENDING' && (
+            {/* Notice for Pending accounts */}
+            {currentStatus.toUpperCase() === 'PENDING_VERIFICATION' && (
               <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200 space-y-2">
                 <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
                   <Clock className="w-4 h-4 text-amber-700 shrink-0" />
-                  <span>Account awaiting administrator activation.</span>
+                  <span>Awaiting administrative verification.</span>
                 </div>
                 <p className="text-[11px] text-amber-800 leading-relaxed pl-6">
-                  Once activated through the backend service, the user will become eligible to access the portal using their registered mobile number and OTP verification.
+                  Verify the registration details. Once confirmed, this user can access the main dashboards. Rejection prevents dashboard sign-in.
                 </p>
               </div>
             )}
 
-            {/* ── Backend-Managed Access Flow Procedure Card ──────── */}
-            <div className="p-4 rounded-xl bg-gradient-to-br from-slate-50 via-white to-blue-50/40 border border-[var(--color-border-subtle)] space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-[var(--color-brand-blue)]" />
-                  <span className="text-xs font-bold text-[var(--color-brand-navy)]">
-                    Backend-managed access flow
-                  </span>
-                </div>
-                <Badge variant="blue" size="sm">
-                  System Architecture
-                </Badge>
-              </div>
-
-              <div className="space-y-1.5 text-[11px] text-slate-600">
-                {[
-                  '1. Administrator activates the programme account.',
-                  '2. Backend updates the account status.',
-                  '3. Backend notification service informs the user that portal access is active.',
-                  '4. User opens the portal login link.',
-                  '5. User enters the registered mobile number.',
-                  '6. Backend/SMS service sends the OTP.',
-                  '7. Backend verifies the OTP.',
-                  '8. Frontend receives the verified identity and role.',
-                  '9. User is redirected to the correct dashboard.',
-                ].map((stepText, idx) => (
-                  <div key={idx} className="flex items-start gap-2 py-0.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-brand-blue)] shrink-0 mt-1.5" />
-                    <span>{stepText}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
 
           {/* ── Sticky Drawer Footer / Action Buttons ────────────── */}
@@ -410,63 +416,53 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
             </Button>
 
             <div className="flex items-center gap-2.5">
-              {/* Conditional Actions based on Status */}
-              {currentStatus === 'PENDING' && (
+              {/* Actions based on Pending status */}
+              {currentStatus.toUpperCase() === 'PENDING_VERIFICATION' && (
                 <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="md"
-                    leftIcon={<Edit3 className="w-4 h-4" />}
-                    onClick={() => handleActionClick('edit')}
-                  >
-                    Edit User
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="md"
-                    leftIcon={<CheckCircle2 className="w-4 h-4" />}
-                    onClick={() => handleActionClick('activate')}
-                  >
-                    Activate User
-                  </Button>
-                </>
-              )}
-
-              {currentStatus === 'ACTIVE' && (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="md"
-                    leftIcon={<Edit3 className="w-4 h-4" />}
-                    onClick={() => handleActionClick('edit')}
-                  >
-                    Edit User
-                  </Button>
                   <Button
                     type="button"
                     variant="outline"
                     size="md"
                     className="border-red-200 text-red-700 hover:bg-red-50 hover:border-red-300"
                     leftIcon={<Ban className="w-4 h-4 text-red-600" />}
-                    onClick={() => handleActionClick('deactivate')}
+                    onClick={() => handleActionClick('reject')}
                   >
-                    Deactivate User
+                    Reject Registration
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="md"
+                    leftIcon={<CheckCircle2 className="w-4 h-4" />}
+                    onClick={() => handleActionClick('verify')}
+                  >
+                    Verify User
                   </Button>
                 </>
               )}
 
-              {currentStatus === 'INACTIVE' && (
+              {(currentStatus.toUpperCase() === 'VERIFIED' || currentStatus.toUpperCase() === 'ACTIVE') && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  className="border-red-200 text-red-700 hover:bg-red-50 hover:border-red-300"
+                  leftIcon={<Ban className="w-4 h-4 text-red-600" />}
+                  onClick={() => handleActionClick('deactivate')}
+                >
+                  Deactivate User
+                </Button>
+              )}
+
+              {(currentStatus.toUpperCase() === 'REJECTED' || currentStatus.toUpperCase() === 'INACTIVE') && (
                 <Button
                   type="button"
                   variant="primary"
                   size="md"
-                  leftIcon={<Check className="w-4 h-4" />}
+                  leftIcon={<CheckCircle2 className="w-4 h-4" />}
                   onClick={() => handleActionClick('reactivate')}
                 >
-                  Reactivate User
+                  Review Registration
                 </Button>
               )}
             </div>
@@ -474,23 +470,21 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
         </div>
       </div>
 
-      {/* ── Activation Confirmation Dialog Modal ─────────────── */}
-      {isConfirmingActivation && (
+      {/* ── Verify Confirmation Modal ───────────────────────── */}
+      {isConfirmingVerification && (
         <div
           className="fixed inset-0 z-60 overflow-y-auto"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="confirm-activation-title"
+          aria-labelledby="confirm-verification-title"
         >
           <div className="min-h-screen px-4 flex items-center justify-center">
-            {/* Modal backdrop */}
             <div
               className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
-              onClick={() => setIsConfirmingActivation(false)}
+              onClick={() => setIsConfirmingVerification(false)}
               aria-hidden="true"
             />
 
-            {/* Modal Card */}
             <div className="relative bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-[var(--color-border-subtle)] space-y-5 z-10">
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 rounded-xl bg-blue-50 text-[var(--color-brand-blue)] flex items-center justify-center shrink-0">
@@ -498,18 +492,18 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
                 </div>
                 <div className="space-y-1">
                   <h3
-                    id="confirm-activation-title"
+                    id="confirm-verification-title"
                     className="text-base font-bold text-[var(--color-brand-navy)]"
                   >
-                    Activate Programme User?
+                    Verify Programme User?
                   </h3>
                   <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                    Confirm that the user's programme information and registered mobile number have been reviewed before enabling portal access.
+                    Confirm that the registration details, user type, role information, email address and registered mobile number have been reviewed.
                   </p>
                 </div>
               </div>
 
-              {/* Review Summary */}
+              {/* Summary details */}
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
                 <div className="flex justify-between py-1 border-b border-slate-200/80">
                   <span className="text-[var(--color-text-secondary)]">User:</span>
@@ -520,20 +514,28 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
                   <span className="font-mono font-semibold text-slate-800">{user?.employeeId || '—'}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-200/80">
-                  <span className="text-[var(--color-text-secondary)]">Registered Mobile:</span>
-                  <span className="font-mono font-semibold text-slate-800">{user?.phoneNumber ? `+94 ${user.phoneNumber}` : '—'}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-200/80">
-                  <span className="text-[var(--color-text-secondary)]">Category:</span>
+                  <span className="text-[var(--color-text-secondary)]">User Type:</span>
                   <span className="font-semibold text-slate-800">{formatCategory(user?.category)}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-200/80">
-                  <span className="text-[var(--color-text-secondary)]">Professional Role:</span>
+                  <span className="text-[var(--color-text-secondary)]">Role:</span>
                   <span className="font-semibold text-slate-800">{user?.professionalRole || '—'}</span>
                 </div>
+                {user?.category === 'PERMANENT_STAFF' && (
+                  <div className="flex justify-between py-1 border-b border-slate-200/80">
+                    <span className="text-[var(--color-text-secondary)]">Employment Type:</span>
+                    <span className="font-semibold text-slate-800">
+                      {user?.department === 'Contract Based' || user?.department === 'Freelance' ? user.department : 'Permanent'}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between py-1 border-b border-slate-200/80">
+                  <span className="text-[var(--color-text-secondary)]">Mobile Number:</span>
+                  <span className="font-mono font-semibold text-slate-800">{user?.phoneNumber ? `+94 ${user.phoneNumber}` : '—'}</span>
+                </div>
                 <div className="flex justify-between py-1">
-                  <span className="text-[var(--color-text-secondary)]">Department:</span>
-                  <span className="font-semibold text-slate-800">{user?.department || '—'}</span>
+                  <span className="text-[var(--color-text-secondary)]">Email:</span>
+                  <span className="font-semibold text-slate-800 truncate">{user?.email || '—'}</span>
                 </div>
               </div>
 
@@ -543,7 +545,7 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
                   type="button"
                   variant="outline"
                   size="md"
-                  onClick={() => setIsConfirmingActivation(false)}
+                  onClick={() => setIsConfirmingVerification(false)}
                 >
                   Cancel
                 </Button>
@@ -552,9 +554,85 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
                   variant="primary"
                   size="md"
                   leftIcon={<CheckCircle2 className="w-4 h-4" />}
-                  onClick={handleConfirmActivation}
+                  onClick={handleConfirmVerification}
                 >
-                  Confirm Activation
+                  Confirm Verification
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Reject Confirmation Modal ───────────────────────── */}
+      {isConfirmingRejection && (
+        <div
+          className="fixed inset-0 z-60 overflow-y-auto"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirm-rejection-title"
+        >
+          <div className="min-h-screen px-4 flex items-center justify-center">
+            <div
+              className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
+              onClick={() => setIsConfirmingRejection(false)}
+              aria-hidden="true"
+            />
+
+            <div className="relative bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-[var(--color-border-subtle)] space-y-5 z-10">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100">
+                  <AlertTriangle className="w-5 h-5 text-rose-500" />
+                </div>
+                <div className="space-y-1">
+                  <h3
+                    id="confirm-rejection-title"
+                    className="text-base font-bold text-[var(--color-brand-navy)]"
+                  >
+                    Reject Registration?
+                  </h3>
+                  <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+                    This registration will remain unable to access the programme workspace.
+                  </p>
+                </div>
+              </div>
+
+              {/* Reason Textarea UI */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="rejection-reason"
+                  className="block text-xs font-bold text-[var(--color-brand-navy)] uppercase tracking-wider"
+                >
+                  Reason for Rejection
+                </label>
+                <textarea
+                  id="rejection-reason"
+                  placeholder="Provide a brief explanation for rejection (e.g. invalid employee ID)"
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  className="w-full min-h-[80px] p-3 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  onClick={() => setIsConfirmingRejection(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  className="border-red-200 text-red-700 hover:bg-red-50 hover:border-red-300"
+                  leftIcon={<Ban className="w-4 h-4 text-red-600" />}
+                  onClick={handleConfirmRejection}
+                >
+                  Confirm Rejection
                 </Button>
               </div>
             </div>

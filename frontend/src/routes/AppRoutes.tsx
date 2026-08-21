@@ -3,13 +3,18 @@ import LandingPage from '../pages/public/LandingPage';
 import LoginPage from '../pages/auth/LoginPage';
 import ActivationPage from '../pages/auth/ActivationPage';
 import ChangePasswordPage from '../pages/auth/ChangePasswordPage';
+import RegistrationPage from '../pages/auth/RegistrationPage';
+import PendingVerificationPage from '../pages/auth/PendingVerificationPage';
 import DashboardPreviewPage from '../pages/preview/DashboardPreviewPage';
 import AdminDashboardPage from '../pages/dashboard/AdminDashboardPage';
 import UserManagementPage from '../pages/admin/UserManagementPage';
 import ProjectsManagementPage from '../pages/admin/ProjectsManagementPage';
 import ProjectAssignmentsPage from '../pages/admin/ProjectAssignmentsPage';
 import ProgrammeProgressPage from '../pages/admin/ProgrammeProgressPage';
+import TeamWorkHistoryPage from '../pages/admin/TeamWorkHistoryPage';
 import StaffDashboardPage from '../pages/dashboard/StaffDashboardPage';
+import StaffAssignedProjectsPage from '../pages/staff/StaffAssignedProjectsPage';
+import StaffWorkItemsPage from '../pages/staff/StaffWorkItemsPage';
 import InternDashboardPage from '../pages/dashboard/InternDashboardPage';
 import { ProtectedRoute } from './ProtectedRoute';
 
@@ -24,6 +29,8 @@ export default function AppRoutes() {
       <Route path="/activate" element={<ActivationPage />} />
       <Route path="/activate/:token" element={<ActivationPage />} />
       <Route path="/change-password" element={<ChangePasswordPage />} />
+      <Route path="/register" element={<RegistrationPage />} />
+      <Route path="/register/pending" element={<PendingVerificationPage />} />
 
       {/* Role-Based Protected Dashboards */}
       <Route
@@ -67,6 +74,14 @@ export default function AppRoutes() {
         }
       />
       <Route
+        path="/admin/work-history"
+        element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <TeamWorkHistoryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/admin/*"
         element={
           <ProtectedRoute allowedRoles={['ADMIN']}>
@@ -80,6 +95,22 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['PERMANENT_STAFF']}>
             <StaffDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff/projects"
+        element={
+          <ProtectedRoute allowedRoles={['PERMANENT_STAFF']}>
+            <StaffAssignedProjectsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff/work-items"
+        element={
+          <ProtectedRoute allowedRoles={['PERMANENT_STAFF']}>
+            <StaffWorkItemsPage />
           </ProtectedRoute>
         }
       />
