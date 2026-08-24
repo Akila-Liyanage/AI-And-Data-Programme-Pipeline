@@ -20,6 +20,10 @@ import StaffWorkHistoryPage from '../pages/staff/StaffWorkHistoryPage';
 import StaffProfilePage from '../pages/staff/StaffProfilePage';
 import InternDashboardPage from '../pages/dashboard/InternDashboardPage';
 import InternAssignedProjectsPage from '../pages/intern/InternAssignedProjectsPage';
+import InternWorkItemsPage from '../pages/intern/InternWorkItemsPage';
+import InternProgressPage from '../pages/intern/InternProgressPage';
+import InternWorkHistoryPage from '../pages/intern/InternWorkHistoryPage';
+import InternProfilePage from '../pages/intern/InternProfilePage';
 import { ProtectedRoute } from './ProtectedRoute';
 
 export default function AppRoutes() {
@@ -164,6 +168,38 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['INTERN']}>
             <InternAssignedProjectsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/intern/work-items"
+        element={
+          <ProtectedRoute allowedRoles={['INTERN']}>
+            <InternWorkItemsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/intern/progress"
+        element={
+          <ProtectedRoute allowedRoles={['INTERN']}>
+            <InternProgressPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/intern/work-history"
+        element={
+          <ProtectedRoute allowedRoles={['INTERN']}>
+            <InternWorkHistoryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/intern/profile"
+        element={
+          <ProtectedRoute allowedRoles={['INTERN']}>
+            <InternProfilePage />
           </ProtectedRoute>
         }
       />

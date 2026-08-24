@@ -40,7 +40,6 @@ const INTERN_NAVIGATION: NavSection[] = [
         label: 'My Work Items',
         path: '/intern/work-items',
         icon: <CheckSquare className="w-4 h-4" />,
-        disabled: true,
       },
     ],
   },
@@ -52,21 +51,18 @@ const INTERN_NAVIGATION: NavSection[] = [
         label: 'Work Progress',
         path: '/intern/progress',
         icon: <TrendingUp className="w-4 h-4" />,
-        disabled: true,
       },
       {
         id: 'intern-history',
         label: 'Work History',
-        path: '/intern/history',
+        path: '/intern/work-history',
         icon: <History className="w-4 h-4" />,
-        disabled: true,
       },
       {
         id: 'intern-profile',
         label: 'My Profile',
         path: '/intern/profile',
         icon: <User className="w-4 h-4" />,
-        disabled: true,
       },
     ],
   },
@@ -109,8 +105,8 @@ export default function InternDashboardPage() {
       navigation={INTERN_NAVIGATION}
       user={userDisplay}
       notificationsCount={0}
-      onNotificationClick={() => {}}
-      onProfileClick={() => {}}
+      onNotificationClick={() => { }}
+      onProfileClick={() => { }}
       onLogoutClick={handleLogout}
     >
       <PageHeader
@@ -208,7 +204,7 @@ export default function InternDashboardPage() {
                   title="No work items assigned yet"
                   description="Your assigned work items will appear here."
                   action={
-                    <Button variant="outline" size="sm" disabled title="Coming soon">
+                    <Button variant="outline" size="sm" onClick={() => navigate('/intern/work-items')}>
                       View My Work Items
                     </Button>
                   }
@@ -286,7 +282,7 @@ export default function InternDashboardPage() {
                   </div>
                 </div>
 
-                <Button variant="outline" size="sm" className="w-full" disabled title="Coming soon">
+                <Button variant="outline" size="sm" className="w-full" onClick={() => navigate('/intern/progress')}>
                   View Work Progress
                 </Button>
               </div>
@@ -301,7 +297,7 @@ export default function InternDashboardPage() {
                   description="Your completed work will appear here."
                 />
 
-                <Button variant="outline" size="sm" className="w-full" disabled title="Coming soon">
+                <Button variant="outline" size="sm" className="w-full" onClick={() => navigate('/intern/work-history')}>
                   View Work History
                 </Button>
               </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Users,
@@ -11,6 +11,8 @@ import {
   UserPlus,
   Smartphone,
   Info,
+  Ban,
+  CheckCircle2,
 } from 'lucide-react';
 import {
   DashboardLayout,
@@ -29,6 +31,8 @@ import { AddUserDrawer } from './components/AddUserDrawer';
 import { UserDetailsDrawer } from './components/UserDetailsDrawer';
 import type { ManagedUser } from '../../types/userManagement.types';
 
+const API_BASE_URL = 'http://localhost:5000/api';
+
 export default function UserManagementPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -45,6 +49,129 @@ export default function UserManagementPage() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [departmentFilter, setDepartmentFilter] = useState('ALL');
   const [employmentFilter, setEmploymentFilter] = useState('ALL');
+
+  // API State
+  const [users, setUsers] = useState<ManagedUser[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/users`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch users.');
+      }
+      const mapped = (data.users || []).map((u: any) => ({
+        id: u._id || u.id,
+        fullName: u.fullName || '—',
+        employeeId: u.userId || '—',
+        phoneNumber: u.phoneNumber || '—',
+        email: u.email || '—',
+        category: u.role || '—',
+        professionalRole: u.role === 'PERMANENT_STAFF' ? (u.designation || '—') : (u.internRole || u.designation || '—'),
+        department: u.role === 'PERMANENT_STAFF' ? (u.employmentType || 'Permanent') : (u.department || '—'),
+        accountStatus: u.accountStatus || '—',
+        createdAt: u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—',
+        updatedAt: u.updatedAt ? new Date(u.updatedAt).toLocaleDateString() : '—',
+      }));
+      setUsers(mapped);
+    } catch (err: unknown) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const formatCategory = (cat?: string) => {
+    if (!cat) return '—';
+    if (cat === 'ADMIN' || cat === 'ADMINISTRATOR') return 'Administrator';
+    if (cat === 'PERMANENT_STAFF') return 'Permanent Staff';
+    if (cat === 'INTERN') return 'Intern';
+    return cat;
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status.toUpperCase()) {
+      case 'VERIFIED':
+      case 'ACTIVE':
+        return (
+          <Badge variant="success" size="sm" className="inline-flex items-center gap-1">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Verified
+          </Badge>
+        );
+      case 'REJECTED':
+      case 'INACTIVE':
+        return (
+          <Badge variant="neutral" size="sm" className="inline-flex items-center gap-1">
+            <Ban className="w-3.5 h-3.5 text-slate-500" />
+            Rejected
+          </Badge>
+        );
+      case 'PENDING_VERIFICATION':
+      case 'PENDING':
+      default:
+        return (
+          <Badge variant="warning" size="sm" className="inline-flex items-center gap-1">
+            <Clock className="w-3.5 h-3.5" />
+            Pending Verification
+          </Badge>
+        );
+    }
+  };
+
+  const totalCount = users.length;
+  const pendingCount = users.filter((u) => u.accountStatus === 'PENDING').length;
+  const verifiedCount = users.filter((u) => u.accountStatus === 'ACTIVE').length;
+  const rejectedCount = users.filter((u) => u.accountStatus === 'REJECTED').length;
+
+  const filteredUsers = users.filter((u) => {
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchesSearch =
+        u.fullName.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        u.phoneNumber.includes(q) ||
+        u.employeeId.toLowerCase().includes(q);
+      if (!matchesSearch) return false;
+    }
+
+    if (activeTab === 'PENDING_VERIFICATION') {
+      if (u.accountStatus !== 'PENDING') return false;
+    } else if (activeTab === 'VERIFIED') {
+      if (u.accountStatus !== 'ACTIVE') return false;
+    } else if (activeTab === 'REJECTED') {
+      if (u.accountStatus !== 'REJECTED') return false;
+    }
+
+    if (categoryFilter !== 'ALL') {
+      if (u.category !== categoryFilter) return false;
+    }
+
+    if (statusFilter !== 'ALL') {
+      if (statusFilter === 'PENDING_VERIFICATION' && u.accountStatus !== 'PENDING') return false;
+      if (statusFilter === 'VERIFIED' && u.accountStatus !== 'ACTIVE') return false;
+      if (statusFilter === 'ACTIVE' && u.accountStatus !== 'ACTIVE') return false;
+      if (statusFilter === 'INACTIVE' && u.accountStatus !== 'INACTIVE') return false;
+      if (statusFilter === 'REJECTED' && u.accountStatus !== 'REJECTED') return false;
+    }
+
+    if (employmentFilter !== 'ALL') {
+      if (u.category !== 'PERMANENT_STAFF' || u.department !== employmentFilter) return false;
+    }
+
+    return true;
+  });
 
   const userDisplay: UserDisplayInfo = {
     name: user?.fullName || 'Akila Liyanage',
@@ -119,12 +246,12 @@ export default function UserManagementPage() {
                 All
               </Badge>
             </div>
-            <p className="text-2xl font-bold text-[var(--color-brand-navy)] tracking-tight">
-              —
+            <p className="text-2xl font-bold text-[var(--color-brand-navy)]">
+              {isLoading ? '—' : totalCount}
             </p>
             <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-300" aria-hidden="true" />
-              Awaiting data integration
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
+              Real-time user directory
             </p>
           </Card>
 
@@ -143,12 +270,12 @@ export default function UserManagementPage() {
                 Review Queue
               </Badge>
             </div>
-            <p className="text-2xl font-bold text-[var(--color-brand-navy)] tracking-tight">
-              —
+            <p className="text-2xl font-bold text-[var(--color-brand-navy)]">
+              {isLoading ? '—' : pendingCount}
             </p>
             <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-300" aria-hidden="true" />
-              Awaiting data integration
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" aria-hidden="true" />
+              Awaiting review
             </p>
           </Card>
 
@@ -167,12 +294,12 @@ export default function UserManagementPage() {
                 Active Access
               </Badge>
             </div>
-            <p className="text-2xl font-bold text-[var(--color-brand-navy)] tracking-tight">
-              —
+            <p className="text-2xl font-bold text-[var(--color-brand-navy)]">
+              {isLoading ? '—' : verifiedCount}
             </p>
             <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-300" aria-hidden="true" />
-              Awaiting data integration
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
+              Verified & active
             </p>
           </Card>
 
@@ -191,12 +318,12 @@ export default function UserManagementPage() {
                 Declined
               </Badge>
             </div>
-            <p className="text-2xl font-bold text-[var(--color-brand-navy)] tracking-tight">
-              —
+            <p className="text-2xl font-bold text-[var(--color-brand-navy)]">
+              {isLoading ? '—' : rejectedCount}
             </p>
             <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-300" aria-hidden="true" />
-              Awaiting data integration
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" aria-hidden="true" />
+              Declined registrations
             </p>
           </Card>
         </div>
@@ -334,12 +461,12 @@ export default function UserManagementPage() {
               <h2 className="text-sm font-bold text-[var(--color-brand-navy)]">
                 Programme Accounts
               </h2>
-              <Badge size="sm" variant="neutral">
-                0 Registered
+              <Badge size="sm" variant="blue">
+                {filteredUsers.length} Registered
               </Badge>
             </div>
             <span className="text-xs text-[var(--color-text-secondary)] font-medium">
-              Awaiting backend integration
+              Live user database
             </span>
           </div>
 
@@ -361,31 +488,78 @@ export default function UserManagementPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border-subtle)] bg-[var(--color-surface-white)]">
-                {/* Empty State when no backend data is connected */}
-                <tr>
-                  <td colSpan={10} className="p-8">
-                    <EmptyState
-                      icon={<Users className="w-6 h-6 text-[var(--color-brand-blue)]" />}
-                      title="No registration records available"
-                      description="Registered Staff and Intern users will appear here once the user service is connected."
-                      action={
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={10} className="p-8 text-center text-xs text-[var(--color-text-secondary)]">
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-[var(--color-brand-blue)] border-t-transparent rounded-full animate-spin" />
+                        <span>Loading user directory...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="p-8">
+                      <EmptyState
+                        icon={<Users className="w-6 h-6 text-slate-400" />}
+                        title="No matching records found"
+                        description="Try adjusting your search query or status filter parameters."
+                        action={
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleResetFilters}
+                            leftIcon={<RotateCcw className="w-4 h-4" />}
+                          >
+                            Clear Filters
+                          </Button>
+                        }
+                      />
+                    </td>
+                  </tr>
+                ) : (
+                  filteredUsers.map((u) => (
+                    <tr key={u.id} className="hover:bg-slate-50/50 transition-colors text-xs text-[var(--color-text-primary)]">
+                      <td className="py-3 px-4 sm:px-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-[var(--color-brand-blue-light)] text-[var(--color-brand-blue)] flex items-center justify-center font-bold">
+                            {u.fullName.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-bold text-[var(--color-brand-navy)]">{u.fullName}</p>
+                            <p className="text-[10px] text-[var(--color-text-secondary)]">{u.professionalRole}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 font-mono font-medium">{u.employeeId}</td>
+                      <td className="py-3 px-4">
+                        <Badge variant={u.category === 'ADMIN' ? 'blue' : (u.category === 'PERMANENT_STAFF' ? 'success' : 'neutral')}>
+                          {formatCategory(u.category)}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4">{u.professionalRole}</td>
+                      <td className="py-3 px-4">
+                        {u.category === 'PERMANENT_STAFF' ? u.department : '—'}
+                      </td>
+                      <td className="py-3 px-4 font-mono">{u.phoneNumber}</td>
+                      <td className="py-3 px-4 truncate max-w-[150px]" title={u.email}>{u.email}</td>
+                      <td className="py-3 px-4">{getStatusBadge(u.accountStatus)}</td>
+                      <td className="py-3 px-4 text-[var(--color-text-secondary)]">{u.createdAt}</td>
+                      <td className="py-3 px-4 sm:px-6 text-right">
                         <Button
                           variant="outline"
                           size="sm"
-                          leftIcon={<Plus className="w-4 h-4" />}
-                          onClick={() => setIsAddUserOpen(true)}
+                          onClick={() => {
+                            setSelectedUser(u);
+                            setIsDetailsOpen(true);
+                          }}
                         >
-                          Manual User Provisioning
+                          Review Access
                         </Button>
-                      }
-                      secondaryAction={
-                        <Badge size="sm" variant="neutral">
-                          Awaiting backend integration
-                        </Badge>
-                      }
-                    />
-                  </td>
-                </tr>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -485,6 +659,7 @@ export default function UserManagementPage() {
           setSelectedUser(null);
         }}
         user={selectedUser}
+        onStatusUpdated={fetchUsers}
       />
     </DashboardLayout>
   );

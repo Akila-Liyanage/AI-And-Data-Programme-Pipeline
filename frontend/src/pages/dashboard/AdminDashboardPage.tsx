@@ -12,7 +12,7 @@
  * - NO hardcoded fake stats or counts.
  * - All interactive widgets display "Awaiting data integration" or navigate to valid routes.
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Users,
   ShieldCheck,
@@ -36,6 +36,37 @@ export default function AdminDashboardPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [showWelcome, setShowWelcome] = useState(true);
+
+  const [users, setUsers] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = 'http://localhost:5000/api';
+      const response = await fetch(`${API_BASE_URL}/users`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setUsers(data.users || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const pendingCount = users.filter((u) => u.accountStatus === 'PENDING').length;
+  const verifiedCount = users.filter((u) => u.accountStatus === 'ACTIVE').length;
 
   const userDisplay: UserDisplayInfo = {
     name: user?.fullName || 'Akila Liyanage',
@@ -113,10 +144,12 @@ export default function AdminDashboardPage() {
               </span>
               <Badge size="sm" variant="warning">Awaiting Review</Badge>
             </div>
-            <p className="text-2xl font-bold text-[var(--color-brand-navy)]">—</p>
+            <p className="text-2xl font-bold text-[var(--color-brand-navy)]">
+              {isLoading ? '—' : pendingCount}
+            </p>
             <p className="text-[11px] text-[var(--color-text-secondary)] flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500" aria-hidden="true" />
-              Awaiting data integration
+              {isLoading ? 'Loading...' : `${pendingCount} user${pendingCount === 1 ? '' : 's'} pending`}
             </p>
           </Card>
 
@@ -128,10 +161,12 @@ export default function AdminDashboardPage() {
               </span>
               <Badge size="sm" variant="success">Active Directory</Badge>
             </div>
-            <p className="text-2xl font-bold text-[var(--color-brand-navy)]">—</p>
+            <p className="text-2xl font-bold text-[var(--color-brand-navy)]">
+              {isLoading ? '—' : verifiedCount}
+            </p>
             <p className="text-[11px] text-[var(--color-text-secondary)] flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
-              Awaiting data integration
+              {isLoading ? 'Loading...' : `${verifiedCount} active user${verifiedCount === 1 ? '' : 's'}`}
             </p>
           </Card>
 
@@ -207,20 +242,50 @@ export default function AdminDashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td colSpan={7} className="p-6">
-                        <EmptyState
-                          icon={<Users className="w-6 h-6 text-slate-400" />}
-                          title="No pending registrations available"
-                          description="Pending Staff and Intern registrations will appear here once the user service is connected."
-                          secondaryAction={
-                            <Badge size="sm" variant="neutral">
-                              Awaiting backend integration
-                            </Badge>
-                          }
-                        />
-                      </td>
-                    </tr>
+                    {isLoading ? (
+                      <tr>
+                        <td colSpan={7} className="p-6 text-center text-[var(--color-text-secondary)]">
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="w-4 h-4 border-2 border-[var(--color-brand-blue)] border-t-transparent rounded-full animate-spin" />
+                            <span>Loading pending queue...</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : users.filter((u) => u.accountStatus === 'PENDING').length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="p-6">
+                          <EmptyState
+                            icon={<Users className="w-6 h-6 text-slate-400" />}
+                            title="No pending registrations available"
+                            description="All self-registered Staff and Intern accounts have been verified."
+                          />
+                        </td>
+                      </tr>
+                    ) : (
+                      users
+                        .filter((u) => u.accountStatus === 'PENDING')
+                        .map((u) => (
+                          <tr key={u._id} className="hover:bg-slate-50 border-b border-slate-100 last:border-0 text-slate-700">
+                            <td className="py-2.5 px-3 font-semibold text-slate-800">{u.fullName}</td>
+                            <td className="py-2.5 px-3 font-mono">{u.userId}</td>
+                            <td className="py-2.5 px-3">
+                              <Badge variant={u.role === 'PERMANENT_STAFF' ? 'success' : 'neutral'}>
+                                {u.role === 'PERMANENT_STAFF' ? 'Permanent Staff' : 'Intern'}
+                              </Badge>
+                            </td>
+                            <td className="py-2.5 px-3">{u.designation || u.internRole || '—'}</td>
+                            <td className="py-2.5 px-3">
+                              {u.role === 'PERMANENT_STAFF' ? (u.employmentType || 'Permanent') : '—'}
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-500">
+                              {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}
+                            </td>
+                            <td className="py-2.5 px-3 text-right">
+                              <Badge variant="warning">Pending</Badge>
+                            </td>
+                          </tr>
+                        ))
+                    )}
                   </tbody>
                 </table>
               </div>

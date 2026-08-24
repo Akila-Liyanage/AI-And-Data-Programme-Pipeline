@@ -39,7 +39,6 @@ const INTERN_NAVIGATION: NavSection[] = [
         label: 'My Work Items',
         path: '/intern/work-items',
         icon: <CheckSquare className="w-4 h-4" />,
-        disabled: true,
       },
     ],
   },
@@ -51,21 +50,18 @@ const INTERN_NAVIGATION: NavSection[] = [
         label: 'Work Progress',
         path: '/intern/progress',
         icon: <TrendingUp className="w-4 h-4" />,
-        disabled: true,
       },
       {
         id: 'intern-history',
         label: 'Work History',
-        path: '/intern/history',
+        path: '/intern/work-history',
         icon: <History className="w-4 h-4" />,
-        disabled: true,
       },
       {
         id: 'intern-profile',
         label: 'My Profile',
         path: '/intern/profile',
         icon: <User className="w-4 h-4" />,
-        disabled: true,
       },
     ],
   },
@@ -103,8 +99,8 @@ export default function InternAssignedProjectsPage() {
       navigation={INTERN_NAVIGATION}
       user={userDisplay}
       notificationsCount={0}
-      onNotificationClick={() => {}}
-      onProfileClick={() => {}}
+      onNotificationClick={() => { }}
+      onProfileClick={() => { }}
       onLogoutClick={handleLogout}
     >
       <PageHeader

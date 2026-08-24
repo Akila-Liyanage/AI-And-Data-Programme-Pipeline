@@ -9,7 +9,7 @@
  * - NO mock database entries or fake localStorage records.
  * - NO dashboard redirection or auto-login behaviour.
  */
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ShieldCheck,
   ArrowLeft,
@@ -86,6 +86,14 @@ function PendingBrandPanel() {
 /* ── Main Page Component ────────────────────────────────── */
 export default function PendingVerificationPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const registration = location.state?.registration;
+
+  const userTypeLabel = registration?.role === 'PERMANENT_STAFF' ? 'Permanent Staff' : (registration?.role === 'INTERN' ? 'Intern' : '—');
+  const userRoleLabel = registration?.role === 'PERMANENT_STAFF' ? (registration?.designation || '—') : (registration?.internRole || registration?.designation || '—');
+  
+  const statusLabel = registration?.accountStatus === 'PENDING' ? 'Pending Verification' 
+    : (registration?.accountStatus === 'ACTIVE' ? 'Verified' : (registration?.accountStatus === 'REJECTED' ? 'Rejected' : (registration?.accountStatus || 'Pending')));
 
   return (
     <AuthLayout leftPanel={<PendingBrandPanel />} backTo={{ to: '/login', label: 'Back to Sign In' }}>
@@ -178,12 +186,12 @@ export default function PendingVerificationPage() {
           
           <div className="space-y-2 text-xs">
             {[
-              { label: 'User Type', value: '—' },
-              { label: 'User ID', value: '—' },
-              { label: 'Selected Role', value: '—' },
-              { label: 'Email', value: '—' },
-              { label: 'Mobile Number', value: '—' },
-              { label: 'Current Status', value: 'Pending' },
+              { label: 'User Type', value: userTypeLabel },
+              { label: 'User ID', value: registration?.userId || '—' },
+              { label: 'Selected Role', value: userRoleLabel },
+              { label: 'Email', value: registration?.email || '—' },
+              { label: 'Mobile Number', value: registration?.phoneNumber || '—' },
+              { label: 'Current Status', value: statusLabel },
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between py-1 border-b border-slate-100 last:border-0">
                 <span className="text-[var(--color-text-secondary)]">{label}</span>
@@ -192,9 +200,11 @@ export default function PendingVerificationPage() {
             ))}
           </div>
 
-          <p className="text-[10px] text-slate-500 text-center italic pt-1 leading-relaxed">
-            "Registration details will be displayed after backend integration."
-          </p>
+          {!registration && (
+            <p className="text-[10px] text-slate-500 text-center italic pt-1 leading-relaxed">
+              "Registration details will be displayed after backend integration."
+            </p>
+          )}
         </div>
 
         {/* 4. What Happens Next Card */}

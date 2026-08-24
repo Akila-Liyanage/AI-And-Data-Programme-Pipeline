@@ -32,12 +32,14 @@ export interface UserDetailsDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   user?: ManagedUser | null;
+  onStatusUpdated?: () => void;
 }
 
 export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
   isOpen,
   onClose,
   user,
+  onStatusUpdated,
 }) => {
   const [isConfirmingVerification, setIsConfirmingVerification] = useState(false);
   const [isConfirmingRejection, setIsConfirmingRejection] = useState(false);
@@ -47,6 +49,7 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
     title: string;
     message: string;
   } | null>(null);
+  const [isActionPending, setIsActionPending] = useState(false);
 
   // Close on Escape key press
   useEffect(() => {
@@ -117,6 +120,80 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
     }
   };
 
+  const handleDeactivate = async () => {
+    if (!user) return;
+    setIsActionPending(true);
+    setStatusNotice(null);
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = 'http://localhost:5000/api';
+      const response = await fetch(`${API_BASE_URL}/users/${user.id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: 'INACTIVE' }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to deactivate user.');
+
+      setStatusNotice({
+        type: 'success',
+        title: 'User Deactivated',
+        message: `Account status for ${user.fullName} has been set to INACTIVE.`,
+      });
+      if (onStatusUpdated) onStatusUpdated();
+    } catch (err: unknown) {
+      console.error(err);
+      setStatusNotice({
+        type: 'error',
+        title: 'Deactivation Failed',
+        message: err instanceof Error ? err.message : 'An error occurred during deactivation.',
+      });
+    } finally {
+      setIsActionPending(false);
+    }
+  };
+
+  const handleReactivate = async () => {
+    if (!user) return;
+    setIsActionPending(true);
+    setStatusNotice(null);
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = 'http://localhost:5000/api';
+      const response = await fetch(`${API_BASE_URL}/users/${user.id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: 'ACTIVE' }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to reactivate user.');
+
+      setStatusNotice({
+        type: 'success',
+        title: 'User Reactivated',
+        message: `Account status for ${user.fullName} has been set to ACTIVE.`,
+      });
+      if (onStatusUpdated) onStatusUpdated();
+    } catch (err: unknown) {
+      console.error(err);
+      setStatusNotice({
+        type: 'error',
+        title: 'Reactivation Failed',
+        message: err instanceof Error ? err.message : 'An error occurred during reactivation.',
+      });
+    } finally {
+      setIsActionPending(false);
+    }
+  };
+
   const handleActionClick = (actionName: string) => {
     if (actionName === 'verify') {
       setIsConfirmingVerification(true);
@@ -126,34 +203,102 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
       setIsConfirmingRejection(true);
       return;
     }
-
-    // Default other actions
-    setStatusNotice({
-      type: 'info',
-      title: 'Awaiting backend integration',
-      message:
-        'Verification decisions will be processed by the user verification API once connected.',
-    });
+    if (actionName === 'deactivate') {
+      handleDeactivate();
+      return;
+    }
+    if (actionName === 'reactivate') {
+      handleReactivate();
+      return;
+    }
   };
 
-  const handleConfirmVerification = () => {
+  const handleConfirmVerification = async () => {
+    if (!user) return;
     setIsConfirmingVerification(false);
-    setStatusNotice({
-      type: 'success',
-      title: 'Awaiting backend integration',
-      message:
-        'Awaiting backend integration. Verification decisions will be processed by the user verification API once connected.',
-    });
+    setIsActionPending(true);
+    setStatusNotice(null);
+
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = 'http://localhost:5000/api';
+      const response = await fetch(`${API_BASE_URL}/users/${user.id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: 'ACTIVE' }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to verify user.');
+      }
+
+      setStatusNotice({
+        type: 'success',
+        title: 'Account Verified Successfully',
+        message: `Account status for ${user.fullName} is now ACTIVE. They can now log in using OTP.`,
+      });
+
+      if (onStatusUpdated) {
+        onStatusUpdated();
+      }
+    } catch (err: unknown) {
+      console.error(err);
+      setStatusNotice({
+        type: 'error',
+        title: 'Verification Failed',
+        message: err instanceof Error ? err.message : 'An error occurred during verification.',
+      });
+    } finally {
+      setIsActionPending(false);
+    }
   };
 
-  const handleConfirmRejection = () => {
+  const handleConfirmRejection = async () => {
+    if (!user) return;
     setIsConfirmingRejection(false);
-    setStatusNotice({
-      type: 'info',
-      title: 'Awaiting backend integration',
-      message:
-        'Awaiting backend integration. Registration rejection will be processed by the verification API once connected.',
-    });
+    setIsActionPending(true);
+    setStatusNotice(null);
+
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = 'http://localhost:5000/api';
+      const response = await fetch(`${API_BASE_URL}/users/${user.id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: 'REJECTED' }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to reject registration.');
+      }
+
+      setStatusNotice({
+        type: 'success',
+        title: 'Registration Rejected',
+        message: `Registration for ${user.fullName} has been declined.`,
+      });
+
+      if (onStatusUpdated) {
+        onStatusUpdated();
+      }
+    } catch (err: unknown) {
+      console.error(err);
+      setStatusNotice({
+        type: 'error',
+        title: 'Rejection Failed',
+        message: err instanceof Error ? err.message : 'An error occurred during registration rejection.',
+      });
+    } finally {
+      setIsActionPending(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -395,7 +540,7 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
             </div>
 
             {/* Notice for Pending accounts */}
-            {currentStatus.toUpperCase() === 'PENDING_VERIFICATION' && (
+            {(currentStatus.toUpperCase() === 'PENDING_VERIFICATION' || currentStatus.toUpperCase() === 'PENDING') && (
               <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200 space-y-2">
                 <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
                   <Clock className="w-4 h-4 text-amber-700 shrink-0" />
@@ -411,13 +556,13 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
 
           {/* ── Sticky Drawer Footer / Action Buttons ────────────── */}
           <div className="px-6 py-4 border-t border-[var(--color-border-subtle)] bg-[var(--color-surface-subtle)]/60 flex items-center justify-between gap-3 shrink-0">
-            <Button type="button" variant="outline" size="md" onClick={onClose}>
+            <Button type="button" variant="outline" size="md" onClick={onClose} disabled={isActionPending}>
               Close
             </Button>
 
             <div className="flex items-center gap-2.5">
               {/* Actions based on Pending status */}
-              {currentStatus.toUpperCase() === 'PENDING_VERIFICATION' && (
+              {(currentStatus.toUpperCase() === 'PENDING_VERIFICATION' || currentStatus.toUpperCase() === 'PENDING') && (
                 <>
                   <Button
                     type="button"
@@ -426,8 +571,9 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
                     className="border-red-200 text-red-700 hover:bg-red-50 hover:border-red-300"
                     leftIcon={<Ban className="w-4 h-4 text-red-600" />}
                     onClick={() => handleActionClick('reject')}
+                    disabled={isActionPending}
                   >
-                    Reject Registration
+                    {isActionPending ? 'Rejecting...' : 'Reject Registration'}
                   </Button>
                   <Button
                     type="button"
@@ -435,8 +581,10 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
                     size="md"
                     leftIcon={<CheckCircle2 className="w-4 h-4" />}
                     onClick={() => handleActionClick('verify')}
+                    disabled={isActionPending}
+                    isLoading={isActionPending}
                   >
-                    Verify User
+                    {isActionPending ? 'Verifying...' : 'Verify User'}
                   </Button>
                 </>
               )}
@@ -449,6 +597,8 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
                   className="border-red-200 text-red-700 hover:bg-red-50 hover:border-red-300"
                   leftIcon={<Ban className="w-4 h-4 text-red-600" />}
                   onClick={() => handleActionClick('deactivate')}
+                  disabled={isActionPending}
+                  isLoading={isActionPending}
                 >
                   Deactivate User
                 </Button>
@@ -461,6 +611,8 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
                   size="md"
                   leftIcon={<CheckCircle2 className="w-4 h-4" />}
                   onClick={() => handleActionClick('reactivate')}
+                  disabled={isActionPending}
+                  isLoading={isActionPending}
                 >
                   Review Registration
                 </Button>
@@ -495,10 +647,10 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
                     id="confirm-verification-title"
                     className="text-base font-bold text-[var(--color-brand-navy)]"
                   >
-                    Verify Programme User?
+                    Verify this user?
                   </h3>
                   <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                    Confirm that the registration details, user type, role information, email address and registered mobile number have been reviewed.
+                    This will activate the account and allow the user to sign in using their registered mobile number and OTP.
                   </p>
                 </div>
               </div>
@@ -546,6 +698,7 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
                   variant="outline"
                   size="md"
                   onClick={() => setIsConfirmingVerification(false)}
+                  disabled={isActionPending}
                 >
                   Cancel
                 </Button>
@@ -555,8 +708,10 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
                   size="md"
                   leftIcon={<CheckCircle2 className="w-4 h-4" />}
                   onClick={handleConfirmVerification}
+                  isLoading={isActionPending}
+                  disabled={isActionPending}
                 >
-                  Confirm Verification
+                  {isActionPending ? 'Verifying...' : 'Verify User'}
                 </Button>
               </div>
             </div>
@@ -589,10 +744,10 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
                     id="confirm-rejection-title"
                     className="text-base font-bold text-[var(--color-brand-navy)]"
                   >
-                    Reject Registration?
+                    Reject this registration?
                   </h3>
                   <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                    This registration will remain unable to access the programme workspace.
+                    This user will not be allowed to access the programme workspace.
                   </p>
                 </div>
               </div>
@@ -621,6 +776,7 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
                   variant="outline"
                   size="md"
                   onClick={() => setIsConfirmingRejection(false)}
+                  disabled={isActionPending}
                 >
                   Cancel
                 </Button>
@@ -631,8 +787,10 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
                   className="border-red-200 text-red-700 hover:bg-red-50 hover:border-red-300"
                   leftIcon={<Ban className="w-4 h-4 text-red-600" />}
                   onClick={handleConfirmRejection}
+                  isLoading={isActionPending}
+                  disabled={isActionPending}
                 >
-                  Confirm Rejection
+                  {isActionPending ? 'Rejecting...' : 'Reject Registration'}
                 </Button>
               </div>
             </div>

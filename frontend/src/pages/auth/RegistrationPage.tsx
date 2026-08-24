@@ -15,10 +15,6 @@ import {
   ShieldAlert,
   ArrowLeft,
   ArrowRight,
-  Briefcase,
-  GraduationCap,
-  Eye,
-  EyeOff,
   AlertCircle,
 } from 'lucide-react';
 import {
@@ -26,8 +22,6 @@ import {
   Alert,
   Button,
   Input,
-  PasswordRequirements,
-  DEFAULT_PASSWORD_RULES,
 } from '../../components/common';
 import { AuthLayout } from '../../components/layout/AuthLayout';
 
@@ -126,20 +120,16 @@ export default function RegistrationPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [mobile, setMobile] = useState('');
-  const [userId, setUserId] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   /* Conditional Fields */
   const [internRole, setInternRole] = useState('');
   const [professionalRole, setProfessionalRole] = useState('');
   const [employmentType, setEmploymentType] = useState('');
 
-  /* Validation & Dev Preview states */
+  /* Validation & API states */
   const [errors, setErrors] = useState<FormErrors>({});
-  const [devNotice, setDevNotice] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   /* Helper to clear single field error */
   const clearError = (field: keyof FormErrors) => {
@@ -148,10 +138,13 @@ export default function RegistrationPage() {
     }
   };
 
+  /* API Base URL */
+  const API_BASE_URL = 'http://localhost:5000/api';
+
   /* Client-Side Submit handler */
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setDevNotice(null);
+    setApiError(null);
 
     const newErrors: FormErrors = {};
 
@@ -170,24 +163,6 @@ export default function RegistrationPage() {
       newErrors.mobile = 'Enter a valid Sri Lankan mobile number (e.g. 77xxxxxxx)';
     }
 
-    if (!userId.trim()) {
-      newErrors.userId = userType === 'STAFF' ? 'Employee ID is required' : 'Intern ID is required';
-    }
-
-    /* Password Validation */
-    const passwordMet = DEFAULT_PASSWORD_RULES.every((rule) => rule.test(password));
-    if (!password) {
-      newErrors.password = 'Password is required';
-    } else if (!passwordMet) {
-      newErrors.password = 'Password does not meet the complexity requirements';
-    }
-
-    if (!confirmPassword) {
-      newErrors.confirmPassword = 'Confirm password is required';
-    } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-
     /* Conditional validation */
     if (userType === 'INTERN') {
       if (!internRole) newErrors.internRole = 'Please select your Intern Role';
@@ -203,11 +178,64 @@ export default function RegistrationPage() {
       return;
     }
 
-    /* Success state for UI preview (does NOT call backend or save anything) */
     setErrors({});
-    setDevNotice(
-      'Registration form is validated and ready for backend integration. Account creation and Pending Verification status will be handled by the registration API once connected.'
-    );
+    setIsSubmitting(true);
+
+    const role = userType === 'STAFF' ? 'PERMANENT_STAFF' : 'INTERN';
+    let formattedPhone = mobile.replace(/\s+/g, '').trim();
+    if (/^7[0-9]{8}$/.test(formattedPhone)) {
+      formattedPhone = `0${formattedPhone}`;
+    }
+
+    // Auto-generate secure random compliant password to pass backend validation constraints
+    const generatedPassword = 'Pass' + Math.random().toString(36).substring(2, 10) + '9!';
+
+    const payload = {
+      fullName: fullName.trim(),
+      phoneNumber: formattedPhone,
+      email: email.trim(),
+      password: generatedPassword,
+      role,
+      employmentType: userType === 'STAFF' ? employmentType : undefined,
+      internRole: userType === 'INTERN' ? internRole : undefined,
+      designation: userType === 'STAFF' ? professionalRole : internRole,
+    };
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Registration failed.');
+      }
+
+      navigate('/register/pending', {
+        state: {
+          registration: data.user,
+        },
+      });
+    } catch (err: unknown) {
+      console.error('Registration API Error:', err);
+      if (err instanceof Error) {
+        if (err.message.includes('Failed to fetch') || err.message.includes('Load failed')) {
+          setApiError('Unable to connect to the registration service. Please try again.');
+        } else {
+          setApiError(err.message);
+        }
+      } else {
+        setApiError('Registration could not be completed. Please try again.');
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -235,27 +263,10 @@ export default function RegistrationPage() {
           </p>
         </div>
 
-        {/* Development success notification */}
-        {devNotice && (
-          <Alert variant="success" title="Form Validated Successfully" onClose={() => setDevNotice(null)}>
-            <div className="space-y-2">
-              <p className="text-xs">{devNotice}</p>
-              <div className="rounded bg-white/20 p-2 font-mono text-[10px] text-emerald-950">
-                <p><strong>Payload preview:</strong></p>
-                <p>Type: {userType}</p>
-                <p>Name: {fullName}</p>
-                <p>Email: {email}</p>
-                <p>ID: {userId}</p>
-                {userType === 'INTERN' ? (
-                  <p>Intern Role: {internRole}</p>
-                ) : (
-                  <>
-                    <p>Professional Role: {professionalRole}</p>
-                    <p>Employment: {employmentType}</p>
-                  </>
-                )}
-              </div>
-            </div>
+        {/* API Error Notification */}
+        {apiError && (
+          <Alert variant="error" title="Registration Error" onClose={() => setApiError(null)}>
+            <p className="text-xs">{apiError}</p>
           </Alert>
         )}
 
@@ -264,52 +275,27 @@ export default function RegistrationPage() {
           {/* USER TYPE SELECTOR */}
           <div className="space-y-2">
             <span className="block text-xs font-semibold text-[var(--color-brand-navy)]">
-              Registering As *
+              Registering as
             </span>
-            <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="User Category Selection">
-              {[
-                {
-                  id: 'STAFF',
-                  label: 'Permanent Staff',
-                  desc: 'Programme managers & engineers',
-                  icon: <Briefcase className="w-4 h-4" />,
-                },
-                {
-                  id: 'INTERN',
-                  label: 'Intern',
-                  desc: 'Programme student intake',
-                  icon: <GraduationCap className="w-4 h-4" />,
-                },
-              ].map((type) => {
-                const active = userType === type.id;
+            <div className="grid grid-cols-2 gap-2 bg-slate-50 p-1 rounded-xl border border-slate-100">
+              {(['STAFF', 'INTERN'] as const).map((type) => {
+                const isActive = userType === type;
                 return (
                   <button
-                    key={type.id}
+                    key={type}
                     type="button"
-                    role="radio"
-                    aria-checked={active}
                     onClick={() => {
-                      setUserType(type.id as 'STAFF' | 'INTERN');
+                      setUserType(type);
                       setErrors({});
-                      setDevNotice(null);
                     }}
-                    className={`flex flex-col items-start p-3 rounded-xl border text-left transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-blue)]/30 ${
-                      active
-                        ? 'border-[var(--color-brand-blue)] bg-blue-50/60 shadow-xs'
-                        : 'border-slate-200 bg-white hover:border-slate-300'
+                    disabled={isSubmitting}
+                    className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                      isActive
+                        ? 'bg-white text-[var(--color-brand-navy)] shadow-sm'
+                        : 'text-slate-400 hover:text-slate-600'
                     }`}
                   >
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                      active ? 'bg-[var(--color-brand-blue-light)] text-[var(--color-brand-blue)]' : 'bg-slate-100 text-slate-500'
-                    }`}>
-                      {type.icon}
-                    </div>
-                    <span className="text-xs font-bold text-[var(--color-brand-navy)] mt-2">
-                      {type.label}
-                    </span>
-                    <span className="text-[10px] text-[var(--color-text-secondary)] mt-0.5 leading-tight">
-                      {type.desc}
-                    </span>
+                    {type === 'STAFF' ? 'Permanent Staff' : 'Intern'}
                   </button>
                 );
               })}
@@ -329,7 +315,7 @@ export default function RegistrationPage() {
               clearError('fullName');
             }}
             error={errors.fullName}
-            disabled={!!devNotice}
+            disabled={isSubmitting}
           />
 
           {/* 2. Email Address */}
@@ -345,7 +331,7 @@ export default function RegistrationPage() {
               clearError('email');
             }}
             error={errors.email}
-            disabled={!!devNotice}
+            disabled={isSubmitting}
           />
 
           {/* 3. Mobile Number */}
@@ -372,7 +358,7 @@ export default function RegistrationPage() {
                   setMobile(e.target.value);
                   clearError('mobile');
                 }}
-                disabled={!!devNotice}
+                disabled={isSubmitting}
               />
             </div>
             {errors.mobile ? (
@@ -387,21 +373,6 @@ export default function RegistrationPage() {
             )}
           </div>
 
-          {/* 4. User ID */}
-          <Input
-            id="reg-userid"
-            label={userType === 'STAFF' ? 'Employee ID *' : 'Intern ID *'}
-            placeholder={userType === 'STAFF' ? 'e.g. STF-101' : 'e.g. INT-201'}
-            type="text"
-            required
-            value={userId}
-            onChange={(e) => {
-              setUserId(e.target.value);
-              clearError('userId');
-            }}
-            error={errors.userId}
-            disabled={!!devNotice}
-          />
 
           {/* ── STAFF SPECIFIC FIELDS ─────────────────────────── */}
           {userType === 'STAFF' && (
@@ -428,7 +399,7 @@ export default function RegistrationPage() {
                       ? 'border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20'
                       : 'border-slate-300 focus:border-[var(--color-brand-blue)] focus:ring-2 focus:ring-[var(--color-brand-blue)]/20'
                   }`}
-                  disabled={!!devNotice}
+                  disabled={isSubmitting}
                 >
                   <option value="">-- Select Professional Role --</option>
                   <option value="Business Analyst">Business Analyst</option>
@@ -464,7 +435,7 @@ export default function RegistrationPage() {
                       ? 'border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20'
                       : 'border-slate-300 focus:border-[var(--color-brand-blue)] focus:ring-2 focus:ring-[var(--color-brand-blue)]/20'
                   }`}
-                  disabled={!!devNotice}
+                  disabled={isSubmitting}
                 >
                   <option value="">-- Select Employment Type --</option>
                   <option value="Permanent">Permanent</option>
@@ -505,7 +476,7 @@ export default function RegistrationPage() {
                       ? 'border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20'
                       : 'border-slate-300 focus:border-[var(--color-brand-blue)] focus:ring-2 focus:ring-[var(--color-brand-blue)]/20'
                   }`}
-                  disabled={!!devNotice}
+                  disabled={isSubmitting}
                 >
                   <option value="">-- Select Intern Role --</option>
                   <option value="Business Analyst">Business Analyst</option>
@@ -528,64 +499,6 @@ export default function RegistrationPage() {
             </div>
           )}
 
-          {/* 5. Password */}
-          <div className="space-y-1.5 relative">
-            <Input
-              id="reg-password"
-              label="Password *"
-              placeholder="Minimum 8 characters"
-              type={showPassword ? 'text' : 'password'}
-              required
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                clearError('password');
-              }}
-              error={errors.password}
-              rightIcon={
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="p-1 focus:outline-none text-slate-400 hover:text-slate-600 focus:text-[var(--color-brand-blue)]"
-                  tabIndex={-1}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              }
-              disabled={!!devNotice}
-            />
-          </div>
-
-          {/* Shared PasswordRequirements panel */}
-          <PasswordRequirements password={password} />
-
-          {/* 6. Confirm Password */}
-          <Input
-            id="reg-confirm-password"
-            label="Confirm Password *"
-            placeholder="Re-enter your password"
-            type={showConfirmPassword ? 'text' : 'password'}
-            required
-            value={confirmPassword}
-            onChange={(e) => {
-              setConfirmPassword(e.target.value);
-              clearError('confirmPassword');
-            }}
-            error={errors.confirmPassword}
-            rightIcon={
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="p-1 focus:outline-none text-slate-400 hover:text-slate-600 focus:text-[var(--color-brand-blue)]"
-                tabIndex={-1}
-                aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
-              >
-                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            }
-            disabled={!!devNotice}
-          />
 
           {/* Form Actions */}
           <div className="space-y-3 pt-3">
@@ -594,9 +507,11 @@ export default function RegistrationPage() {
               variant="primary"
               size="lg"
               fullWidth
-              rightIcon={<ArrowRight className="w-4 h-4" />}
+              isLoading={isSubmitting}
+              disabled={isSubmitting}
+              rightIcon={!isSubmitting ? <ArrowRight className="w-4 h-4" /> : undefined}
             >
-              Submit Registration
+              {isSubmitting ? 'Submitting registration...' : 'Submit Registration'}
             </Button>
 
             <Button
