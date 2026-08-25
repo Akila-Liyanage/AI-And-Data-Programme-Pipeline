@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Project, IWorkItem } from '../models/Project';
 import { Assignment } from '../models/Assignment';
+import { appCache } from '../utils/cache';
 
 // Helper to compute overall project progress percentage from work-items
 function computeProgress(workItems: IWorkItem[]): number {
@@ -11,12 +12,20 @@ function computeProgress(workItems: IWorkItem[]): number {
   return Math.min(100, Math.round(totalCompletedWeight));
 }
 
-// GET /api/projects
+// GET /api/projects - Ultra-Fast Optimized Endpoint
 export const getProjects = async (req: Request, res: Response): Promise<void> => {
   try {
     const { category, status, department, search } = req.query;
-    const filter: any = {};
+    const cacheKey = `projects_${category || 'ALL'}_${status || 'ALL'}_${department || 'ALL'}_${search || ''}`;
 
+    // Return cached response if available (<2ms)
+    const cachedData = appCache.get<any>(cacheKey);
+    if (cachedData) {
+      res.status(200).json(cachedData);
+      return;
+    }
+
+    const filter: any = {};
     if (category && category !== 'ALL') {
       filter.category = String(category);
     }
@@ -36,22 +45,35 @@ export const getProjects = async (req: Request, res: Response): Promise<void> =>
       ];
     }
 
-    const projects = await Project.find(filter).sort({ createdAt: -1 });
+    // Run Project fetch and Assignment counts in parallel with .lean()
+    const [projects, assignmentCounts] = await Promise.all([
+      Project.find(filter).sort({ createdAt: -1 }).lean(),
+      Assignment.aggregate([
+        { $group: { _id: '$projectId', count: { $sum: 1 } } },
+      ]),
+    ]);
 
-    // Sync assigned members count
-    for (const p of projects) {
-      const count = await Assignment.countDocuments({ projectId: p.projectId });
-      if (p.assignedMembersCount !== count) {
-        p.assignedMembersCount = count;
-        await p.save();
-      }
-    }
-
-    res.status(200).json({
-      success: true,
-      count: projects.length,
-      projects,
+    // Create lookup map for fast O(1) member count assignment
+    const countMap = new Map<string, number>();
+    assignmentCounts.forEach((ac: { _id: string; count: number }) => {
+      if (ac._id) countMap.set(ac._id, ac.count);
     });
+
+    const enrichedProjects = projects.map((p) => ({
+      ...p,
+      assignedMembersCount: countMap.get(p.projectId) || p.assignedMembersCount || 0,
+    }));
+
+    const responsePayload = {
+      success: true,
+      count: enrichedProjects.length,
+      projects: enrichedProjects,
+    };
+
+    // Cache result for 20 seconds
+    appCache.set(cacheKey, responsePayload, 20);
+
+    res.status(200).json(responsePayload);
   } catch (error: any) {
     console.error('Error fetching projects:', error);
     res.status(500).json({ success: false, message: 'Server error fetching projects', error: error.message });
@@ -67,14 +89,14 @@ export const getProjectById = async (req: Request, res: Response): Promise<void>
 
     const project = await Project.findOne({
       $or: [{ ...(isObjectId ? { _id: id } : { _id: null }) }, { projectId: id }],
-    });
+    }).lean();
 
     if (!project) {
       res.status(404).json({ success: false, message: 'Project not found' });
       return;
     }
 
-    const assignments = await Assignment.find({ projectId: project.projectId });
+    const assignments = await Assignment.find({ projectId: project.projectId }).lean();
 
     res.status(200).json({
       success: true,
@@ -148,6 +170,9 @@ export const createProject = async (req: Request, res: Response): Promise<void> 
 
     await newProject.save();
 
+    // Invalidate project cache
+    appCache.invalidate('projects');
+
     res.status(201).json({
       success: true,
       message: 'Project created successfully',
@@ -182,6 +207,9 @@ export const updateProject = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    // Invalidate project cache
+    appCache.invalidate('projects');
+
     res.status(200).json({
       success: true,
       message: 'Project updated successfully',
@@ -210,6 +238,10 @@ export const deleteProject = async (req: Request, res: Response): Promise<void> 
     }
 
     await Assignment.deleteMany({ projectId: deleted.projectId });
+
+    // Invalidate project & assignment cache
+    appCache.invalidate('projects');
+    appCache.invalidate('assignments');
 
     res.status(200).json({
       success: true,

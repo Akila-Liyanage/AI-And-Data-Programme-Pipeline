@@ -2,6 +2,7 @@ import { Response } from 'express';
 import User, { UserRole, AccountStatus } from '../models/User';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { normalizePhoneNumber } from './authController';
+import { appCache } from '../utils/cache';
 
 /**
  * Helper to generate next unique User ID based on Role
@@ -28,13 +29,20 @@ export const generateNextUserId = async (role: UserRole): Promise<string> => {
 };
 
 /**
- * @desc    Get all users (Admin only)
+ * @desc    Get all users (Admin only) - Optimized Caching
  * @route   GET /api/users
  * @access  Private (Admin)
  */
 export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { role, status, search } = req.query;
+    const cacheKey = `users_${role || 'ALL'}_${status || 'ALL'}_${search || ''}`;
+
+    const cachedData = appCache.get<any>(cacheKey);
+    if (cachedData) {
+      res.status(200).json(cachedData);
+      return;
+    }
 
     const query: Record<string, unknown> = {};
 
@@ -57,17 +65,21 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
       ];
     }
 
-    const users = await User.find(query)
-      .select('-password -otpCode -otpExpiresAt')
-      .sort({ createdAt: -1 });
+    const [users, allUsersForStats] = await Promise.all([
+      User.find(query)
+        .select('-password -otpCode -otpExpiresAt')
+        .sort({ createdAt: -1 })
+        .lean(),
+      User.find({}, 'role').lean(),
+    ]);
 
-    // Calculate role distribution stats
-    const totalUsers = await User.countDocuments();
-    const adminCount = await User.countDocuments({ role: 'ADMIN' });
-    const staffCount = await User.countDocuments({ role: 'PERMANENT_STAFF' });
-    const internCount = await User.countDocuments({ role: 'INTERN' });
+    // Calculate role distribution stats directly in memory
+    const totalUsers = allUsersForStats.length;
+    const adminCount = allUsersForStats.filter((u) => u.role === 'ADMIN').length;
+    const staffCount = allUsersForStats.filter((u) => u.role === 'PERMANENT_STAFF').length;
+    const internCount = allUsersForStats.filter((u) => u.role === 'INTERN').length;
 
-    res.status(200).json({
+    const responsePayload = {
       success: true,
       count: users.length,
       stats: {
@@ -77,7 +89,11 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
         internCount,
       },
       users,
-    });
+    };
+
+    appCache.set(cacheKey, responsePayload, 20);
+
+    res.status(200).json(responsePayload);
   } catch (error) {
     console.error('Error fetching users:', error);
     res.status(500).json({
@@ -156,6 +172,7 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
     });
 
     await newUser.save();
+    appCache.invalidate('users');
 
     console.log(`👤 [USER CREATED] Added ${newUser.fullName} (${newUser.role}) - Phone: ${newUser.phoneNumber}, ID: ${newUser.userId}`);
 
@@ -227,6 +244,7 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
     }
 
     await user.save();
+    appCache.invalidate('users');
 
     res.status(200).json({
       success: true,
@@ -281,6 +299,8 @@ export const deleteUser = async (req: AuthRequest, res: Response): Promise<void>
       });
       return;
     }
+
+    appCache.invalidate('users');
 
     res.status(200).json({
       success: true,
@@ -343,6 +363,7 @@ export const toggleUserStatus = async (req: AuthRequest, res: Response): Promise
     }
 
     await user.save();
+    appCache.invalidate('users');
 
     res.status(200).json({
       success: true,
