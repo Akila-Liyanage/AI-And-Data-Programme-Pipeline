@@ -391,11 +391,10 @@ export default function LoginPage() {
                     setPhoneNumber('0774943291');
                     setPhoneError(null);
                   }}
-                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs border text-left transition-all ${
-                    phoneNumber === '0774943291'
+                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs border text-left transition-all ${phoneNumber === '0774943291'
                       ? 'bg-blue-50 border-[var(--color-brand-blue)] text-[var(--color-brand-blue)] font-semibold shadow-xs'
                       : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-blue-600"></span>
@@ -410,11 +409,10 @@ export default function LoginPage() {
                     setPhoneNumber('0771234567');
                     setPhoneError(null);
                   }}
-                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs border text-left transition-all ${
-                    phoneNumber === '0771234567'
+                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs border text-left transition-all ${phoneNumber === '0771234567'
                       ? 'bg-emerald-50 border-emerald-500 text-emerald-700 font-semibold shadow-xs'
                       : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
@@ -429,11 +427,10 @@ export default function LoginPage() {
                     setPhoneNumber('0777654321');
                     setPhoneError(null);
                   }}
-                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs border text-left transition-all ${
-                    phoneNumber === '0777654321'
+                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs border text-left transition-all ${phoneNumber === '0777654321'
                       ? 'bg-purple-50 border-purple-500 text-purple-700 font-semibold shadow-xs'
                       : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-purple-600"></span>
@@ -559,11 +556,10 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => handleSendOtp()}
                   disabled={resendTimer > 0 || isSubmitting}
-                  className={`font-semibold flex items-center gap-1 ${
-                    resendTimer > 0
+                  className={`font-semibold flex items-center gap-1 ${resendTimer > 0
                       ? 'text-slate-400 cursor-not-allowed'
                       : 'text-[var(--color-brand-blue)] hover:underline cursor-pointer'
-                  }`}
+                    }`}
                 >
                   <RefreshCw className={`w-3 h-3 ${resendTimer > 0 ? '' : 'hover:rotate-180 transition-transform'}`} />
                   {resendTimer > 0 ? `Resend code in ${resendTimer}s` : 'Resend Code'}

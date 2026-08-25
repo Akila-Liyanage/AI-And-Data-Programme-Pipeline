@@ -20,6 +20,8 @@ export interface AuthUser {
   role: UserRole;
   designation?: string;
   department?: string;
+  employmentType?: string;
+  internRole?: string;
   accountStatus?: string;
   mustChangePassword?: boolean;
   isActivated?: boolean;

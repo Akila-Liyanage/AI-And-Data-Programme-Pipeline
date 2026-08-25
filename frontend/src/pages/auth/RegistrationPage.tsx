@@ -150,7 +150,7 @@ export default function RegistrationPage() {
 
     /* Shared Validation */
     if (!fullName.trim()) newErrors.fullName = 'Full Name is required';
-    
+
     if (!email.trim()) {
       newErrors.email = 'Email Address is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -241,7 +241,7 @@ export default function RegistrationPage() {
   return (
     <AuthLayout leftPanel={<RegBrandPanel />} backTo={{ to: '/login', label: 'Back to Sign In' }}>
       <div className="max-w-md w-full mx-auto space-y-6">
-        
+
         {/* Header Title */}
         <div className="space-y-1.5">
           <span className="text-xs font-semibold text-[var(--color-brand-blue)] tracking-wider uppercase block">
@@ -271,7 +271,7 @@ export default function RegistrationPage() {
         )}
 
         <form onSubmit={handleSubmit} noValidate className="space-y-5" aria-label="Self-registration form">
-          
+
           {/* USER TYPE SELECTOR */}
           <div className="space-y-2">
             <span className="block text-xs font-semibold text-[var(--color-brand-navy)]">
@@ -289,11 +289,10 @@ export default function RegistrationPage() {
                       setErrors({});
                     }}
                     disabled={isSubmitting}
-                    className={`py-2 rounded-lg text-xs font-bold transition-all ${
-                      isActive
+                    className={`py-2 rounded-lg text-xs font-bold transition-all ${isActive
                         ? 'bg-white text-[var(--color-brand-navy)] shadow-sm'
                         : 'text-slate-400 hover:text-slate-600'
-                    }`}
+                      }`}
                   >
                     {type === 'STAFF' ? 'Permanent Staff' : 'Intern'}
                   </button>
@@ -348,11 +347,10 @@ export default function RegistrationPage() {
                 type="tel"
                 placeholder="e.g. 774943291"
                 required
-                className={`flex-1 min-w-0 block w-full px-3 py-2.5 rounded-r-xl border text-xs focus:outline-none transition-all ${
-                  errors.mobile
+                className={`flex-1 min-w-0 block w-full px-3 py-2.5 rounded-r-xl border text-xs focus:outline-none transition-all ${errors.mobile
                     ? 'border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 bg-rose-50/10'
                     : 'border-slate-300 focus:border-[var(--color-brand-blue)] focus:ring-2 focus:ring-[var(--color-brand-blue)]/20 bg-white'
-                }`}
+                  }`}
                 value={mobile}
                 onChange={(e) => {
                   setMobile(e.target.value);
@@ -394,11 +392,10 @@ export default function RegistrationPage() {
                     setProfessionalRole(e.target.value);
                     clearError('professionalRole');
                   }}
-                  className={`w-full px-3 py-2.5 rounded-xl border text-xs focus:outline-none transition-all bg-white ${
-                    errors.professionalRole
+                  className={`w-full px-3 py-2.5 rounded-xl border text-xs focus:outline-none transition-all bg-white ${errors.professionalRole
                       ? 'border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20'
                       : 'border-slate-300 focus:border-[var(--color-brand-blue)] focus:ring-2 focus:ring-[var(--color-brand-blue)]/20'
-                  }`}
+                    }`}
                   disabled={isSubmitting}
                 >
                   <option value="">-- Select Professional Role --</option>
@@ -430,11 +427,10 @@ export default function RegistrationPage() {
                     setEmploymentType(e.target.value);
                     clearError('employmentType');
                   }}
-                  className={`w-full px-3 py-2.5 rounded-xl border text-xs focus:outline-none transition-all bg-white ${
-                    errors.employmentType
+                  className={`w-full px-3 py-2.5 rounded-xl border text-xs focus:outline-none transition-all bg-white ${errors.employmentType
                       ? 'border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20'
                       : 'border-slate-300 focus:border-[var(--color-brand-blue)] focus:ring-2 focus:ring-[var(--color-brand-blue)]/20'
-                  }`}
+                    }`}
                   disabled={isSubmitting}
                 >
                   <option value="">-- Select Employment Type --</option>
@@ -471,11 +467,10 @@ export default function RegistrationPage() {
                     setInternRole(e.target.value);
                     clearError('internRole');
                   }}
-                  className={`w-full px-3 py-2.5 rounded-xl border text-xs focus:outline-none transition-all bg-white ${
-                    errors.internRole
+                  className={`w-full px-3 py-2.5 rounded-xl border text-xs focus:outline-none transition-all bg-white ${errors.internRole
                       ? 'border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20'
                       : 'border-slate-300 focus:border-[var(--color-brand-blue)] focus:ring-2 focus:ring-[var(--color-brand-blue)]/20'
-                  }`}
+                    }`}
                   disabled={isSubmitting}
                 >
                   <option value="">-- Select Intern Role --</option>

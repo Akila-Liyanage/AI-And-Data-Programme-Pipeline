@@ -239,7 +239,7 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
       setStatusNotice({
         type: 'success',
         title: 'Account Verified Successfully',
-        message: `Account status for ${user.fullName} is now ACTIVE. They can now log in using OTP.`,
+        message: `Account status for ${user.fullName} is now ACTIVE. They can now log in using User ID and password.`,
       });
 
       if (onStatusUpdated) {
