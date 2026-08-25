@@ -84,4 +84,9 @@ const AssignmentSchema = new Schema<IAssignment>(
   }
 );
 
+AssignmentSchema.index({ projectId: 1, userId: 1 });
+AssignmentSchema.index({ userId: 1 });
+AssignmentSchema.index({ status: 1 });
+AssignmentSchema.index({ createdAt: -1 });
+
 export const Assignment = mongoose.model<IAssignment>('Assignment', AssignmentSchema);

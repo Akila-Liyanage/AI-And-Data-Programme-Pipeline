@@ -113,4 +113,7 @@ const ProjectSchema = new Schema<IProject>(
   }
 );
 
+ProjectSchema.index({ category: 1, status: 1 });
+ProjectSchema.index({ createdAt: -1 });
+
 export const Project = mongoose.model<IProject>('Project', ProjectSchema);

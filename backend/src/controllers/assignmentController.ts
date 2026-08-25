@@ -2,13 +2,21 @@ import { Request, Response } from 'express';
 import { Assignment } from '../models/Assignment';
 import { Project } from '../models/Project';
 import User from '../models/User';
+import { appCache } from '../utils/cache';
 
-// GET /api/assignments
+// GET /api/assignments - Optimized Caching & Lean Queries
 export const getAssignments = async (req: Request, res: Response): Promise<void> => {
   try {
     const { projectId, userId, userCategory, status, search } = req.query;
-    const filter: any = {};
+    const cacheKey = `assignments_${projectId || 'ALL'}_${userId || 'ALL'}_${userCategory || 'ALL'}_${status || 'ALL'}_${search || ''}`;
 
+    const cachedData = appCache.get<any>(cacheKey);
+    if (cachedData) {
+      res.status(200).json(cachedData);
+      return;
+    }
+
+    const filter: any = {};
     if (projectId && projectId !== 'ALL') {
       filter.projectId = String(projectId);
     }
@@ -33,13 +41,17 @@ export const getAssignments = async (req: Request, res: Response): Promise<void>
       ];
     }
 
-    const assignments = await Assignment.find(filter).sort({ createdAt: -1 });
+    const assignments = await Assignment.find(filter).sort({ createdAt: -1 }).lean();
 
-    res.status(200).json({
+    const responsePayload = {
       success: true,
       count: assignments.length,
       assignments,
-    });
+    };
+
+    appCache.set(cacheKey, responsePayload, 20);
+
+    res.status(200).json(responsePayload);
   } catch (error: any) {
     console.error('Error fetching assignments:', error);
     res.status(500).json({ success: false, message: 'Server error fetching assignments', error: error.message });
@@ -68,18 +80,21 @@ export const createAssignment = async (req: Request, res: Response): Promise<voi
     }
 
     const isProjectObjectId = /^[0-9a-fA-F]{24}$/.test(projectId);
-    const project = await Project.findOne({
-      $or: [{ ...(isProjectObjectId ? { _id: projectId } : { _id: null }) }, { projectId }],
-    });
+    const isUserObjectId = /^[0-9a-fA-F]{24}$/.test(userId);
+
+    const [project, user] = await Promise.all([
+      Project.findOne({
+        $or: [{ ...(isProjectObjectId ? { _id: projectId } : { _id: null }) }, { projectId }],
+      }),
+      User.findOne({
+        $or: [{ ...(isUserObjectId ? { _id: userId } : { _id: null }) }, { userId }],
+      }),
+    ]);
+
     if (!project) {
       res.status(404).json({ success: false, message: 'Selected project not found' });
       return;
     }
-
-    const isUserObjectId = /^[0-9a-fA-F]{24}$/.test(userId);
-    const user = await User.findOne({
-      $or: [{ ...(isUserObjectId ? { _id: userId } : { _id: null }) }, { userId }],
-    });
     if (!user) {
       res.status(404).json({ success: false, message: 'Selected user not found' });
       return;
@@ -121,9 +136,13 @@ export const createAssignment = async (req: Request, res: Response): Promise<voi
 
     await newAssignment.save();
 
-    // Update project count
+    // Update project member count
     project.assignedMembersCount = await Assignment.countDocuments({ projectId: project.projectId });
     await project.save();
+
+    // Invalidate caches
+    appCache.invalidate('assignments');
+    appCache.invalidate('projects');
 
     res.status(201).json({
       success: true,
@@ -154,6 +173,8 @@ export const updateAssignment = async (req: Request, res: Response): Promise<voi
       return;
     }
 
+    appCache.invalidate('assignments');
+
     res.status(200).json({
       success: true,
       message: 'Assignment updated successfully',
@@ -181,12 +202,15 @@ export const deleteAssignment = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    // Update project count
+    // Update project member count
     const project = await Project.findOne({ projectId: deleted.projectId });
     if (project) {
       project.assignedMembersCount = await Assignment.countDocuments({ projectId: project.projectId });
       await project.save();
     }
+
+    appCache.invalidate('assignments');
+    appCache.invalidate('projects');
 
     res.status(200).json({
       success: true,
