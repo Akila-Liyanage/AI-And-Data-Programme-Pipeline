@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 import { Badge } from '../../common/Badge';
-import { SltSignalMark } from '../../common/Brand';
 import type { HeaderProps } from './types';
 
 /**
@@ -82,8 +81,7 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         {/* Enterprise workspace indicator */}
-        <div className="hidden sm:flex items-center gap-2.5 text-xs font-semibold text-[var(--color-brand-navy)]">
-          <SltSignalMark size={20} />
+        <div className="hidden sm:flex items-center text-xs font-semibold text-slate-700">
           <span>AI & Data Programme Pipeline</span>
         </div>
       </div>

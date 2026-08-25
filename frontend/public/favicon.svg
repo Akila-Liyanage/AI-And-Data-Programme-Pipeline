@@ -1,10 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 54 56" fill="none">
-  <!-- Top Left Cyan Bar -->
-  <path d="M25 6 L7 32" stroke="#00A9E0" stroke-width="7.5" stroke-linecap="round" />
-  <!-- Bottom Left Deep Blue Bar -->
-  <path d="M25 30 L7 54" stroke="#0057A8" stroke-width="7.5" stroke-linecap="round" />
-  <!-- Center Green Dot -->
-  <circle cx="31" cy="32" r="5" fill="#00A651" />
-  <!-- Right Green Bar -->
-  <path d="M51 22 L33 54" stroke="#00A651" stroke-width="7.5" stroke-linecap="round" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <filter id="soft-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0B1F3A" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+  <!-- Circular Background -->
+  <circle cx="64" cy="64" r="62" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="3" filter="url(#soft-shadow)"/>
+  
+  <!-- SLT-MOBITEL Iconic Signal Mark -->
+  <g transform="translate(10, 8) scale(0.85)">
+    <!-- Top Left Cyan Bar -->
+    <path d="M52 24 L24 64" stroke="#00A9E0" stroke-width="12" stroke-linecap="round"/>
+    <!-- Bottom Left Deep Blue Bar -->
+    <path d="M52 64 L24 104" stroke="#0057A8" stroke-width="12" stroke-linecap="round"/>
+    <!-- Center Green Dot -->
+    <circle cx="64" cy="68" r="8" fill="#00A651"/>
+    <!-- Right Green Bar -->
+    <path d="M104 50 L76 104" stroke="#00A651" stroke-width="12" stroke-linecap="round"/>
+  </g>
 </svg>

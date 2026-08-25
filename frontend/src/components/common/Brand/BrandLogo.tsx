@@ -10,104 +10,46 @@ export interface BrandLogoProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 /**
- * SLT-MOBITEL Iconic Signal Mark SVG
+ * SLT-MOBITEL Iconic Signal Mark Component
  */
 export const SltSignalMark: React.FC<{ className?: string; size?: number }> = ({
   className,
-  size = 32,
+  size = 28,
 }) => {
   return (
-    <svg
-      width={size}
-      height={Math.round(size * 1.05)}
-      viewBox="0 0 54 56"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={cn('shrink-0 select-none', className)}
-      aria-hidden="true"
+    <div
+      style={{ width: size, height: size }}
+      className={cn('shrink-0 select-none flex items-center justify-center overflow-hidden', className)}
     >
-      {/* Top Left Cyan Bar */}
-      <path d="M25 6 L7 32" stroke="#00A9E0" strokeWidth="7.5" strokeLinecap="round" />
-      {/* Bottom Left Deep Blue Bar */}
-      <path d="M25 30 L7 54" stroke="#0057A8" strokeWidth="7.5" strokeLinecap="round" />
-      {/* Center Green Dot */}
-      <circle cx="31" cy="32" r="5" fill="#00A651" />
-      {/* Right Green Bar */}
-      <path d="M51 22 L33 54" stroke="#00A651" strokeWidth="7.5" strokeLinecap="round" />
-    </svg>
+      <img
+        src="/slt-mobitel-logo.png"
+        alt="SLTMOBITEL"
+        className="w-full h-full object-contain object-left"
+      />
+    </div>
   );
 };
 
 /**
- * Full SLT-MOBITEL Logo Component
+ * Full SLT-MOBITEL Official Logo Component
  */
 export const SltMobitelLogo: React.FC<{
   className?: string;
   theme?: 'light' | 'dark';
   height?: number;
-}> = ({ className, theme = 'light', height = 36 }) => {
-  const isDark = theme === 'dark';
-  const width = Math.round(height * 2.8);
-
+}> = ({ className, height = 36 }) => {
   return (
-    <svg
-      width={width}
-      height={height}
-      viewBox="0 0 250 82"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={cn('shrink-0 select-none', className)}
-      role="img"
-      aria-label="SLT-MOBITEL"
+    <div
+      style={{ height }}
+      className={cn('shrink-0 select-none flex items-center', className)}
     >
-      {/* Signal Mark */}
-      <g>
-        <path d="M23 8 L8 32" stroke="#00A9E0" strokeWidth="7" strokeLinecap="round" />
-        <path d="M23 30 L8 54" stroke={isDark ? '#38BDF8' : '#0057A8'} strokeWidth="7" strokeLinecap="round" />
-        <circle cx="29" cy="32" r="4.5" fill="#00A651" />
-        <path d="M47 22 L32 54" stroke="#00A651" strokeWidth="7" strokeLinecap="round" />
-      </g>
-
-      {/* SLT */}
-      <text
-        x="56"
-        y="50"
-        fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-        fontSize="34"
-        fontWeight="900"
-        letterSpacing="-0.5"
-        fill={isDark ? '#FFFFFF' : '#0057A8'}
-      >
-        SLT
-      </text>
-
-      {/* MOBITEL */}
-      <text
-        x="122"
-        y="50"
-        fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-        fontSize="34"
-        fontWeight="900"
-        letterSpacing="-0.5"
-        fill="#00A651"
-      >
-        MOBITEL
-      </text>
-
-      {/* Slogan "The Connection" */}
-      <text
-        x="158"
-        y="70"
-        textAnchor="middle"
-        fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-        fontSize="12"
-        fontWeight="600"
-        letterSpacing="2.2"
-        fill={isDark ? '#94A3B8' : '#0057A8'}
-      >
-        The Connection
-      </text>
-    </svg>
+      <img
+        src="/slt-mobitel-logo.png"
+        alt="SLTMOBITEL - The Connection"
+        style={{ height }}
+        className="w-auto max-h-full object-contain"
+      />
+    </div>
   );
 };
 
@@ -124,80 +66,71 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   const isSm = size === 'sm';
   const isDark = theme === 'dark';
 
-  const markSize = isSm ? 24 : isLg ? 36 : 28;
+  const logoHeight = isSm ? 28 : isLg ? 42 : 34;
 
   return (
     <div
       className={cn(
-        'flex select-none items-center',
-        layout === 'vertical' ? 'flex-col text-center' : 'gap-3',
+        'flex select-none',
+        layout === 'vertical' ? 'flex-col items-center text-center' : 'items-center gap-2.5',
         className
       )}
       {...props}
     >
-      {/* SLT-MOBITEL Signal Mark */}
-      <div className="flex items-center justify-center shrink-0">
-        <SltSignalMark size={markSize} />
+      {/* Official SLT-MOBITEL Image Logo */}
+      <div className="shrink-0 flex items-center">
+        <img
+          src="/slt-mobitel-logo.png"
+          alt="SLTMOBITEL"
+          style={{ height: logoHeight }}
+          className="w-auto max-h-full object-contain filter drop-shadow-2xs"
+        />
       </div>
 
-      {/* Text Branding */}
-      <div className={cn('flex flex-col', layout === 'vertical' && 'mt-2')}>
-        {/* SLT-MOBITEL Name & AI Division Tag */}
-        <div className="flex items-center gap-1.5 leading-tight flex-wrap">
-          <span
-            className={cn(
-              'font-extrabold tracking-tight',
-              isDark ? 'text-white' : 'text-[var(--color-brand-blue)]',
-              isSm && 'text-sm',
-              size === 'md' && 'text-base',
-              isLg && 'text-lg'
-            )}
-          >
-            SLT<span className="text-[var(--color-brand-green)]">MOBITEL</span>
-          </span>
+      {/* Division Badge & Platform Tag */}
+      {(showPlatformName || showSubtitle) && (
+        <div className={cn('flex flex-col min-w-0', layout === 'vertical' ? 'mt-1.5' : 'pl-1 border-l border-slate-200')}>
+          <div className="flex items-center gap-1.5 leading-tight flex-wrap">
+            <span
+              className={cn(
+                'inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-extrabold tracking-wider uppercase',
+                isDark
+                  ? 'bg-white/15 text-blue-200 border border-white/20'
+                  : 'bg-blue-50 text-blue-700 border border-blue-200'
+              )}
+            >
+              AI & DATA
+            </span>
+          </div>
 
-          <span
-            className={cn(
-              'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase',
-              isDark
-                ? 'bg-white/15 text-blue-200 border border-white/20'
-                : 'bg-[var(--color-brand-blue-light)] text-[var(--color-brand-blue)] border border-[#BFDBFE]'
-            )}
-          >
-            AI & DATA
-          </span>
+          {/* Platform Title */}
+          {showPlatformName && (
+            <span
+              className={cn(
+                'font-bold tracking-tight leading-tight mt-0.5 truncate',
+                isDark ? 'text-slate-100' : 'text-slate-900',
+                isSm && 'text-[11px]',
+                size === 'md' && 'text-xs',
+                isLg && 'text-sm'
+              )}
+            >
+              Programme Pipeline
+            </span>
+          )}
+
+          {/* Subtitle */}
+          {showSubtitle && (
+            <span
+              className={cn(
+                'font-medium leading-tight text-[10px] text-slate-500 truncate',
+                isDark && 'text-slate-300'
+              )}
+            >
+              Staff & Intern Portal
+            </span>
+          )}
         </div>
-
-        {/* Platform Title */}
-        {showPlatformName && (
-          <span
-            className={cn(
-              'font-bold tracking-tight mt-0.5 leading-tight',
-              isDark ? 'text-slate-100' : 'text-[var(--color-brand-navy)]',
-              isSm && 'text-xs',
-              size === 'md' && 'text-sm',
-              isLg && 'text-base'
-            )}
-          >
-            Programme Pipeline
-          </span>
-        )}
-
-        {/* Subtitle */}
-        {showSubtitle && (
-          <span
-            className={cn(
-              'font-medium leading-tight mt-0.5',
-              isDark ? 'text-slate-300' : 'text-[var(--color-text-secondary)]',
-              isSm && 'text-[10px]',
-              size === 'md' && 'text-xs',
-              isLg && 'text-sm'
-            )}
-          >
-            Staff & Intern Progress Dashboard
-          </span>
-        )}
-      </div>
+      )}
     </div>
   );
 };
