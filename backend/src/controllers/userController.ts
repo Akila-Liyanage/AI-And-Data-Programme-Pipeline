@@ -6,7 +6,7 @@ import { normalizePhoneNumber } from './authController';
 /**
  * Helper to generate next unique User ID based on Role
  */
-const generateNextUserId = async (role: UserRole): Promise<string> => {
+export const generateNextUserId = async (role: UserRole): Promise<string> => {
   let prefix = 'INT';
   let startNum = 200;
 
@@ -322,7 +322,22 @@ export const toggleUserStatus = async (req: AuthRequest, res: Response): Promise
       return;
     }
 
-    user.accountStatus = user.accountStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    const { status } = req.body;
+
+    if (status) {
+      const validStatuses: AccountStatus[] = ['ACTIVE', 'INACTIVE', 'PENDING', 'REJECTED'];
+      if (!validStatuses.includes(status as AccountStatus)) {
+        res.status(400).json({
+          success: false,
+          message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`,
+        });
+        return;
+      }
+      user.accountStatus = status as AccountStatus;
+    } else {
+      user.accountStatus = user.accountStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    }
+
     await user.save();
 
     res.status(200).json({

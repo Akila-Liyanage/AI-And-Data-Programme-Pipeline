@@ -2,7 +2,7 @@ import mongoose, { Document, Schema, Model } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 export type UserRole = 'ADMIN' | 'PERMANENT_STAFF' | 'INTERN';
-export type AccountStatus = 'ACTIVE' | 'INACTIVE' | 'PENDING';
+export type AccountStatus = 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'REJECTED';
 
 export interface IUser extends Document {
   userId: string;
@@ -17,6 +17,8 @@ export interface IUser extends Document {
   accountStatus: AccountStatus;
   otpCode?: string;
   otpExpiresAt?: Date;
+  employmentType?: string;
+  internRole?: string;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -85,8 +87,16 @@ const UserSchema = new Schema<IUser>(
     },
     accountStatus: {
       type: String,
-      enum: ['ACTIVE', 'INACTIVE', 'PENDING'],
+      enum: ['ACTIVE', 'INACTIVE', 'PENDING', 'REJECTED'],
       default: 'ACTIVE',
+    },
+    employmentType: {
+      type: String,
+      trim: true,
+    },
+    internRole: {
+      type: String,
+      trim: true,
     },
     otpCode: {
       type: String,

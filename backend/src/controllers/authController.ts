@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import User, { UserRole } from '../models/User';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { generateNextUserId } from './userController';
 
 /**
  * Generate JWT Token helper
@@ -140,10 +141,10 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    if (user.accountStatus === 'INACTIVE') {
+    if (user.accountStatus !== 'ACTIVE') {
       res.status(403).json({
         success: false,
-        message: 'Your account has been deactivated. Please contact an Administrator.',
+        message: `Your account status is currently ${user.accountStatus.toLowerCase()}. Please contact an Administrator.`,
       });
       return;
     }
@@ -251,10 +252,10 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Check account status
-    if (user.accountStatus === 'INACTIVE') {
+    if (user.accountStatus !== 'ACTIVE') {
       res.status(403).json({
         success: false,
-        message: 'Your account has been deactivated. Please contact an Administrator.',
+        message: `Your account status is currently ${user.accountStatus.toLowerCase()}. Please contact an Administrator.`,
       });
       return;
     }
@@ -324,6 +325,146 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
     res.status(500).json({
       success: false,
       message: 'Server error retrieving user profile',
+    });
+  }
+};
+
+/**
+ * @desc    Self-register user (Staff or Intern)
+ * @route   POST /api/auth/register
+ * @access  Public
+ */
+export const registerUser = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const {
+      fullName,
+      phoneNumber,
+      email,
+      password,
+      role,
+      employmentType,
+      internRole,
+      designation,
+      department,
+    } = req.body;
+
+    // Validate role: Admin cannot self-register, role must be PERMANENT_STAFF or INTERN
+    if (!role || (role !== 'PERMANENT_STAFF' && role !== 'INTERN')) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid role selection. Public registration is only available for Staff and Interns.',
+      });
+      return;
+    }
+
+    // Validate required fields
+    if (!fullName || !phoneNumber || !email || !password) {
+      res.status(400).json({
+        success: false,
+        message: 'Full Name, Phone Number, Email, and Password are required',
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters long',
+      });
+      return;
+    }
+
+    const cleanPhone = normalizePhoneNumber(phoneNumber);
+    const cleanEmail = email.toLowerCase().trim();
+
+    // Check if phone or email already exists
+    const existingUser = await User.findOne({
+      $or: [
+        { phoneNumber: phoneNumber.trim() },
+        { phoneNumber: cleanPhone },
+        { email: cleanEmail },
+      ],
+    });
+
+    if (existingUser) {
+      const conflictField =
+        existingUser.email.toLowerCase() === cleanEmail ? 'Email' : 'Phone Number';
+      res.status(409).json({
+        success: false,
+        message: `A user with this ${conflictField} already exists in the system.`,
+      });
+      return;
+    }
+
+    // Auto-generate User ID and Username
+    const generatedUserId = await generateNextUserId(role as UserRole);
+    
+    let baseUsername = cleanEmail.split('@')[0] || 
+      fullName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    
+    baseUsername = baseUsername.toLowerCase().trim().replace(/[^a-z0-9_]/g, '');
+    if (!baseUsername) {
+      baseUsername = 'user';
+    }
+
+    let generatedUsername = baseUsername;
+    let isUsernameUnique = false;
+    let attempts = 0;
+
+    while (!isUsernameUnique && attempts < 10) {
+      const usernameExists = await User.findOne({ username: generatedUsername });
+      if (!usernameExists) {
+        isUsernameUnique = true;
+      } else {
+        attempts++;
+        const suffix = Math.floor(100 + Math.random() * 900).toString();
+        generatedUsername = `${baseUsername}${suffix}`;
+      }
+    }
+
+    // Save with status PENDING
+    const newUser = new User({
+      userId: generatedUserId,
+      username: generatedUsername,
+      fullName: fullName.trim(),
+      phoneNumber: phoneNumber.trim(),
+      email: cleanEmail,
+      password: password.trim(),
+      role: role as UserRole,
+      designation: designation ? designation.trim() : (internRole ? internRole.trim() : (role === 'PERMANENT_STAFF' ? 'Staff Member' : 'Intern Trainee')),
+      employmentType: employmentType ? employmentType.trim() : undefined,
+      internRole: internRole ? internRole.trim() : undefined,
+      department: department ? department.trim() : 'AI & Data Team',
+      accountStatus: 'PENDING',
+    });
+
+    await newUser.save();
+
+    console.log(`👤 [USER SELF-REGISTERED] Added ${newUser.fullName} (${newUser.role}) - Phone: ${newUser.phoneNumber}, ID: ${newUser.userId} - status: PENDING`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Registration successful! Your account is pending administrator verification.',
+      user: {
+        id: newUser._id,
+        userId: newUser.userId,
+        username: newUser.username,
+        fullName: newUser.fullName,
+        phoneNumber: newUser.phoneNumber,
+        email: newUser.email,
+        role: newUser.role,
+        designation: newUser.designation,
+        department: newUser.department,
+        accountStatus: newUser.accountStatus,
+        createdAt: newUser.createdAt,
+      },
+    });
+  } catch (error: unknown) {
+    console.error('Error during self-registration:', error);
+    const errorMsg = error instanceof Error ? error.message : 'Registration failed';
+    res.status(500).json({
+      success: false,
+      message: errorMsg,
     });
   }
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { Button, Input, Alert, Badge } from '../../components/common';
 import { AuthLayout } from '../../components/layout/AuthLayout';
@@ -442,6 +442,22 @@ export default function LoginPage() {
                   <Badge size="sm" variant="neutral">Intern</Badge>
                 </button>
               </div>
+            </div>
+
+            {/* Create Account section */}
+            <div className="pt-5 border-t border-[var(--color-border-subtle)] text-center space-y-2">
+              <p className="text-xs text-[var(--color-text-secondary)] font-medium">
+                New to the programme?
+              </p>
+              <Link
+                to="/register"
+                className="inline-block text-sm font-bold text-[var(--color-brand-blue)] hover:underline transition-all"
+              >
+                Create Account
+              </Link>
+              <p className="text-[10px] text-[var(--color-text-secondary)] max-w-xs mx-auto leading-relaxed">
+                Registration is available for Staff and Intern users. New accounts require administrator verification before system access.
+              </p>
             </div>
           </form>
         )}
