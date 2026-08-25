@@ -17,6 +17,7 @@ import { Button, Badge, Alert } from '../../../components/common';
 export interface AddUserDrawerProps {
   isOpen: boolean;
   onClose: () => void;
+  onUserCreated?: () => void;
 }
 
 interface FormState {
@@ -39,34 +40,41 @@ interface FormErrors {
   department?: string;
 }
 
-const INITIAL_FORM_STATE: FormState = {
-  fullName: '',
-  employeeId: '',
-  phoneNumber: '',
-  email: '',
-  category: '',
-  professionalRole: '',
-  department: 'AI & Data Systems',
-};
-
 const PROFESSIONAL_ROLES = [
+  'Senior AI Engineer',
   'AI Engineer',
   'Data Scientist',
   'Data Analyst',
   'Software Engineer',
   'Business Analyst',
-  'Project Manager',
+  'QA',
+  'Frontend Developer',
+  'Backend Developer',
 ];
 
 const DEPARTMENTS = [
-  'AI & Data Systems',
-  'Enterprise Network',
+  'AI & Data Team',
+  'Machine Learning Ops',
+  'Data Engineering',
   'Software Architecture',
-  'Digital Innovation',
   'Programme Operations',
 ];
 
-export const AddUserDrawer: React.FC<AddUserDrawerProps> = ({ isOpen, onClose }) => {
+const INITIAL_FORM_STATE: FormState = {
+  fullName: '',
+  employeeId: '',
+  phoneNumber: '',
+  email: '',
+  category: 'PERMANENT_STAFF',
+  professionalRole: 'Senior AI Engineer',
+  department: 'AI & Data Team',
+};
+
+export const AddUserDrawer: React.FC<AddUserDrawerProps> = ({
+  isOpen,
+  onClose,
+  onUserCreated,
+}) => {
   const [formData, setFormData] = useState<FormState>(INITIAL_FORM_STATE);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -106,9 +114,6 @@ export const AddUserDrawer: React.FC<AddUserDrawerProps> = ({ isOpen, onClose })
     }
   };
 
-  /**
-   * Helper: Format phone number input (digits only, remove leading 0, max 9 digits)
-   */
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawVal = e.target.value.replace(/\D/g, '');
     const normalized = rawVal.startsWith('0') ? rawVal.slice(1) : rawVal;
@@ -120,32 +125,26 @@ export const AddUserDrawer: React.FC<AddUserDrawerProps> = ({ isOpen, onClose })
 
     if (!formData.fullName.trim()) {
       newErrors.fullName = 'Full Name is required.';
-    } else if (formData.fullName.trim().length < 3) {
-      newErrors.fullName = 'Full Name must be at least 3 characters.';
-    }
-
-    if (!formData.employeeId.trim()) {
-      newErrors.employeeId = 'Employee or Intern ID is required.';
-    }
-
-    if (!formData.phoneNumber) {
-      newErrors.phoneNumber = 'Registered Mobile Number is required.';
-    } else if (formData.phoneNumber.length < 9) {
-      newErrors.phoneNumber = 'Please enter a valid 9-digit Sri Lankan mobile number.';
     }
 
     if (!formData.email.trim()) {
       newErrors.email = 'Email Address is required.';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
-      newErrors.email = 'Please enter a valid email address.';
+      newErrors.email = 'Enter a valid email address.';
+    }
+
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = 'Phone Number is required.';
+    } else if (!/^\+?[0-9\s\-()]{7,15}$/.test(formData.phoneNumber.trim())) {
+      newErrors.phoneNumber = 'Enter a valid phone number.';
     }
 
     if (!formData.category) {
       newErrors.category = 'User Category is required.';
     }
 
-    if (!formData.professionalRole) {
-      newErrors.professionalRole = 'Professional Role is required.';
+    if (!formData.professionalRole.trim()) {
+      newErrors.professionalRole = 'Professional / Assigned Role is required.';
     }
 
     if (!formData.department) {
@@ -156,7 +155,7 @@ export const AddUserDrawer: React.FC<AddUserDrawerProps> = ({ isOpen, onClose })
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setStatusNotice(null);
 
@@ -165,17 +164,51 @@ export const AddUserDrawer: React.FC<AddUserDrawerProps> = ({ isOpen, onClose })
 
     setIsSubmitting(true);
 
-    // Frontend validation passed.
-    // Explicitly designate as awaiting backend integration without faking user creation.
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setStatusNotice({
-        type: 'info',
-        title: 'Awaiting backend integration',
-        message:
-          'User creation form is validated and ready for backend integration. Account creation will dispatch to the backend API once connected.',
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = 'http://localhost:5000/api';
+      const response = await fetch(`${API_BASE_URL}/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          fullName: formData.fullName.trim(),
+          phoneNumber: formData.phoneNumber.trim(),
+          email: formData.email.trim(),
+          role: formData.category,
+          designation: formData.professionalRole.trim(),
+          department: formData.department.trim(),
+          accountStatus: 'ACTIVE',
+        }),
       });
-    }, 400);
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to create user');
+      }
+
+      setStatusNotice({
+        type: 'success',
+        title: 'User Provisioned Successfully',
+        message: `Account for ${formData.fullName} has been created and activated.`,
+      });
+
+      setFormData(INITIAL_FORM_STATE);
+      if (onUserCreated) {
+        onUserCreated();
+      }
+    } catch (err: unknown) {
+      console.error(err);
+      setStatusNotice({
+        type: 'error',
+        title: 'Provisioning Failed',
+        message: err instanceof Error ? err.message : 'An error occurred while creating user.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleResetForm = () => {

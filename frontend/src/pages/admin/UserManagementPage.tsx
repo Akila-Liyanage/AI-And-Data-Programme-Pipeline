@@ -232,10 +232,10 @@ export default function UserManagementPage() {
         {/* ── Summary Cards Area ──────────────────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {/* Card 1: Total Users */}
-          <Card padding="md" className="space-y-3">
+          <Card padding="md" className="space-y-3 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md cursor-pointer hover:border-blue-300">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-[var(--color-brand-blue-light)] text-[var(--color-brand-blue)] flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-200 text-[var(--color-brand-blue)] flex items-center justify-center shrink-0 shadow-2xs">
                   <Users className="w-4 h-4" />
                 </div>
                 <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
@@ -246,20 +246,20 @@ export default function UserManagementPage() {
                 All
               </Badge>
             </div>
-            <p className="text-2xl font-bold text-[var(--color-brand-navy)]">
+            <p className="text-2xl font-bold text-slate-900">
               {isLoading ? '—' : totalCount}
             </p>
-            <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5">
+            <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5 pt-1 border-t border-slate-100">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
               Real-time user directory
             </p>
           </Card>
 
           {/* Card 2: Pending Verification */}
-          <Card padding="md" className="space-y-3">
+          <Card padding="md" className="space-y-3 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md cursor-pointer border-amber-200 bg-amber-50/20">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center shrink-0 shadow-2xs">
                   <Clock className="w-4 h-4" />
                 </div>
                 <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
@@ -270,20 +270,20 @@ export default function UserManagementPage() {
                 Review Queue
               </Badge>
             </div>
-            <p className="text-2xl font-bold text-[var(--color-brand-navy)]">
+            <p className="text-2xl font-bold text-slate-900">
               {isLoading ? '—' : pendingCount}
             </p>
-            <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5">
+            <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5 pt-1 border-t border-slate-100">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500" aria-hidden="true" />
               Awaiting review
             </p>
           </Card>
 
           {/* Card 3: Verified Users */}
-          <Card padding="md" className="space-y-3">
+          <Card padding="md" className="space-y-3 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md cursor-pointer hover:border-blue-300">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-emerald-50 text-[var(--color-brand-green)] flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 text-[var(--color-brand-green)] flex items-center justify-center shrink-0 shadow-2xs">
                   <UserCheck className="w-4 h-4" />
                 </div>
                 <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
@@ -294,20 +294,20 @@ export default function UserManagementPage() {
                 Active Access
               </Badge>
             </div>
-            <p className="text-2xl font-bold text-[var(--color-brand-navy)]">
+            <p className="text-2xl font-bold text-slate-900">
               {isLoading ? '—' : verifiedCount}
             </p>
-            <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5">
+            <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5 pt-1 border-t border-slate-100">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
               Verified & active
             </p>
           </Card>
 
           {/* Card 4: Rejected Registrations */}
-          <Card padding="md" className="space-y-3">
+          <Card padding="md" className="space-y-3 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md cursor-pointer hover:border-rose-300">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center shrink-0 shadow-2xs">
                   <Clock className="w-4 h-4 text-rose-500" />
                 </div>
                 <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
@@ -318,10 +318,10 @@ export default function UserManagementPage() {
                 Declined
               </Badge>
             </div>
-            <p className="text-2xl font-bold text-[var(--color-brand-navy)]">
+            <p className="text-2xl font-bold text-slate-900">
               {isLoading ? '—' : rejectedCount}
             </p>
-            <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5">
+            <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5 pt-1 border-t border-slate-100">
               <span className="w-1.5 h-1.5 rounded-full bg-rose-500" aria-hidden="true" />
               Declined registrations
             </p>

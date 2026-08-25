@@ -251,11 +251,33 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       }
     }
 
-    // Check account status
+    // Check account status with clear feedback matching updated BRD
+    if (user.accountStatus === 'PENDING') {
+      res.status(403).json({
+        success: false,
+        accountStatus: 'PENDING',
+        userId: user.userId,
+        message: `Your account registration (ID: ${user.userId}) is pending administrator verification. Please wait for approval before logging in.`,
+      });
+      return;
+    }
+
+    if (user.accountStatus === 'REJECTED') {
+      res.status(403).json({
+        success: false,
+        accountStatus: 'REJECTED',
+        userId: user.userId,
+        message: `Your account registration (ID: ${user.userId}) was not approved. Please contact the administrator for further details.`,
+      });
+      return;
+    }
+
     if (user.accountStatus !== 'ACTIVE') {
       res.status(403).json({
         success: false,
-        message: `Your account status is currently ${user.accountStatus.toLowerCase()}. Please contact an Administrator.`,
+        accountStatus: user.accountStatus,
+        userId: user.userId,
+        message: `Your account is currently inactive. Please contact an Administrator.`,
       });
       return;
     }
@@ -275,6 +297,8 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
         phoneNumber: user.phoneNumber,
         email: user.email,
         role: user.role,
+        employmentType: user.employmentType,
+        internRole: user.internRole,
         designation: user.designation,
         department: user.department,
         accountStatus: user.accountStatus,
@@ -398,10 +422,10 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
 
     // Auto-generate User ID and Username
     const generatedUserId = await generateNextUserId(role as UserRole);
-    
-    let baseUsername = cleanEmail.split('@')[0] || 
+
+    let baseUsername = cleanEmail.split('@')[0] ||
       fullName.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
+
     baseUsername = baseUsername.toLowerCase().trim().replace(/[^a-z0-9_]/g, '');
     if (!baseUsername) {
       baseUsername = 'user';

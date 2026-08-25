@@ -16,6 +16,7 @@ import WorkItemBuilder, { type WorkItem } from './WorkItemBuilder';
 export interface AddProjectDrawerProps {
   isOpen: boolean;
   onClose: () => void;
+  onProjectCreated?: () => void;
 }
 
 interface ProjectFormState {
@@ -49,7 +50,7 @@ interface ProjectFormErrors {
 const INITIAL_PROJECT_FORM: ProjectFormState = {
   name: '',
   projectId: '',
-  category: '',
+  category: 'AI',
   description: '',
   technologyStack: '',
   department: 'AI & Data Systems',
@@ -80,6 +81,7 @@ const PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
 export const AddProjectDrawer: React.FC<AddProjectDrawerProps> = ({
   isOpen,
   onClose,
+  onProjectCreated,
 }) => {
   const [formData, setFormData] = useState<ProjectFormState>(INITIAL_PROJECT_FORM);
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
@@ -182,7 +184,7 @@ export const AddProjectDrawer: React.FC<AddProjectDrawerProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setStatusNotice(null);
 
@@ -191,16 +193,56 @@ export const AddProjectDrawer: React.FC<AddProjectDrawerProps> = ({
 
     setIsSubmitting(true);
 
-    // Explicitly designate as awaiting backend integration without faking data creation
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setStatusNotice({
-        type: 'info',
-        title: 'Awaiting backend integration',
-        message:
-          'Project creation UI is validated and ready for the Project Management API. Project records will be created once the backend service is connected.',
+    try {
+      const token = localStorage.getItem('token');
+      const payload = {
+        ...formData,
+        workItems: workItems.map((item) => ({
+          workItemId: item.id,
+          title: item.task,
+          role: item.requiredRole,
+          percentage: Number(item.percentage) || 0,
+          status: item.status === 'Completed' ? 'DONE' : item.status === 'In Progress' ? 'IN_PROGRESS' : 'TODO',
+        })),
+      };
+
+      const response = await fetch('http://localhost:5000/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
       });
-    }, 400);
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to create project');
+      }
+
+      setStatusNotice({
+        type: 'success',
+        title: 'Project Created Successfully',
+        message: `Project ${data.project?.name} (${data.project?.projectId}) has been registered in the database.`,
+      });
+
+      if (onProjectCreated) {
+        onProjectCreated();
+      }
+
+      setTimeout(() => {
+        handleResetForm();
+      }, 1200);
+    } catch (err: any) {
+      setStatusNotice({
+        type: 'error',
+        title: 'Creation Failed',
+        message: err.message || 'Could not connect to project management service.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleResetForm = () => {

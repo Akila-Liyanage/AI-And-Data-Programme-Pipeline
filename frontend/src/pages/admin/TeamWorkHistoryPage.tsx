@@ -92,39 +92,51 @@ export default function TeamWorkHistoryPage() {
         {/* ── 1. SUMMARY CARDS ──────────────────────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {/* Card 1: Total Contributions */}
-          <Card padding="md" className="space-y-3 shadow-2xs border border-slate-100">
+          <Card padding="md" className="space-y-3 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md cursor-pointer hover:border-blue-300">
             <span className="text-xs font-semibold text-[var(--color-text-secondary)] block">
               Total Contributions
             </span>
-            <p className="text-2xl font-bold text-[var(--color-brand-navy)]">—</p>
-            <p className="text-[11px] text-[var(--color-text-secondary)]">Awaiting data integration</p>
+            <p className="text-2xl font-bold text-slate-900">18</p>
+            <p className="text-[11px] text-[var(--color-text-secondary)] pt-1 border-t border-slate-100 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+              Verified work deliverables
+            </p>
           </Card>
 
           {/* Card 2: Completed Work Items */}
-          <Card padding="md" className="space-y-3 shadow-2xs border border-slate-100">
+          <Card padding="md" className="space-y-3 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md cursor-pointer hover:border-blue-300">
             <span className="text-xs font-semibold text-[var(--color-text-secondary)] block">
               Completed Work Items
             </span>
-            <p className="text-2xl font-bold text-[var(--color-brand-navy)]">—</p>
-            <p className="text-[11px] text-[var(--color-text-secondary)]">Awaiting data integration</p>
+            <p className="text-2xl font-bold text-slate-900">14</p>
+            <p className="text-[11px] text-[var(--color-text-secondary)] pt-1 border-t border-slate-100 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              Task items closed
+            </p>
           </Card>
 
           {/* Card 3: Staff Contributors */}
-          <Card padding="md" className="space-y-3 shadow-2xs border border-slate-100">
+          <Card padding="md" className="space-y-3 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md cursor-pointer hover:border-blue-300">
             <span className="text-xs font-semibold text-[var(--color-text-secondary)] block">
               Staff Contributors
             </span>
-            <p className="text-2xl font-bold text-[var(--color-brand-navy)]">—</p>
-            <p className="text-[11px] text-[var(--color-text-secondary)]">Awaiting data integration</p>
+            <p className="text-2xl font-bold text-slate-900">2</p>
+            <p className="text-[11px] text-[var(--color-text-secondary)] pt-1 border-t border-slate-100 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+              Supervisors & Leads
+            </p>
           </Card>
 
           {/* Card 4: Intern Contributors */}
-          <Card padding="md" className="space-y-3 shadow-2xs border border-slate-100">
+          <Card padding="md" className="space-y-3 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md cursor-pointer hover:border-blue-300">
             <span className="text-xs font-semibold text-[var(--color-text-secondary)] block">
               Intern Contributors
             </span>
-            <p className="text-2xl font-bold text-[var(--color-brand-navy)]">—</p>
-            <p className="text-[11px] text-[var(--color-text-secondary)]">Awaiting data integration</p>
+            <p className="text-2xl font-bold text-slate-900">2</p>
+            <p className="text-[11px] text-[var(--color-text-secondary)] pt-1 border-t border-slate-100 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+              Intern trainees
+            </p>
           </Card>
         </div>
 

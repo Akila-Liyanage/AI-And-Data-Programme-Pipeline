@@ -302,7 +302,8 @@ export const deleteUser = async (req: AuthRequest, res: Response): Promise<void>
  */
 export const toggleUserStatus = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const rawId = req.params.id;
+    const id = Array.isArray(rawId) ? rawId[0] : String(rawId);
 
     if (req.user && req.user._id.toString() === id) {
       res.status(400).json({
@@ -312,7 +313,10 @@ export const toggleUserStatus = async (req: AuthRequest, res: Response): Promise
       return;
     }
 
-    const user = await User.findById(id);
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+    const user = await User.findOne({
+      $or: [{ ...(isObjectId ? { _id: id } : { _id: null }) }, { userId: id }],
+    });
 
     if (!user) {
       res.status(404).json({
