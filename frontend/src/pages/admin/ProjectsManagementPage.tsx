@@ -89,25 +89,33 @@ export default function ProjectsManagementPage() {
 
   // Filter projects in memory
   const filteredProjects = projects.filter((p) => {
+    const name = p?.name || '';
+    const projectId = p?.projectId || '';
+    const techStack = p?.technologyStack || '';
+    const projectLead = p?.projectLead || '';
+    const status = p?.status || '';
+    const category = p?.category || '';
+    const department = p?.department || '';
+
     const matchSearch =
       !searchQuery.trim() ||
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.projectId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.technologyStack && p.technologyStack.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (p.projectLead && p.projectLead.toLowerCase().includes(searchQuery.toLowerCase()));
+      name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      projectId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      techStack.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      projectLead.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchStatus = statusFilter === 'ALL' || p.status.toLowerCase() === statusFilter.toLowerCase();
-    const matchCategory = categoryFilter === 'ALL' || p.category.toLowerCase() === categoryFilter.toLowerCase();
-    const matchDept = departmentFilter === 'ALL' || p.department.toLowerCase() === departmentFilter.toLowerCase();
+    const matchStatus = statusFilter === 'ALL' || status.toLowerCase() === statusFilter.toLowerCase();
+    const matchCategory = categoryFilter === 'ALL' || category.toLowerCase() === categoryFilter.toLowerCase();
+    const matchDept = departmentFilter === 'ALL' || department.toLowerCase() === departmentFilter.toLowerCase();
 
     return matchSearch && matchStatus && matchCategory && matchDept;
   });
 
   // Calculate live statistics
   const totalCount = projects.length;
-  const activeCount = projects.filter((p) => p.status.toLowerCase() === 'active').length;
-  const completedCount = projects.filter((p) => p.status.toLowerCase() === 'completed').length;
-  const plannedCount = projects.filter((p) => p.status.toLowerCase() === 'planned').length;
+  const activeCount = projects.filter((p) => (p?.status || '').toLowerCase() === 'active').length;
+  const completedCount = projects.filter((p) => (p?.status || '').toLowerCase() === 'completed').length;
+  const plannedCount = projects.filter((p) => (p?.status || '').toLowerCase() === 'planned').length;
 
   const handleOpenDetails = (p: any) => {
     const mapped: ManagedProject = {

@@ -97,28 +97,36 @@ export default function ProjectAssignmentsPage() {
 
   // Filter assignments in memory
   const filteredAssignments = assignments.filter((a) => {
+    const projectName = a?.projectName || '';
+    const projectId = a?.projectId || '';
+    const userName = a?.userName || '';
+    const userId = a?.userId || '';
+    const assignmentRole = a?.assignmentRole || '';
+    const userCategory = a?.userCategory || '';
+    const status = a?.status || '';
+
     const matchSearch =
       !searchQuery.trim() ||
-      a.projectName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.projectId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.userId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.assignmentRole.toLowerCase().includes(searchQuery.toLowerCase());
+      projectName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      projectId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      userId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      assignmentRole.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchCategory =
       categoryFilter === 'ALL' ||
-      a.userCategory.toLowerCase().includes(categoryFilter.toLowerCase());
+      userCategory.toLowerCase().includes(categoryFilter.toLowerCase());
 
     const matchStatus =
-      statusFilter === 'ALL' || a.status.toLowerCase() === statusFilter.toLowerCase();
+      statusFilter === 'ALL' || status.toLowerCase() === statusFilter.toLowerCase();
 
     return matchSearch && matchCategory && matchStatus;
   });
 
   // Calculate live statistics
   const totalAssignments = assignments.length;
-  const staffAssignments = assignments.filter((a) => a.userCategory.includes('Staff')).length;
-  const internAssignments = assignments.filter((a) => a.userCategory.includes('Intern')).length;
+  const staffAssignments = assignments.filter((a) => (a?.userCategory || '').includes('Staff')).length;
+  const internAssignments = assignments.filter((a) => (a?.userCategory || '').includes('Intern')).length;
   const unassignedProjectsCount = projects.filter((p) => (p.assignedMembersCount || 0) === 0).length;
 
   const handleOpenDetails = (a: any) => {
