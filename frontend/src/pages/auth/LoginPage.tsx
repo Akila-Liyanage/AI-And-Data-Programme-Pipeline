@@ -1,128 +1,136 @@
-import React, { useState, useEffect, useRef } from 'react';
+/**
+ * LoginPage.tsx
+ *
+ * MODERN LIGHT BLUE CREDENTIALS LOGIN PORTAL (User ID + Password)
+ * Features:
+ * - Direct User ID / Email + Password login authentication
+ * - High-security RBAC session handling with JWT storage
+ * - Instant 1-Click Quick Demo Account switcher across all roles & states
+ * - Contextual alerts for Pending Verification and Rejected registrations
+ * - Direct navigation link to Staff/Intern Self-Registration
+ */
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { Button, Input, Alert, Badge } from '../../components/common';
+import { Button, Badge } from '../../components/common';
 import { AuthLayout } from '../../components/layout/AuthLayout';
 import {
   ArrowRight,
-  ArrowLeft,
-  Smartphone,
-  KeyRound,
+  ShieldCheck,
   FolderKanban,
   Users,
-  ShieldCheck,
-  CheckCircle2,
-  Activity,
-  RefreshCw,
+  Eye,
+  EyeOff,
   Sparkles,
+  Lock,
+  User,
+  GraduationCap,
+  Building,
+  CheckCircle2,
+  Clock,
+  Ban,
+  Activity,
 } from 'lucide-react';
 
 /* ── Left Brand Panel ──────────────────────────────────── */
 function LoginBrandPanel() {
   return (
-    <div className="bg-[var(--color-brand-navy)] px-8 py-10 sm:px-10 sm:py-12 text-white flex flex-col justify-between h-full relative overflow-hidden">
-      {/* Ambient glows */}
-      <div className="absolute -top-12 -right-12 w-52 h-52 bg-[var(--color-brand-blue)]/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-10 -left-10 w-44 h-44 bg-[var(--color-brand-green)]/15 rounded-full blur-3xl pointer-events-none" />
+    <div className="bg-gradient-to-br from-[#0B1F3A] via-[#132D52] to-[#1e3a8a] p-8 sm:p-10 lg:p-12 text-white flex flex-col justify-between h-full relative overflow-hidden">
+      {/* Ambient soft glow orbs */}
+      <div className="absolute -top-12 -right-12 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-10 -left-10 w-56 h-56 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="relative space-y-7">
+      <div className="relative space-y-8 z-10">
         {/* Product emblem */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center font-bold text-sm shrink-0">
-            <span className="text-[var(--color-brand-blue-light)]">AI</span>
-            <span className="text-[var(--color-brand-green)] font-extrabold">+</span>
+          <div className="w-11 h-11 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center font-bold text-base shrink-0 shadow-sm backdrop-blur-sm">
+            <span className="text-blue-300">AI</span>
+            <span className="text-emerald-400 font-extrabold">+</span>
           </div>
           <div>
-            <p className="font-bold text-sm tracking-tight text-white leading-tight">
+            <p className="font-extrabold text-base tracking-tight text-white leading-tight">
               AI & Data Programme Pipeline
             </p>
-            <p className="text-[11px] text-slate-300 leading-tight">
-              Staff & Intern Progress Dashboard
+            <p className="text-xs text-blue-200/80 leading-tight">
+              Enterprise Project Management System
             </p>
           </div>
         </div>
 
         <div className="space-y-3">
-          <Badge variant="blue" dot size="sm" className="bg-white/10 text-blue-200 border-white/15">
-            Instant Phone OTP Access
+          <Badge variant="blue" dot size="sm" className="bg-white/10 text-blue-200 border-white/20 px-3 py-1">
+            Role-Based Access Control (RBAC)
           </Badge>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight leading-snug">
-            Passwordless, high-security phone authentication for programme leaders.
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-snug text-white">
+            Centralized intelligence & project delivery workspace.
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-            Enter your authorized mobile phone number to receive a secure one-time verification code.
+            Sign in using your authorized User ID and password to access your role-specific console.
           </p>
         </div>
 
-        {/* Supporting points */}
+        {/* Feature Highlights */}
         <div className="space-y-4 pt-1">
           {[
             {
-              icon: <Smartphone className="w-4 h-4" />,
-              color: 'text-[var(--color-brand-blue-light)]',
-              label: 'Passwordless One-Time Password (OTP)',
-              detail: 'No password to remember — instant SMS/OTP login directly linked to your phone.',
+              icon: <ShieldCheck className="w-4 h-4" />,
+              color: 'text-blue-300',
+              label: 'Verified User ID Authentication',
+              detail: 'Tailored access for Administrators (ADM), Permanent Staff (STF), and Interns (INT).',
             },
             {
               icon: <FolderKanban className="w-4 h-4" />,
-              color: 'text-[var(--color-brand-green)]',
-              label: 'Centralized project visibility',
-              detail: 'Track all programme activities and milestones in one secure place.',
+              color: 'text-emerald-400',
+              label: 'Automated Project Calculations',
+              detail: 'Work item status toggles dynamically update project completion percentages.',
             },
             {
               icon: <Users className="w-4 h-4" />,
-              color: 'text-[var(--color-brand-blue-light)]',
-              label: 'Role-based authorization',
-              detail: 'Tailored workspace for Administrators, Permanent Staff, and Interns.',
+              color: 'text-sky-300',
+              label: 'Administrative Governance',
+              detail: 'Pending registrations are securely verified and activated by Programme Leadership.',
             },
           ].map(({ icon, color, label, detail }) => (
-            <div key={label} className="flex items-start gap-3">
-              <div className={`w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center shrink-0 mt-0.5 ${color}`} aria-hidden="true">
+            <div key={label} className="flex items-start gap-3.5 group">
+              <div className={`w-8 h-8 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center shrink-0 mt-0.5 ${color} transition-transform duration-200 group-hover:scale-110`} aria-hidden="true">
                 {icon}
               </div>
               <div>
-                <p className="text-sm font-semibold text-white">{label}</p>
-                <p className="text-xs text-slate-400 leading-snug mt-0.5">{detail}</p>
+                <p className="text-xs sm:text-sm font-bold text-white">{label}</p>
+                <p className="text-[11px] text-slate-300 leading-snug mt-0.5">{detail}</p>
               </div>
             </div>
           ))}
         </div>
 
         {/* Mini stats */}
-        <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3">
-          <div className="flex items-center justify-between text-[11px] text-slate-300">
-            <span className="flex items-center gap-1.5">
-              <Activity className="w-3.5 h-3.5 text-[var(--color-brand-green)]" />
-              Programme Activity
+        <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2.5 backdrop-blur-xs">
+          <div className="flex items-center justify-between text-xs text-slate-300">
+            <span className="flex items-center gap-1.5 font-semibold">
+              <Activity className="w-3.5 h-3.5 text-emerald-400" />
+              Security Architecture
             </span>
-            <span className="text-[var(--color-brand-green)] font-semibold">Live & Secured</span>
+            <span className="text-emerald-400 font-bold text-[11px]">Active & Verified</span>
           </div>
-          <div className="space-y-2">
-            {[
-              { label: 'Active Projects', value: '82%', color: 'bg-[var(--color-brand-green)]', width: 'w-[82%]' },
-              { label: 'Assignments Complete', value: '64%', color: 'bg-[var(--color-brand-blue)]', width: 'w-[64%]' },
-              { label: 'Intern Progress', value: '71%', color: 'bg-blue-300', width: 'w-[71%]' },
-            ].map(({ label, value, color, width }) => (
-              <div key={label}>
-                <div className="flex justify-between text-[10px] text-slate-400 mb-1">
-                  <span>{label}</span>
-                  <span className="text-slate-200 font-medium">{value}</span>
-                </div>
-                <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full ${color} ${width}`} />
-                </div>
-              </div>
-            ))}
+          <div className="space-y-1.5 text-[11px] text-slate-300">
+            <div className="flex justify-between">
+              <span>Authentication Gate:</span>
+              <span className="font-mono text-blue-200 font-semibold">User ID + Password</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Token Standard:</span>
+              <span className="text-slate-300 font-mono">JWT + Bcrypt Hashing</span>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Bottom row */}
-      <div className="relative mt-8 pt-5 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
-        <span>Internal Enterprise System</span>
-        <span className="flex items-center gap-1 text-[var(--color-brand-green)] font-semibold">
-          <CheckCircle2 className="w-3.5 h-3.5" />
-          OTP Secured
+      <div className="relative mt-8 pt-5 border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
+        <span>SLT-MOBITEL AI & Data Programme</span>
+        <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+          <CheckCircle2 className="w-4 h-4" />
+          SSL / RBAC Secured
         </span>
       </div>
     </div>
@@ -131,27 +139,27 @@ function LoginBrandPanel() {
 
 /* ── Main Login Page Component ─────────────────────────── */
 export default function LoginPage() {
-  const { sendOtp, verifyOtp, isAuthenticated, user, error: authError, clearError } = useAuth();
+  const { login, isAuthenticated, user, error: authError, clearError } = useAuth();
   const navigate = useNavigate();
 
-  // Authentication Step: 1 = Enter Phone, 2 = Enter OTP
-  const [step, setStep] = useState<1 | 2>(1);
-  const [phoneNumber, setPhoneNumber] = useState('0774943291'); // Default to Admin phone
-  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
-  const [receivedOtp, setReceivedOtp] = useState<string | null>(null);
+  // Form State
+  const [identifier, setIdentifier] = useState('ADM-001');
+  const [password, setPassword] = useState('Admin@123');
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [phoneError, setPhoneError] = useState<string | null>(null);
-  const [statusNotice, setStatusNotice] = useState<string | null>(null);
-  const [resendTimer, setResendTimer] = useState(0);
-
-  const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [statusNotice, setStatusNotice] = useState<{
+    type: 'pending' | 'rejected' | 'info';
+    userId?: string;
+    message: string;
+  } | null>(null);
 
   // If already authenticated, redirect to the appropriate dashboard
   useEffect(() => {
     if (isAuthenticated && user) {
       if (user.role === 'ADMIN') {
         navigate('/admin/dashboard', { replace: true });
-      } else if (user.role === 'PERMANENT_STAFF') {
+      } else if (user.role === 'PERMANENT_STAFF' || user.role === 'STAFF') {
         navigate('/staff/dashboard', { replace: true });
       } else if (user.role === 'INTERN') {
         navigate('/intern/dashboard', { replace: true });
@@ -159,421 +167,309 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, user, navigate]);
 
-  // Resend OTP countdown timer
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | null = null;
-    if (resendTimer > 0) {
-      interval = setInterval(() => {
-        setResendTimer((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [resendTimer]);
-
   /**
-   * Handle Step 1: Send OTP
+   * Handle Credentials Login Submission
    */
-  const handleSendOtp = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    setPhoneError(null);
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
     setStatusNotice(null);
     clearError();
 
-    const cleanPhone = phoneNumber.trim();
-    if (!cleanPhone) {
-      setPhoneError('Please enter your mobile phone number.');
+    const cleanIdentifier = identifier.trim();
+    const cleanPassword = password.trim();
+
+    if (!cleanIdentifier) {
+      setErrorMessage('Please enter your User ID, Email, or Phone Number.');
       return;
     }
 
-    if (cleanPhone.length < 9) {
-      setPhoneError('Please enter a valid phone number (e.g. 0774943291).');
+    if (!cleanPassword) {
+      setErrorMessage('Please enter your account password.');
       return;
     }
 
     setIsSubmitting(true);
+
     try {
-      const response = await sendOtp(cleanPhone);
-      setReceivedOtp(response.debugOtp || null);
-      setStep(2);
-      setResendTimer(30); // 30s cooldown
-      // Reset OTP inputs
-      setOtpDigits(['', '', '', '', '', '']);
-      setTimeout(() => {
-        otpInputsRef.current[0]?.focus();
-      }, 100);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to send OTP.';
-      setPhoneError(message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+      const loggedUser = await login({
+        identifier: cleanIdentifier,
+        password: cleanPassword,
+      });
 
-  /**
-   * Handle OTP input changes with auto-focus across 6 boxes
-   */
-  const handleOtpDigitChange = (index: number, value: string) => {
-    setStatusNotice(null);
-    // Allow single digit
-    const digit = value.replace(/\D/g, '').slice(-1);
-    const newDigits = [...otpDigits];
-    newDigits[index] = digit;
-    setOtpDigits(newDigits);
-
-    // Auto move to next input
-    if (digit && index < 5) {
-      otpInputsRef.current[index + 1]?.focus();
-    }
-  };
-
-  /**
-   * Handle OTP backspace navigation
-   */
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
-      otpInputsRef.current[index - 1]?.focus();
-    }
-  };
-
-  /**
-   * Handle Paste of full 6-digit OTP
-   */
-  const handleOtpPaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    if (pastedData.length > 0) {
-      const newDigits = [...otpDigits];
-      for (let i = 0; i < 6; i++) {
-        newDigits[i] = pastedData[i] || '';
-      }
-      setOtpDigits(newDigits);
-      const nextFocus = Math.min(pastedData.length, 5);
-      otpInputsRef.current[nextFocus]?.focus();
-    }
-  };
-
-  /**
-   * Auto-fill OTP when user clicks the demo helper banner
-   */
-  const handleAutofillOtp = (otp: string) => {
-    const digits = otp.split('').slice(0, 6);
-    setOtpDigits(digits);
-    setStatusNotice(null);
-    otpInputsRef.current[5]?.focus();
-  };
-
-  /**
-   * Handle Step 2: Verify OTP
-   */
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setStatusNotice(null);
-    clearError();
-
-    const fullOtp = otpDigits.join('');
-    if (fullOtp.length !== 6) {
-      setStatusNotice('Please enter all 6 digits of the verification code.');
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const loggedUser = await verifyOtp(phoneNumber.trim(), fullOtp);
-      // Role-Based Navigation
+      // Successful redirect based on user role
       if (loggedUser.role === 'ADMIN') {
         navigate('/admin/dashboard');
-      } else if (loggedUser.role === 'PERMANENT_STAFF') {
+      } else if (loggedUser.role === 'PERMANENT_STAFF' || loggedUser.role === 'STAFF') {
         navigate('/staff/dashboard');
       } else if (loggedUser.role === 'INTERN') {
         navigate('/intern/dashboard');
-      } else {
-        navigate('/admin/dashboard');
       }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Invalid or expired OTP code.';
-      setStatusNotice(message);
+    } catch (err: any) {
+      const msg = err.message || 'Login failed. Please check your credentials.';
+
+      if (msg.toLowerCase().includes('pending')) {
+        setStatusNotice({
+          type: 'pending',
+          userId: cleanIdentifier,
+          message: msg,
+        });
+      } else if (msg.toLowerCase().includes('reject') || msg.toLowerCase().includes('not approved')) {
+        setStatusNotice({
+          type: 'rejected',
+          userId: cleanIdentifier,
+          message: msg,
+        });
+      } else {
+        setErrorMessage(msg);
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  /**
+   * 1-Click Quick Demo Account Switcher
+   */
+  const handleQuickFill = (id: string, pass: string) => {
+    setIdentifier(id);
+    setPassword(pass);
+    setErrorMessage(null);
+    setStatusNotice(null);
+    clearError();
+  };
+
   return (
-    <AuthLayout leftPanel={<LoginBrandPanel />} backTo={{ to: '/', label: 'Back to Home' }}>
-      <div className="max-w-md w-full mx-auto space-y-6">
-        {/* Header Badge & Title */}
-        <div className="space-y-1.5">
-          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-brand-blue)] mb-0.5">
-            {step === 1 ? (
-              <>
-                <Smartphone className="w-3.5 h-3.5" aria-hidden="true" />
-                <span>Phone OTP Verification</span>
-              </>
-            ) : (
-              <>
-                <KeyRound className="w-3.5 h-3.5" aria-hidden="true" />
-                <span>Enter Security Code</span>
-              </>
-            )}
+    <AuthLayout leftPanel={<LoginBrandPanel />}>
+      <div className="space-y-6 max-w-xl mx-auto w-full">
+        {/* Header */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-[var(--color-brand-blue)] border border-blue-200 shadow-2xs">
+              <Sparkles className="w-3.5 h-3.5" />
+              Credentials Authentication
+            </span>
+            <span className="text-xs text-slate-500 font-medium">• Enterprise V2</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--color-brand-navy)]">
-            {step === 1 ? 'Sign In with Phone' : 'Verify Code'}
+
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+            Sign In to Dashboard
           </h1>
-          <p className="text-sm text-[var(--color-text-secondary)]">
-            {step === 1
-              ? 'Enter your registered phone number to receive a secure OTP.'
-              : `We sent a 6-digit verification code to ${phoneNumber}.`}
+          <p className="text-xs sm:text-sm text-slate-600">
+            Enter your User ID and password to access your role workspace.
           </p>
         </div>
 
-        {/* Status / Error alert */}
-        {(statusNotice || authError || phoneError) && (
-          <Alert
-            variant="error"
-            title="Authentication Error"
-            onClose={() => {
-              setStatusNotice(null);
-              setPhoneError(null);
-              clearError();
-            }}
-          >
-            {statusNotice || authError || phoneError}
-          </Alert>
+        {/* Pending Verification Notice */}
+        {statusNotice?.type === 'pending' && (
+          <div className="p-4 rounded-2xl bg-amber-50/90 border border-amber-300 space-y-2 shadow-xs animate-in fade-in duration-300">
+            <div className="flex items-center gap-2 text-amber-900 font-bold text-xs">
+              <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>Registration Pending Administrator Approval</span>
+            </div>
+            <p className="text-xs text-amber-800 leading-relaxed">
+              {statusNotice.message}
+            </p>
+            <p className="text-[11px] text-amber-700 pt-1.5 border-t border-amber-200/80">
+              💡 Tip: You can switch to <strong className="font-bold">ADM-001</strong> to review and activate this account.
+            </p>
+          </div>
         )}
 
-        {/* STEP 1: PHONE NUMBER INPUT FORM */}
-        {step === 1 && (
-          <form onSubmit={handleSendOtp} noValidate className="space-y-5" aria-label="Phone number login form">
-            <Input
-              id="login-phone"
-              label="Mobile Phone Number"
-              placeholder="e.g. 0774943291"
-              type="tel"
-              required
-              autoFocus
-              autoComplete="tel"
-              value={phoneNumber}
-              onChange={(e) => {
-                setPhoneNumber(e.target.value);
-                setPhoneError(null);
-              }}
-              error={phoneError || undefined}
-              leftIcon={<Smartphone className="w-4 h-4 text-slate-500" aria-hidden="true" />}
-              disabled={isSubmitting}
-            />
+        {/* Rejected Registration Notice */}
+        {statusNotice?.type === 'rejected' && (
+          <div className="p-4 rounded-2xl bg-rose-50/90 border border-rose-300 space-y-2 shadow-xs animate-in fade-in duration-300">
+            <div className="flex items-center gap-2 text-rose-900 font-bold text-xs">
+              <Ban className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>Registration Declined</span>
+            </div>
+            <p className="text-xs text-rose-800 leading-relaxed">
+              {statusNotice.message}
+            </p>
+          </div>
+        )}
 
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              fullWidth
-              isLoading={isSubmitting}
-              rightIcon={!isSubmitting ? <ArrowRight className="w-4 h-4" /> : undefined}
+        {/* Standard Error Alert */}
+        {(errorMessage || authError) && !statusNotice && (
+          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-semibold flex items-start gap-2.5 shadow-2xs animate-in fade-in duration-200">
+            <span className="w-2 h-2 rounded-full bg-rose-500 mt-1 shrink-0" />
+            <span>{errorMessage || authError}</span>
+          </div>
+        )}
+
+        {/* Login Form */}
+        <form onSubmit={handleLogin} className="space-y-4">
+          {/* User ID / Identifier Input */}
+          <div className="space-y-1.5">
+            <label
+              htmlFor="login-identifier"
+              className="text-xs font-bold text-slate-800 flex items-center justify-between"
             >
-              {isSubmitting ? 'Sending OTP Code…' : 'Send Verification OTP'}
-            </Button>
-
-            {/* Quick Demo Selector Chips */}
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-              <div className="flex items-center justify-between text-xs font-semibold text-[var(--color-brand-navy)]">
-                <span className="flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[var(--color-brand-blue)]" />
-                  Select Quick Demo Account:
-                </span>
-                <Badge size="sm" variant="blue">Instant Test</Badge>
+              <span>User ID / Email / Phone</span>
+              <span className="text-[11px] text-slate-400 font-normal">e.g. ADM-001, STF-101</span>
+            </label>
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                <User className="w-4 h-4" />
               </div>
-
-              <div className="grid grid-cols-1 gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPhoneNumber('0774943291');
-                    setPhoneError(null);
-                  }}
-                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs border text-left transition-all ${phoneNumber === '0774943291'
-                      ? 'bg-blue-50 border-[var(--color-brand-blue)] text-[var(--color-brand-blue)] font-semibold shadow-xs'
-                      : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
-                    }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-                    <span><strong>0774943291</strong> — Admin (Akila Liyanage)</span>
-                  </div>
-                  <Badge size="sm" variant="blue">Admin</Badge>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPhoneNumber('0771234567');
-                    setPhoneError(null);
-                  }}
-                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs border text-left transition-all ${phoneNumber === '0771234567'
-                      ? 'bg-emerald-50 border-emerald-500 text-emerald-700 font-semibold shadow-xs'
-                      : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
-                    }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
-                    <span><strong>0771234567</strong> — Staff (Dr. Kasun)</span>
-                  </div>
-                  <Badge size="sm" variant="success">Staff</Badge>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPhoneNumber('0777654321');
-                    setPhoneError(null);
-                  }}
-                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs border text-left transition-all ${phoneNumber === '0777654321'
-                      ? 'bg-purple-50 border-purple-500 text-purple-700 font-semibold shadow-xs'
-                      : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
-                    }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-purple-600"></span>
-                    <span><strong>0777654321</strong> — Intern (Ayuni Sliit)</span>
-                  </div>
-                  <Badge size="sm" variant="neutral">Intern</Badge>
-                </button>
-              </div>
+              <input
+                id="login-identifier"
+                type="text"
+                required
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="Enter User ID (e.g. ADM-001, STF-101, INT-201)"
+                className="w-full h-12 pl-11 pr-4 text-xs sm:text-sm font-mono rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 placeholder:text-slate-400 placeholder:font-sans focus:bg-white focus:outline-hidden focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-2xs"
+              />
             </div>
+          </div>
 
-            {/* Create Account section */}
-            <div className="pt-5 border-t border-[var(--color-border-subtle)] text-center space-y-2">
-              <p className="text-xs text-[var(--color-text-secondary)] font-medium">
-                New to the programme?
-              </p>
-              <Link
-                to="/register"
-                className="inline-block text-sm font-bold text-[var(--color-brand-blue)] hover:underline transition-all"
-              >
-                Create Account
-              </Link>
-              <p className="text-[10px] text-[var(--color-text-secondary)] max-w-xs mx-auto leading-relaxed">
-                Registration is available for Staff and Intern users. New accounts require administrator verification before system access.
-              </p>
-            </div>
-          </form>
-        )}
-
-        {/* STEP 2: 6-DIGIT OTP VERIFICATION FORM */}
-        {step === 2 && (
-          <form onSubmit={handleVerifyOtp} noValidate className="space-y-5" aria-label="OTP verification form">
-            {/* Phone Info & Change button */}
-            <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50/60 border border-blue-100 text-xs">
-              <div className="flex items-center gap-2 text-slate-700">
-                <Smartphone className="w-4 h-4 text-[var(--color-brand-blue)]" />
-                <span>Code sent to: <strong>{phoneNumber}</strong></span>
+          {/* Password Input */}
+          <div className="space-y-1.5">
+            <label
+              htmlFor="login-password"
+              className="text-xs font-bold text-slate-800"
+            >
+              Password
+            </label>
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                <Lock className="w-4 h-4" />
               </div>
+              <input
+                id="login-password"
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your account password"
+                className="w-full h-12 pl-11 pr-11 text-xs sm:text-sm rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-2xs"
+              />
               <button
                 type="button"
-                onClick={() => {
-                  setStep(1);
-                  setReceivedOtp(null);
-                }}
-                className="text-[var(--color-brand-blue)] font-semibold hover:underline flex items-center gap-1"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 focus:outline-hidden cursor-pointer transition-colors p-1"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
-                <ArrowLeft className="w-3 h-3" /> Change
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+          </div>
 
-            {/* Received OTP Simulation Helper Box */}
-            {receivedOtp && (
-              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 space-y-1.5 shadow-xs">
-                <div className="flex items-center justify-between text-xs font-semibold">
-                  <span className="flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                    Simulated SMS Delivery:
-                  </span>
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-200 text-amber-800">
-                    Live Demo
-                  </span>
-                </div>
-                <p className="text-xs text-amber-800">
-                  Your verification code is: <strong className="font-mono text-sm tracking-wider bg-white px-2 py-0.5 rounded border border-amber-300 text-amber-950">{receivedOtp}</strong>
-                </p>
-                <button
-                  type="button"
-                  onClick={() => handleAutofillOtp(receivedOtp)}
-                  className="text-xs text-amber-900 font-bold underline hover:text-amber-950 pt-0.5 inline-block cursor-pointer"
-                >
-                  Click here to auto-fill code →
-                </button>
+          {/* Submit Button */}
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            fullWidth
+            isLoading={isSubmitting}
+            disabled={isSubmitting}
+            rightIcon={<ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />}
+            className="h-12 shadow-md hover:shadow-lg transition-all duration-200 font-bold text-sm transform hover:-translate-y-0.5"
+          >
+            Sign In to Dashboard
+          </Button>
+        </form>
+
+        {/* ── 1-CLICK QUICK DEMO ACCOUNTS ────────────────────────── */}
+        <div className="space-y-3 pt-2">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              Quick 1-Click Demo Accounts
+            </span>
+            <div className="h-px bg-slate-200 flex-1" />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            {/* Admin Demo */}
+            <button
+              type="button"
+              onClick={() => handleQuickFill('ADM-001', 'Admin@123')}
+              className={`p-3 rounded-2xl border text-left transition-all duration-200 cursor-pointer transform hover:-translate-y-0.5 ${
+                identifier === 'ADM-001'
+                  ? 'border-blue-500 bg-blue-50/80 ring-2 ring-blue-500/20 shadow-xs'
+                  : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50/80 shadow-2xs'
+              }`}
+            >
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                <span className="font-bold text-xs text-slate-900">Admin</span>
               </div>
-            )}
+              <p className="font-mono text-[11px] text-blue-700 font-bold mt-1">ADM-001</p>
+              <span className="text-[10px] text-emerald-600 font-bold block mt-0.5">Verified</span>
+            </button>
 
-            {/* 6-Digit Boxes */}
-            <div className="space-y-2">
-              <label className="block text-xs font-semibold text-[var(--color-brand-navy)] text-center">
-                Enter 6-Digit Verification Code
-              </label>
-              <div className="flex justify-between gap-2 sm:gap-3" onPaste={handleOtpPaste}>
-                {otpDigits.map((digit, idx) => (
-                  <input
-                    key={idx}
-                    ref={(el) => { otpInputsRef.current[idx] = el; }}
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleOtpDigitChange(idx, e.target.value)}
-                    onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                    className="w-11 h-12 sm:w-12 sm:h-14 text-center text-xl font-bold font-mono rounded-xl border border-slate-300 focus:border-[var(--color-brand-blue)] focus:ring-2 focus:ring-[var(--color-brand-blue)]/20 outline-none transition-all bg-white shadow-xs"
-                    disabled={isSubmitting}
-                  />
-                ))}
+            {/* Staff Demo */}
+            <button
+              type="button"
+              onClick={() => handleQuickFill('STF-101', 'Staff@123')}
+              className={`p-3 rounded-2xl border text-left transition-all duration-200 cursor-pointer transform hover:-translate-y-0.5 ${
+                identifier === 'STF-101'
+                  ? 'border-emerald-500 bg-emerald-50/80 ring-2 ring-emerald-500/20 shadow-xs'
+                  : 'border-slate-200 hover:border-emerald-300 hover:bg-slate-50/80 shadow-2xs'
+              }`}
+            >
+              <div className="flex items-center gap-1.5">
+                <Building className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="font-bold text-xs text-slate-900">Staff</span>
               </div>
-            </div>
+              <p className="font-mono text-[11px] text-emerald-700 font-bold mt-1">STF-101</p>
+              <span className="text-[10px] text-emerald-600 font-bold block mt-0.5">Permanent</span>
+            </button>
 
-            {/* Action buttons */}
-            <div className="space-y-3 pt-2">
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                fullWidth
-                isLoading={isSubmitting}
-                rightIcon={!isSubmitting ? <ArrowRight className="w-4 h-4" /> : undefined}
+            {/* Intern Demo */}
+            <button
+              type="button"
+              onClick={() => handleQuickFill('INT-201', 'Intern@123')}
+              className={`p-3 rounded-2xl border text-left transition-all duration-200 cursor-pointer transform hover:-translate-y-0.5 ${
+                identifier === 'INT-201'
+                  ? 'border-purple-500 bg-purple-50/80 ring-2 ring-purple-500/20 shadow-xs'
+                  : 'border-slate-200 hover:border-purple-300 hover:bg-slate-50/80 shadow-2xs'
+              }`}
+            >
+              <div className="flex items-center gap-1.5">
+                <GraduationCap className="w-3.5 h-3.5 text-purple-600" />
+                <span className="font-bold text-xs text-slate-900">Intern</span>
+              </div>
+              <p className="font-mono text-[11px] text-purple-700 font-bold mt-1">INT-201</p>
+              <span className="text-[10px] text-purple-600 font-bold block mt-0.5">AI/ML Track</span>
+            </button>
+          </div>
+
+          {/* Pending Demo Accounts */}
+          <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs shadow-2xs">
+            <span className="text-slate-600 font-medium">Test Approval Flow:</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleQuickFill('STF-102', 'Staff@123')}
+                className="font-mono text-amber-700 font-bold hover:underline cursor-pointer bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200"
               >
-                {isSubmitting ? 'Verifying Code…' : 'Verify & Sign In'}
-              </Button>
-
-              {/* Resend button */}
-              <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="hover:text-slate-800 transition-colors flex items-center gap-1"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" /> Back to Phone Input
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleSendOtp()}
-                  disabled={resendTimer > 0 || isSubmitting}
-                  className={`font-semibold flex items-center gap-1 ${resendTimer > 0
-                      ? 'text-slate-400 cursor-not-allowed'
-                      : 'text-[var(--color-brand-blue)] hover:underline cursor-pointer'
-                    }`}
-                >
-                  <RefreshCw className={`w-3 h-3 ${resendTimer > 0 ? '' : 'hover:rotate-180 transition-transform'}`} />
-                  {resendTimer > 0 ? `Resend code in ${resendTimer}s` : 'Resend Code'}
-                </button>
-              </div>
+                STF-102 (Pending)
+              </button>
+              <span className="text-slate-300">•</span>
+              <button
+                type="button"
+                onClick={() => handleQuickFill('INT-202', 'Intern@123')}
+                className="font-mono text-amber-700 font-bold hover:underline cursor-pointer bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200"
+              >
+                INT-202 (Pending)
+              </button>
             </div>
-          </form>
-        )}
+          </div>
+        </div>
 
-        {/* Security footnote */}
-        <p className="text-xs text-[var(--color-text-secondary)] flex items-center justify-center gap-1.5 pt-1">
-          <ShieldCheck className="w-3.5 h-3.5 text-[var(--color-brand-blue)] shrink-0" aria-hidden="true" />
-          <span>Strictly authorized internal system access · AI & Data Pipeline</span>
-        </p>
+        {/* Footer: Link to Self-Registration */}
+        <div className="pt-4 border-t border-slate-100 text-center text-xs text-slate-600">
+          <span>Don't have an authorized account yet? </span>
+          <Link
+            to="/register"
+            className="font-bold text-[var(--color-brand-blue)] hover:text-blue-700 hover:underline inline-flex items-center gap-1 transition-colors"
+          >
+            <span>Register as Staff or Intern</span>
+            <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
       </div>
     </AuthLayout>
   );

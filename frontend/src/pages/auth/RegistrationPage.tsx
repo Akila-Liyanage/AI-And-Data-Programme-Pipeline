@@ -1,98 +1,105 @@
 /**
  * RegistrationPage.tsx
  *
- * STEP 2 SELF-REGISTRATION UI.
- * Provides the interactive frontend registration form for Staff and Intern users.
- *
- * STRICT BOUNDARIES:
- * - NO real account creation or backend connection.
- * - NO mock database entries or localStorage records.
- * - NO fake session or automatic redirection to dashboards.
+ * MODERN WIDE LIGHT BLUE SELF-REGISTRATION CONSOLE
+ * Features:
+ * - Dynamic Role Selection: Staff Member vs. Intern Trainee with animated selector cards
+ * - Wide 2-column responsive layout for personal & professional details
+ * - Staff Employment Types: Permanent, Contract Based, Freelance
+ * - Intern Tracks: AI/ML, Frontend Developer, Backend Developer, QA, Business Analyst
+ * - User Password + Confirm Password with live validation and Show/Hide toggle
+ * - Direct submission to POST /api/auth/register with auto User ID generation
+ * - Smooth redirect to Pending Verification queue screen
  */
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import {
-  ShieldAlert,
-  ArrowLeft,
   ArrowRight,
+  User,
+  Mail,
+  Phone,
+  Lock,
+  Eye,
+  EyeOff,
+  Building,
+  GraduationCap,
+  Sparkles,
   AlertCircle,
 } from 'lucide-react';
-import {
-  Badge,
-  Alert,
-  Button,
-  Input,
-} from '../../components/common';
+import { Badge, Button } from '../../components/common';
 import { AuthLayout } from '../../components/layout/AuthLayout';
 
 /* ── Left Brand Panel ──────────────────────────────────── */
 function RegBrandPanel() {
   return (
-    <div className="bg-[var(--color-brand-navy)] px-8 py-10 sm:px-10 sm:py-12 text-white flex flex-col justify-between h-full relative overflow-hidden">
-      {/* Ambient glows */}
-      <div className="absolute -top-12 -right-12 w-52 h-52 bg-[var(--color-brand-blue)]/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-10 -left-10 w-44 h-44 bg-[var(--color-brand-green)]/15 rounded-full blur-3xl pointer-events-none" />
+    <div className="bg-gradient-to-br from-[#0B1F3A] via-[#132D52] to-[#1e3a8a] p-8 sm:p-10 lg:p-12 text-white flex flex-col justify-between h-full relative overflow-hidden">
+      {/* Ambient soft glow orbs */}
+      <div className="absolute -top-12 -right-12 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-10 -left-10 w-56 h-56 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="relative space-y-7">
+      <div className="relative space-y-8 z-10">
         {/* Emblem */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center font-bold text-sm shrink-0">
-            <span className="text-[var(--color-brand-blue-light)]">AI</span>
-            <span className="text-[var(--color-brand-green)] font-extrabold">+</span>
+          <div className="w-11 h-11 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center font-bold text-base shrink-0 shadow-sm backdrop-blur-sm">
+            <span className="text-blue-300">AI</span>
+            <span className="text-emerald-400 font-extrabold">+</span>
           </div>
           <div>
-            <p className="font-bold text-sm tracking-tight text-white leading-tight">
+            <p className="font-extrabold text-base tracking-tight text-white leading-tight">
               AI & Data Programme Pipeline
             </p>
-            <p className="text-[11px] text-slate-300 leading-tight">
-              Staff & Intern Progress Dashboard
+            <p className="text-xs text-blue-200/80 leading-tight">
+              Staff & Intern Registration Portal
             </p>
           </div>
         </div>
 
         {/* Heading */}
-        <div className="space-y-2">
-          <Badge variant="blue" dot size="sm" className="bg-white/10 text-blue-200 border-white/15">
+        <div className="space-y-3">
+          <Badge variant="blue" dot size="sm" className="bg-white/10 text-blue-200 border-white/20 px-3 py-1">
             Self-Registration Gateway
           </Badge>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight leading-snug">
-            Create your credentials and join the digital workspace.
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-snug text-white">
+            Join the enterprise digital programme workspace.
           </h2>
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            Create your account credentials. Once registered, your application will be verified by Programme Leadership.
+          </p>
         </div>
 
         {/* Flow visual list */}
-        <div className="space-y-6 pt-2">
+        <div className="space-y-5 pt-2">
           {[
             {
               num: '01',
-              title: 'Register Account',
-              detail: 'Create a Staff or Intern programme account.',
+              title: 'Submit Registration Details',
+              detail: 'Enter personal info, assign role track, and set your secure password.',
             },
             {
               num: '02',
-              title: 'Admin Review',
-              detail: 'An Administrator verifies the submitted registration details.',
+              title: 'Administrator Verification',
+              detail: 'Leadership validates credentials and approves your unique User ID.',
             },
             {
               num: '03',
-              title: 'Access Workspace',
-              detail: 'Verified users log in to access the correct dashboard.',
+              title: 'Sign In to Workspace',
+              detail: 'Log in with User ID + password to access your role-specific dashboard.',
             },
           ].map(({ num, title, detail }) => (
-            <div key={num} className="flex gap-4">
-              <span className="font-mono text-xs font-bold text-[var(--color-brand-green)] tracking-wider mt-0.5">
+            <div key={num} className="flex items-start gap-4 group">
+              <span className="font-mono text-xs font-bold text-emerald-400 bg-white/10 border border-white/15 px-2.5 py-1 rounded-lg shrink-0 mt-0.5 group-hover:border-emerald-400 transition-colors">
                 {num}
               </span>
               <div>
-                <p className="text-sm font-semibold text-white leading-tight">{title}</p>
-                <p className="text-xs text-slate-400 leading-snug mt-1">{detail}</p>
+                <p className="text-xs sm:text-sm font-bold text-white leading-tight">{title}</p>
+                <p className="text-[11px] text-slate-300 leading-snug mt-1">{detail}</p>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      <p className="text-[11px] text-slate-400 mt-6 relative z-10">
+      <p className="text-xs text-slate-400 mt-8 relative z-10 pt-4 border-t border-white/10">
         © SLT-MOBITEL AI & Data Team. All rights reserved.
       </p>
     </div>
@@ -104,7 +111,6 @@ interface FormErrors {
   fullName?: string;
   email?: string;
   mobile?: string;
-  userId?: string;
   password?: string;
   confirmPassword?: string;
   internRole?: string;
@@ -120,11 +126,15 @@ export default function RegistrationPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [mobile, setMobile] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   /* Conditional Fields */
-  const [internRole, setInternRole] = useState('');
-  const [professionalRole, setProfessionalRole] = useState('');
-  const [employmentType, setEmploymentType] = useState('');
+  const [internRole, setInternRole] = useState('AI/ML');
+  const [professionalRole, setProfessionalRole] = useState('Senior AI Engineer');
+  const [employmentType, setEmploymentType] = useState('Permanent');
 
   /* Validation & API states */
   const [errors, setErrors] = useState<FormErrors>({});
@@ -160,20 +170,29 @@ export default function RegistrationPage() {
     if (!mobile.trim()) {
       newErrors.mobile = 'Mobile Number is required';
     } else if (!/^(?:\+94|0)?7[0-9]{8}$/.test(mobile.replace(/\s+/g, ''))) {
-      newErrors.mobile = 'Enter a valid Sri Lankan mobile number (e.g. 77xxxxxxx)';
+      newErrors.mobile = 'Enter a valid Sri Lankan mobile number (e.g. 0771234567)';
+    }
+
+    if (!password) {
+      newErrors.password = 'Password is required';
+    } else if (password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    if (password !== confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
     }
 
     /* Conditional validation */
     if (userType === 'INTERN') {
-      if (!internRole) newErrors.internRole = 'Please select your Intern Role';
+      if (!internRole) newErrors.internRole = 'Please select your Intern Track';
     } else {
-      if (!professionalRole) newErrors.professionalRole = 'Please select your Professional Role';
+      if (!professionalRole) newErrors.professionalRole = 'Please specify your Job Title';
       if (!employmentType) newErrors.employmentType = 'Please select your Employment Type';
     }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      // Scroll to top of form wrapper to see errors
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -187,14 +206,11 @@ export default function RegistrationPage() {
       formattedPhone = `0${formattedPhone}`;
     }
 
-    // Auto-generate secure random compliant password to pass backend validation constraints
-    const generatedPassword = 'Pass' + Math.random().toString(36).substring(2, 10) + '9!';
-
     const payload = {
       fullName: fullName.trim(),
       phoneNumber: formattedPhone,
       email: email.trim(),
-      password: generatedPassword,
+      password: password.trim(),
       role,
       employmentType: userType === 'STAFF' ? employmentType : undefined,
       internRole: userType === 'INTERN' ? internRole : undefined,
@@ -222,281 +238,320 @@ export default function RegistrationPage() {
         },
       });
     } catch (err: unknown) {
-      console.error('Registration API Error:', err);
-      if (err instanceof Error) {
-        if (err.message.includes('Failed to fetch') || err.message.includes('Load failed')) {
-          setApiError('Unable to connect to the registration service. Please try again.');
-        } else {
-          setApiError(err.message);
-        }
-      } else {
-        setApiError('Registration could not be completed. Please try again.');
-      }
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      const message = err instanceof Error ? err.message : 'Registration request failed.';
+      setApiError(message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <AuthLayout leftPanel={<RegBrandPanel />} backTo={{ to: '/login', label: 'Back to Sign In' }}>
-      <div className="max-w-md w-full mx-auto space-y-6">
+    <AuthLayout leftPanel={<RegBrandPanel />}>
+      <div className="space-y-6 max-w-2xl mx-auto w-full">
+        {/* Header Block */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-[var(--color-brand-blue)] border border-blue-200 shadow-2xs">
+              <Sparkles className="w-3.5 h-3.5" />
+              Account Registration
+            </span>
+            <span className="text-xs text-slate-500 font-medium">• Step 1 of 2</span>
+          </div>
 
-        {/* Header Title */}
-        <div className="space-y-1.5">
-          <span className="text-xs font-semibold text-[var(--color-brand-blue)] tracking-wider uppercase block">
-            Staff & Intern Registration
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--color-brand-navy)]">
-            Create Your Programme Account
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+            Create Programme Account
           </h1>
-          <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed">
-            Register as a Staff member or Intern. Your account will require administrator verification before system access.
+          <p className="text-xs sm:text-sm text-slate-600">
+            Register as a Staff Member or Intern Trainee to request workspace access.
           </p>
         </div>
 
-        {/* Global Alert Notice (Non-dismissible) */}
-        <div className="p-3.5 rounded-xl border border-blue-100 bg-blue-50/60 text-[var(--color-brand-navy)] text-xs leading-relaxed flex gap-2">
-          <ShieldAlert className="w-4 h-4 text-[var(--color-brand-blue)] shrink-0 mt-0.5" />
-          <p>
-            <strong>Account access is not immediate.</strong> Submitted registrations remain Pending Verification until reviewed by an Administrator.
-          </p>
-        </div>
-
-        {/* API Error Notification */}
+        {/* Global API Error Alert */}
         {apiError && (
-          <Alert variant="error" title="Registration Error" onClose={() => setApiError(null)}>
-            <p className="text-xs">{apiError}</p>
-          </Alert>
+          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-semibold flex items-start gap-2.5 shadow-2xs animate-in fade-in duration-200">
+            <AlertCircle className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" />
+            <span>{apiError}</span>
+          </div>
         )}
 
-        <form onSubmit={handleSubmit} noValidate className="space-y-5" aria-label="Self-registration form">
+        {/* ── ROLE SELECTION INTERACTIVE CARDS ───────────────────── */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-slate-800">Select Your Account Type</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Staff Card */}
+            <button
+              type="button"
+              onClick={() => {
+                setUserType('STAFF');
+                clearError('employmentType');
+                clearError('professionalRole');
+              }}
+              className={`p-4 rounded-2xl border text-left transition-all duration-200 cursor-pointer transform hover:-translate-y-0.5 flex items-start gap-3.5 ${
+                userType === 'STAFF'
+                  ? 'border-blue-500 bg-blue-50/80 ring-2 ring-blue-500/20 shadow-xs'
+                  : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50/80 shadow-2xs'
+              }`}
+            >
+              <div
+                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  userType === 'STAFF'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                <Building className="w-5 h-5" />
+              </div>
+              <div className="space-y-0.5">
+                <span className="font-bold text-sm text-slate-900 block">Permanent Staff</span>
+                <span className="text-[11px] text-slate-500 block leading-tight">
+                  For engineers, leads, and technical consultants
+                </span>
+              </div>
+            </button>
 
-          {/* USER TYPE SELECTOR */}
-          <div className="space-y-2">
-            <span className="block text-xs font-semibold text-[var(--color-brand-navy)]">
-              Registering as
-            </span>
-            <div className="grid grid-cols-2 gap-2 bg-slate-50 p-1 rounded-xl border border-slate-100">
-              {(['STAFF', 'INTERN'] as const).map((type) => {
-                const isActive = userType === type;
-                return (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => {
-                      setUserType(type);
-                      setErrors({});
-                    }}
-                    disabled={isSubmitting}
-                    className={`py-2 rounded-lg text-xs font-bold transition-all ${isActive
-                        ? 'bg-white text-[var(--color-brand-navy)] shadow-sm'
-                        : 'text-slate-400 hover:text-slate-600'
-                      }`}
-                  >
-                    {type === 'STAFF' ? 'Permanent Staff' : 'Intern'}
-                  </button>
-                );
-              })}
-            </div>
+            {/* Intern Card */}
+            <button
+              type="button"
+              onClick={() => {
+                setUserType('INTERN');
+                clearError('internRole');
+              }}
+              className={`p-4 rounded-2xl border text-left transition-all duration-200 cursor-pointer transform hover:-translate-y-0.5 flex items-start gap-3.5 ${
+                userType === 'INTERN'
+                  ? 'border-purple-500 bg-purple-50/80 ring-2 ring-purple-500/20 shadow-xs'
+                  : 'border-slate-200 hover:border-purple-300 hover:bg-slate-50/80 shadow-2xs'
+              }`}
+            >
+              <div
+                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  userType === 'INTERN'
+                    ? 'bg-purple-600 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                <GraduationCap className="w-5 h-5" />
+              </div>
+              <div className="space-y-0.5">
+                <span className="font-bold text-sm text-slate-900 block">Intern Trainee</span>
+                <span className="text-[11px] text-slate-500 block leading-tight">
+                  For university interns and track trainees
+                </span>
+              </div>
+            </button>
           </div>
+        </div>
 
-          {/* 1. Full Name */}
-          <Input
-            id="reg-name"
-            label="Full Name *"
-            placeholder="Enter your first and last name"
-            type="text"
-            required
-            value={fullName}
-            onChange={(e) => {
-              setFullName(e.target.value);
-              clearError('fullName');
-            }}
-            error={errors.fullName}
-            disabled={isSubmitting}
-          />
-
-          {/* 2. Email Address */}
-          <Input
-            id="reg-email"
-            label="Email Address *"
-            placeholder="e.g. name@company.com"
-            type="email"
-            required
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              clearError('email');
-            }}
-            error={errors.email}
-            disabled={isSubmitting}
-          />
-
-          {/* 3. Mobile Number */}
+        {/* ── REGISTRATION FORM ─────────────────────────────────── */}
+        <form onSubmit={handleSubmit} className="space-y-4 pt-1">
+          {/* Row 1: Full Name */}
           <div className="space-y-1.5">
-            <label htmlFor="reg-mobile" className="block text-xs font-semibold text-[var(--color-brand-navy)]">
-              Mobile Number *
+            <label className="text-xs font-bold text-slate-800">
+              Full Name <span className="text-rose-500">*</span>
             </label>
-            <div className="relative flex rounded-xl">
-              <span className="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-slate-300 bg-slate-50 text-slate-500 text-xs font-mono select-none">
-                +94
-              </span>
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                <User className="w-4 h-4" />
+              </div>
               <input
-                id="reg-mobile"
-                type="tel"
-                placeholder="e.g. 774943291"
+                type="text"
                 required
-                className={`flex-1 min-w-0 block w-full px-3 py-2.5 rounded-r-xl border text-xs focus:outline-none transition-all ${errors.mobile
-                    ? 'border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 bg-rose-50/10'
-                    : 'border-slate-300 focus:border-[var(--color-brand-blue)] focus:ring-2 focus:ring-[var(--color-brand-blue)]/20 bg-white'
-                  }`}
-                value={mobile}
+                value={fullName}
                 onChange={(e) => {
-                  setMobile(e.target.value);
-                  clearError('mobile');
+                  setFullName(e.target.value);
+                  clearError('fullName');
                 }}
-                disabled={isSubmitting}
+                placeholder="e.g. Kasun Wickramasinghe"
+                className="w-full h-11 pl-11 pr-4 text-xs sm:text-sm rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-2xs"
               />
             </div>
-            {errors.mobile ? (
-              <p className="text-[10px] text-rose-500 font-medium flex items-center gap-1 mt-1">
-                <AlertCircle className="w-3 h-3 shrink-0" />
-                {errors.mobile}
-              </p>
-            ) : (
-              <p className="text-[10px] text-[var(--color-text-secondary)]">
-                Provide a valid Sri Lankan mobile number.
-              </p>
-            )}
+            {errors.fullName && <p className="text-[11px] text-rose-600 font-semibold">{errors.fullName}</p>}
           </div>
 
+          {/* Row 2: Email & Phone (2-Columns) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            {/* Email */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-800">
+                Email Address <span className="text-rose-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    clearError('email');
+                  }}
+                  placeholder="kasun@aidata.com"
+                  className="w-full h-11 pl-11 pr-4 text-xs sm:text-sm rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-2xs"
+                />
+              </div>
+              {errors.email && <p className="text-[11px] text-rose-600 font-semibold">{errors.email}</p>}
+            </div>
 
-          {/* ── STAFF SPECIFIC FIELDS ─────────────────────────── */}
-          {userType === 'STAFF' && (
-            <div className="space-y-4 p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
-              <span className="block text-[10px] font-bold text-[var(--color-brand-navy)] uppercase tracking-wider">
-                Staff Allocation Details
-              </span>
+            {/* Mobile */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-800">
+                Mobile Number <span className="text-rose-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                  <Phone className="w-4 h-4" />
+                </div>
+                <input
+                  type="tel"
+                  required
+                  value={mobile}
+                  onChange={(e) => {
+                    setMobile(e.target.value);
+                    clearError('mobile');
+                  }}
+                  placeholder="0771234567"
+                  className="w-full h-11 pl-11 pr-4 text-xs sm:text-sm font-mono rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 placeholder:text-slate-400 placeholder:font-sans focus:bg-white focus:outline-hidden focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-2xs"
+                />
+              </div>
+              {errors.mobile && <p className="text-[11px] text-rose-600 font-semibold">{errors.mobile}</p>}
+            </div>
+          </div>
 
-              {/* A. Professional Role */}
+          {/* Row 3: Role Specific Tracks (2-Columns or Selectors) */}
+          {userType === 'STAFF' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 p-3.5 rounded-2xl bg-blue-50/50 border border-blue-200">
+              {/* Staff Employment Type */}
               <div className="space-y-1.5">
-                <label htmlFor="reg-staff-role" className="block text-xs font-semibold text-[var(--color-brand-navy)]">
-                  Professional Role *
+                <label className="text-xs font-bold text-blue-900">
+                  Employment Type <span className="text-rose-500">*</span>
                 </label>
                 <select
-                  id="reg-staff-role"
+                  value={employmentType}
+                  onChange={(e) => {
+                    setEmploymentType(e.target.value);
+                    clearError('employmentType');
+                  }}
+                  className="w-full h-11 px-3.5 text-xs sm:text-sm rounded-xl border border-blue-200 bg-white text-slate-900 focus:outline-hidden focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-2xs cursor-pointer"
+                >
+                  <option value="Permanent">Permanent</option>
+                  <option value="Contract Based">Contract Based</option>
+                  <option value="Freelance">Freelance</option>
+                </select>
+                {errors.employmentType && <p className="text-[11px] text-rose-600 font-semibold">{errors.employmentType}</p>}
+              </div>
+
+              {/* Designation */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-blue-900">
+                  Professional Designation <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
                   required
                   value={professionalRole}
                   onChange={(e) => {
                     setProfessionalRole(e.target.value);
                     clearError('professionalRole');
                   }}
-                  className={`w-full px-3 py-2.5 rounded-xl border text-xs focus:outline-none transition-all bg-white ${errors.professionalRole
-                      ? 'border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20'
-                      : 'border-slate-300 focus:border-[var(--color-brand-blue)] focus:ring-2 focus:ring-[var(--color-brand-blue)]/20'
-                    }`}
-                  disabled={isSubmitting}
-                >
-                  <option value="">-- Select Professional Role --</option>
-                  <option value="Business Analyst">Business Analyst</option>
-                  <option value="Data Analyst">Data Analyst</option>
-                  <option value="Data Scientist">Data Scientist</option>
-                  <option value="Software Engineer">Software Engineer</option>
-                  <option value="QA">QA</option>
-                  <option value="AI Engineer">AI Engineer</option>
-                </select>
-                {errors.professionalRole && (
-                  <p className="text-[10px] text-rose-500 font-medium flex items-center gap-1 mt-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.professionalRole}
-                  </p>
-                )}
+                  placeholder="e.g. Senior AI Engineer"
+                  className="w-full h-11 px-3.5 text-xs sm:text-sm rounded-xl border border-blue-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-2xs"
+                />
+                {errors.professionalRole && <p className="text-[11px] text-rose-600 font-semibold">{errors.professionalRole}</p>}
               </div>
-
-              {/* B. Employment Type */}
-              <div className="space-y-1.5">
-                <label htmlFor="reg-employment" className="block text-xs font-semibold text-[var(--color-brand-navy)]">
-                  Employment Type *
-                </label>
-                <select
-                  id="reg-employment"
-                  required
-                  value={employmentType}
-                  onChange={(e) => {
-                    setEmploymentType(e.target.value);
-                    clearError('employmentType');
-                  }}
-                  className={`w-full px-3 py-2.5 rounded-xl border text-xs focus:outline-none transition-all bg-white ${errors.employmentType
-                      ? 'border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20'
-                      : 'border-slate-300 focus:border-[var(--color-brand-blue)] focus:ring-2 focus:ring-[var(--color-brand-blue)]/20'
-                    }`}
-                  disabled={isSubmitting}
-                >
-                  <option value="">-- Select Employment Type --</option>
-                  <option value="Permanent">Permanent</option>
-                  <option value="Contract Based">Contract Based</option>
-                  <option value="Freelance">Freelance</option>
-                </select>
-                {errors.employmentType && (
-                  <p className="text-[10px] text-rose-500 font-medium flex items-center gap-1 mt-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.employmentType}
-                  </p>
-                )}
-              </div>
+            </div>
+          ) : (
+            <div className="p-3.5 rounded-2xl bg-purple-50/50 border border-purple-200 space-y-1.5">
+              <label className="text-xs font-bold text-purple-900">
+                Intern Focus Track <span className="text-rose-500">*</span>
+              </label>
+              <select
+                value={internRole}
+                onChange={(e) => {
+                  setInternRole(e.target.value);
+                  clearError('internRole');
+                }}
+                className="w-full h-11 px-3.5 text-xs sm:text-sm rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-hidden focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all shadow-2xs cursor-pointer"
+              >
+                <option value="AI/ML">AI / Machine Learning Track</option>
+                <option value="Frontend Developer">Frontend Developer Track</option>
+                <option value="Backend Developer">Backend Developer Track</option>
+                <option value="QA">Quality Assurance & Testing (QA)</option>
+                <option value="Business Analyst">Business & Product Analyst</option>
+              </select>
+              {errors.internRole && <p className="text-[11px] text-rose-600 font-semibold">{errors.internRole}</p>}
             </div>
           )}
 
-          {/* ── INTERN SPECIFIC FIELDS ────────────────────────── */}
-          {userType === 'INTERN' && (
-            <div className="space-y-3 p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
-              <span className="block text-[10px] font-bold text-[var(--color-brand-navy)] uppercase tracking-wider">
-                Intern Placement Details
-              </span>
-
-              <div className="space-y-1.5">
-                <label htmlFor="reg-intern-role" className="block text-xs font-semibold text-[var(--color-brand-navy)]">
-                  Intern Role *
-                </label>
-                <select
-                  id="reg-intern-role"
+          {/* Row 4: Password & Confirm Password (2-Columns) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            {/* Password */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-800">
+                Password <span className="text-rose-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <input
+                  type={showPassword ? 'text' : 'password'}
                   required
-                  value={internRole}
+                  value={password}
                   onChange={(e) => {
-                    setInternRole(e.target.value);
-                    clearError('internRole');
+                    setPassword(e.target.value);
+                    clearError('password');
                   }}
-                  className={`w-full px-3 py-2.5 rounded-xl border text-xs focus:outline-none transition-all bg-white ${errors.internRole
-                      ? 'border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20'
-                      : 'border-slate-300 focus:border-[var(--color-brand-blue)] focus:ring-2 focus:ring-[var(--color-brand-blue)]/20'
-                    }`}
-                  disabled={isSubmitting}
+                  placeholder="Min. 6 characters"
+                  className="w-full h-11 pl-11 pr-10 text-xs sm:text-sm rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-2xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 focus:outline-hidden cursor-pointer p-1"
                 >
-                  <option value="">-- Select Intern Role --</option>
-                  <option value="Business Analyst">Business Analyst</option>
-                  <option value="Frontend Developer">Frontend Developer</option>
-                  <option value="Backend Developer">Backend Developer</option>
-                  <option value="QA">QA</option>
-                  <option value="AI/ML">AI/ML</option>
-                </select>
-                {errors.internRole ? (
-                  <p className="text-[10px] text-rose-500 font-medium flex items-center gap-1 mt-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.internRole}
-                  </p>
-                ) : (
-                  <p className="text-[10px] text-[var(--color-text-secondary)]">
-                    Your selected role will later be used to match suitable project opportunities.
-                  </p>
-                )}
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
+              {errors.password && <p className="text-[11px] text-rose-600 font-semibold">{errors.password}</p>}
             </div>
-          )}
 
+            {/* Confirm Password */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-800">
+                Confirm Password <span className="text-rose-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    clearError('confirmPassword');
+                  }}
+                  placeholder="Re-enter password"
+                  className="w-full h-11 pl-11 pr-10 text-xs sm:text-sm rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-2xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 focus:outline-hidden cursor-pointer p-1"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {errors.confirmPassword && (
+                <p className="text-[11px] text-rose-600 font-semibold">{errors.confirmPassword}</p>
+              )}
+            </div>
+          </div>
 
-          {/* Form Actions */}
-          <div className="space-y-3 pt-3">
+          {/* Submit Button */}
+          <div className="pt-2">
             <Button
               type="submit"
               variant="primary"
@@ -504,29 +559,25 @@ export default function RegistrationPage() {
               fullWidth
               isLoading={isSubmitting}
               disabled={isSubmitting}
-              rightIcon={!isSubmitting ? <ArrowRight className="w-4 h-4" /> : undefined}
+              rightIcon={<ArrowRight className="w-4 h-4" />}
+              className="h-12 shadow-md hover:shadow-lg transition-all duration-200 font-bold text-sm transform hover:-translate-y-0.5"
             >
-              {isSubmitting ? 'Submitting registration...' : 'Submit Registration'}
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              fullWidth
-              leftIcon={<ArrowLeft className="w-4 h-4" />}
-              onClick={() => navigate('/login')}
-            >
-              Back to Sign In
+              Submit Registration for Verification
             </Button>
           </div>
-
-          {/* Pending Verification visual prep notice */}
-          <p className="text-[10px] text-[var(--color-text-secondary)] text-center leading-relaxed max-w-xs mx-auto">
-            After registration is processed by the backend, your account will remain Pending Verification until reviewed by an Administrator.
-          </p>
-
         </form>
+
+        {/* Footer Link */}
+        <div className="pt-4 border-t border-slate-100 text-center text-xs text-slate-600">
+          <span>Already have an authorized User ID? </span>
+          <Link
+            to="/login"
+            className="font-bold text-[var(--color-brand-blue)] hover:text-blue-700 hover:underline inline-flex items-center gap-1 transition-colors"
+          >
+            <span>Sign In here</span>
+            <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
       </div>
     </AuthLayout>
   );
