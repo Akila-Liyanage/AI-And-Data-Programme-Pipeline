@@ -7,6 +7,7 @@ import RegistrationPage from '../pages/auth/RegistrationPage';
 import PendingVerificationPage from '../pages/auth/PendingVerificationPage';
 import DashboardPreviewPage from '../pages/preview/DashboardPreviewPage';
 import AdminDashboardPage from '../pages/dashboard/AdminDashboardPage';
+import AdminProfilePage from '../pages/admin/AdminProfilePage';
 import UserManagementPage from '../pages/admin/UserManagementPage';
 import ProjectsManagementPage from '../pages/admin/ProjectsManagementPage';
 import ProjectAssignmentsPage from '../pages/admin/ProjectAssignmentsPage';
@@ -46,6 +47,14 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['ADMIN']}>
             <AdminDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/profile"
+        element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <AdminProfilePage />
           </ProtectedRoute>
         }
       />
@@ -97,6 +106,7 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
 
       <Route
         path="/staff/dashboard"

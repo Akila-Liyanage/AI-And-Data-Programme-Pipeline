@@ -8,6 +8,7 @@ import type {
   SendOtpResponse,
   ChangePasswordPayload,
   ActivateAccountPayload,
+  UpdateUserProfilePayload,
 } from '../types/auth.types';
 
 const API_BASE_URL = 'http://localhost:5000/api';
@@ -229,6 +230,58 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   /**
+   * Update Profile Implementation
+   */
+  const updateUserProfile = useCallback(
+    async (payload: UpdateUserProfilePayload): Promise<AuthUser> => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
+      setState((prev) => ({ ...prev, isLoading: true, error: null }));
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to update profile.');
+        }
+
+        // Update local storage and auth state
+        localStorage.setItem('user', JSON.stringify(data.user));
+
+        setState((prev) => ({
+          ...prev,
+          user: data.user,
+          isLoading: false,
+          error: null,
+        }));
+
+        return data.user;
+      } catch (err: unknown) {
+        const errorMessage =
+          err instanceof Error ? err.message : 'An error occurred while updating profile';
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          error: errorMessage,
+        }));
+        throw new Error(errorMessage);
+      }
+    },
+    []
+  );
+
+  /**
    * Change Password Integration Point
    */
   const changePassword = useCallback(
@@ -258,12 +311,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       login,
       logout,
       refreshCurrentUser,
+      updateUserProfile,
       changePassword,
       activateAccount,
       clearError,
     }),
-    [state, sendOtp, verifyOtp, login, logout, refreshCurrentUser, changePassword, activateAccount, clearError]
+    [state, sendOtp, verifyOtp, login, logout, refreshCurrentUser, updateUserProfile, changePassword, activateAccount, clearError]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+

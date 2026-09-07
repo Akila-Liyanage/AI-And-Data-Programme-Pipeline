@@ -107,6 +107,31 @@ export const sendOtp = async (req: Request, res: Response): Promise<void> => {
  * @route   POST /api/auth/verify-otp
  * @access  Public
  */
+/**
+ * Format user object for API responses
+ */
+export const formatUserResponse = (user: any) => ({
+  id: user._id ? user._id.toString() : user.id,
+  userId: user.userId,
+  username: user.username,
+  fullName: user.fullName,
+  phoneNumber: user.phoneNumber,
+  email: user.email,
+  role: user.role,
+  designation: user.designation || '',
+  department: user.department || 'AI & Data Team',
+  employmentType: user.employmentType || '',
+  internRole: user.internRole || '',
+  accountStatus: user.accountStatus || 'ACTIVE',
+  createdAt: user.createdAt,
+  updatedAt: user.updatedAt,
+});
+
+/**
+ * @desc    Verify OTP and authenticate user
+ * @route   POST /api/auth/verify-otp
+ * @access  Public
+ */
 export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
   try {
     const { phoneNumber, otp } = req.body;
@@ -178,18 +203,7 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
       success: true,
       message: 'Login successful',
       token,
-      user: {
-        id: user._id,
-        userId: user.userId,
-        username: user.username,
-        fullName: user.fullName,
-        phoneNumber: user.phoneNumber,
-        email: user.email,
-        role: user.role,
-        designation: user.designation,
-        department: user.department,
-        accountStatus: user.accountStatus,
-      },
+      user: formatUserResponse(user),
     });
   } catch (error) {
     console.error('Error verifying OTP:', error);
@@ -289,20 +303,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       success: true,
       message: 'Login successful',
       token,
-      user: {
-        id: user._id,
-        userId: user.userId,
-        username: user.username,
-        fullName: user.fullName,
-        phoneNumber: user.phoneNumber,
-        email: user.email,
-        role: user.role,
-        employmentType: user.employmentType,
-        internRole: user.internRole,
-        designation: user.designation,
-        department: user.department,
-        accountStatus: user.accountStatus,
-      },
+      user: formatUserResponse(user),
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -330,25 +331,82 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
 
     res.status(200).json({
       success: true,
-      user: {
-        id: req.user._id,
-        userId: req.user.userId,
-        username: req.user.username,
-        fullName: req.user.fullName,
-        phoneNumber: req.user.phoneNumber,
-        email: req.user.email,
-        role: req.user.role,
-        designation: req.user.designation,
-        department: req.user.department,
-        accountStatus: req.user.accountStatus,
-        createdAt: req.user.createdAt,
-      },
+      user: formatUserResponse(req.user),
     });
   } catch (error) {
     console.error('Get profile error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error retrieving user profile',
+    });
+  }
+};
+
+/**
+ * @desc    Update authenticated user profile
+ * @route   PUT /api/auth/profile
+ * @access  Private
+ */
+export const updateProfile = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        message: 'Not authorized',
+      });
+      return;
+    }
+
+    const { fullName, phoneNumber, designation, department, employmentType, internRole, password } = req.body;
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: 'User account not found',
+      });
+      return;
+    }
+
+    if (fullName) user.fullName = fullName.trim();
+    if (phoneNumber) {
+      const cleanPhone = normalizePhoneNumber(phoneNumber);
+      // Check for phone conflict
+      const existing = await User.findOne({
+        _id: { $ne: user._id },
+        $or: [{ phoneNumber: phoneNumber.trim() }, { phoneNumber: cleanPhone }],
+      });
+      if (existing) {
+        res.status(409).json({
+          success: false,
+          message: 'Phone number is already associated with another account',
+        });
+        return;
+      }
+      user.phoneNumber = phoneNumber.trim();
+    }
+    if (designation !== undefined) user.designation = designation.trim();
+    if (department !== undefined) user.department = department.trim();
+    if (employmentType !== undefined) user.employmentType = employmentType.trim();
+    if (internRole !== undefined) user.internRole = internRole.trim();
+
+    if (password && password.trim().length >= 6) {
+      user.password = password.trim();
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: formatUserResponse(user),
+    });
+  } catch (error: unknown) {
+    console.error('Update profile error:', error);
+    const errorMsg = error instanceof Error ? error.message : 'Server error updating profile';
+    res.status(500).json({
+      success: false,
+      message: errorMsg,
     });
   }
 };
@@ -469,19 +527,7 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     res.status(201).json({
       success: true,
       message: 'Registration successful! Your account is pending administrator verification.',
-      user: {
-        id: newUser._id,
-        userId: newUser.userId,
-        username: newUser.username,
-        fullName: newUser.fullName,
-        phoneNumber: newUser.phoneNumber,
-        email: newUser.email,
-        role: newUser.role,
-        designation: newUser.designation,
-        department: newUser.department,
-        accountStatus: newUser.accountStatus,
-        createdAt: newUser.createdAt,
-      },
+      user: formatUserResponse(newUser),
     });
   } catch (error: unknown) {
     console.error('Error during self-registration:', error);

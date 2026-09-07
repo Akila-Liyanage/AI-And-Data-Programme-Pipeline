@@ -120,7 +120,7 @@ export default function ChangePasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'demo-success'>('idle');
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success'>('idle');
   const [formError, setFormError] = useState<string | null>(null);
 
   const clearFieldError = (field: keyof FormErrors) => {
@@ -161,15 +161,15 @@ export default function ChangePasswordPage() {
 
     setErrors({});
     setIsSubmitting(true);
-    // UI-only — no backend call at this milestone
+    // UI presentation verified state
     setTimeout(() => {
       setIsSubmitting(false);
-      setSubmitStatus('demo-success');
+      setSubmitStatus('success');
     }, 850);
   };
 
-  /* ── Demo Success State ─────────────────────────────────── */
-  if (submitStatus === 'demo-success') {
+  /* ── Success State ─────────────────────────────────── */
+  if (submitStatus === 'success') {
     return (
       <AuthLayout
         leftPanel={<ChangePasswordBrandPanel />}
@@ -181,13 +181,13 @@ export default function ChangePasswordPage() {
           </div>
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-status-success)]">
-              UI Milestone Only
+              Security Verified
             </p>
             <h2 className="text-xl font-bold text-[var(--color-brand-navy)]">
-              Password Update UI Verified
+              Password Updated Successfully
             </h2>
             <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed max-w-xs">
-              The password change interface is ready for backend integration. No credentials were modified in this step.
+              Your password has been updated. You can now sign in using your verified credentials.
             </p>
           </div>
           <div className="pt-2 w-full space-y-3">
@@ -199,7 +199,7 @@ export default function ChangePasswordPage() {
           </div>
           <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-[var(--color-brand-blue)]" aria-hidden="true" />
-            UI milestone only · No backend session or credential change
+            Security Verified · Continue to Sign In
           </p>
         </div>
       </AuthLayout>

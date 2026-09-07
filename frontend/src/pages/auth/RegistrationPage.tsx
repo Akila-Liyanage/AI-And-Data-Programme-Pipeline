@@ -246,7 +246,7 @@ export default function RegistrationPage() {
 
   return (
     <AuthLayout leftPanel={<RegBrandPanel />}>
-      <div className="space-y-6 max-w-2xl mx-auto w-full">
+      <div className="space-y-6 max-w-xl mx-auto w-full">
         {/* Header Block */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">

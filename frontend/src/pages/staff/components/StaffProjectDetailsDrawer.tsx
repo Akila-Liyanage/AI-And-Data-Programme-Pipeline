@@ -7,20 +7,44 @@ import {
   Layers,
   CheckSquare,
   Activity,
+  Calendar,
+  Shield,
+  Cpu,
+  UserCheck,
 } from 'lucide-react';
 import { Button, Badge, EmptyState } from '../../../components/common';
+
+export interface StaffProjectWorkItem {
+  id: string;
+  title: string;
+  role?: string;
+  weightPercentage?: number;
+  status: 'Not Started' | 'In Progress' | 'Completed' | string;
+  progressPercentage?: number;
+  targetDate?: string;
+}
 
 export interface StaffProjectDetails {
   id: string;
   name: string;
   projectId: string;
+  description?: string;
+  category?: string;
   status: string;
-  projectLead: string;
+  priority?: string;
+  projectLead?: string;
+  department?: string;
+  technologyStack?: string;
+  myRole: string;
+  assignmentStatus?: string;
   startDate: string;
   targetDate: string;
-  myRole: string;
-  assignmentStatus: string;
-  assignedWorkItemsCount: number | string;
+  overallProgress?: number;
+  assignedWorkItemsCount?: number | string;
+  completedWorkItemsCount?: number | string;
+  workItems?: StaffProjectWorkItem[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface StaffProjectDetailsDrawerProps {
@@ -28,6 +52,18 @@ export interface StaffProjectDetailsDrawerProps {
   onClose: () => void;
   project?: StaffProjectDetails | null;
 }
+
+export const formatDisplayDate = (dateStr?: string | null): string => {
+  if (!dateStr || dateStr.trim() === '') return '—';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '—';
+    return d.toISOString().split('T')[0];
+  } catch {
+    return '—';
+  }
+};
 
 export const StaffProjectDetailsDrawer: React.FC<StaffProjectDetailsDrawerProps> = ({
   isOpen,
@@ -57,9 +93,10 @@ export const StaffProjectDetailsDrawer: React.FC<StaffProjectDetailsDrawerProps>
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !project) return null;
 
-  const currentStatus = project?.status || 'Planned';
+  const currentStatus = project.status || 'Planned';
+  const progressValue = Math.min(100, Math.max(0, project.overallProgress ?? 0));
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -91,8 +128,33 @@ export const StaffProjectDetailsDrawer: React.FC<StaffProjectDetailsDrawerProps>
     }
   };
 
-  const getAssignmentStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
+  const getPriorityBadge = (priority?: string) => {
+    switch (priority?.toLowerCase()) {
+      case 'critical':
+      case 'high':
+        return (
+          <Badge variant="error" size="sm">
+            {priority}
+          </Badge>
+        );
+      case 'medium':
+        return (
+          <Badge variant="warning" size="sm">
+            Medium
+          </Badge>
+        );
+      case 'low':
+      default:
+        return (
+          <Badge variant="neutral" size="sm">
+            {priority || 'Standard'}
+          </Badge>
+        );
+    }
+  };
+
+  const getAssignmentStatusBadge = (status?: string) => {
+    switch (status?.toLowerCase()) {
       case 'completed':
         return (
           <Badge variant="blue" size="sm">
@@ -106,10 +168,35 @@ export const StaffProjectDetailsDrawer: React.FC<StaffProjectDetailsDrawerProps>
           </Badge>
         );
       case 'assigned':
+      case 'active':
       default:
         return (
           <Badge variant="success" size="sm">
-            Assigned
+            {status || 'Assigned'}
+          </Badge>
+        );
+    }
+  };
+
+  const getWorkItemStatusBadge = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return (
+          <Badge variant="success" size="sm">
+            Completed
+          </Badge>
+        );
+      case 'in progress':
+        return (
+          <Badge variant="blue" size="sm">
+            In Progress
+          </Badge>
+        );
+      case 'not started':
+      default:
+        return (
+          <Badge variant="neutral" size="sm">
+            Not Started
           </Badge>
         );
     }
@@ -135,27 +222,32 @@ export const StaffProjectDetailsDrawer: React.FC<StaffProjectDetailsDrawerProps>
           {/* ── Sticky Header ───────────────────────────────────── */}
           <div className="px-6 py-5 border-b border-[var(--color-border-subtle)] flex items-start justify-between gap-4 bg-[var(--color-surface-white)] shrink-0">
             <div className="space-y-1.5 min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="blue" size="sm">
                   Assigned Project
                 </Badge>
+                {project.category && (
+                  <Badge variant="neutral" size="sm">
+                    {project.category}
+                  </Badge>
+                )}
                 {getStatusBadge(currentStatus)}
               </div>
               <h2
                 id="staff-project-details-title"
-                className="text-lg sm:text-xl font-bold tracking-tight text-[var(--color-brand-navy)]"
+                className="text-lg sm:text-xl font-bold tracking-tight text-[var(--color-brand-navy)] truncate"
               >
-                Project Responsibility & Progress
+                {project.name || 'Project Details'}
               </h2>
               <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                Review project metadata, your assignment details, and individual work-item requirements.
+                Review project specifications, your assigned responsibilities, and overall progress.
               </p>
             </div>
 
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-brand-navy)] hover:bg-[var(--color-surface-subtle)] transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)]/40"
+              className="p-2 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-brand-navy)] hover:bg-[var(--color-surface-subtle)] transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)]/40 shrink-0"
               aria-label="Close drawer"
             >
               <X className="w-5 h-5" />
@@ -170,206 +262,327 @@ export const StaffProjectDetailsDrawer: React.FC<StaffProjectDetailsDrawerProps>
                 <FolderKanban className="w-6 h-6" />
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="text-base font-bold text-[var(--color-brand-navy)] truncate">
-                  {project?.name || '—'}
-                </h3>
-                <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5 mt-0.5">
-                  <span className="font-mono font-medium text-slate-700">
-                    {project?.projectId || '—'}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-base font-bold text-[var(--color-brand-navy)] truncate">
+                    {project.name}
+                  </h3>
+                </div>
+                <div className="text-xs text-[var(--color-text-secondary)] flex items-center gap-2 mt-1 flex-wrap">
+                  <span className="font-mono font-semibold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200">
+                    {project.projectId || '—'}
                   </span>
-                  <span>•</span>
-                  <span>{project?.projectLead || '—'}</span>
-                </p>
+                  {project.department && (
+                    <>
+                      <span>•</span>
+                      <span>{project.department}</span>
+                    </>
+                  )}
+                  {project.projectLead && (
+                    <>
+                      <span>•</span>
+                      <span>Lead: {project.projectLead}</span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* ── A. PROJECT INFORMATION ────────────────────────── */}
+            {/* ── 1. READ-ONLY OVERALL PROGRESS ──────────────────── */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border-subtle)]">
+                <div className="flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-[var(--color-brand-blue)]" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
+                    Overall Project Progress
+                  </h4>
+                </div>
+                <span className="text-[11px] font-semibold text-[var(--color-text-muted)]">
+                  Read-only
+                </span>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200 space-y-3 shadow-2xs">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-[var(--color-brand-navy)]">
+                    Completion Status
+                  </span>
+                  <span className="text-base font-bold text-[var(--color-brand-blue)] font-mono">
+                    {project.overallProgress !== undefined ? `${progressValue}%` : '—%'}
+                  </span>
+                </div>
+
+                {/* Progress bar */}
+                <div
+                  className="w-full h-3 bg-slate-200 rounded-full overflow-hidden p-0.5"
+                  role="progressbar"
+                  aria-valuenow={progressValue}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label="Overall project progress"
+                >
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      progressValue === 100
+                        ? 'bg-[var(--color-brand-green)]'
+                        : 'bg-gradient-to-r from-blue-500 to-[var(--color-brand-blue)]'
+                    }`}
+                    style={{ width: `${progressValue}%` }}
+                  />
+                </div>
+
+                <div className="p-3 bg-white rounded-lg border border-slate-100 text-[11px] text-slate-600 space-y-1">
+                  <p className="font-medium text-[var(--color-brand-navy)]">
+                    Project progress is automatically calculated from completed work-item weights.
+                  </p>
+                  <p className="text-slate-500 text-[10px]">
+                    Individual staff members do not manually adjust project completion percentages.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* ── 2. PROJECT DESCRIPTION & OBJECTIVES ─────────────── */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
                 <FileText className="w-4 h-4 text-[var(--color-brand-blue)]" />
                 <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
-                  Project Information
+                  Project Description & Objectives
+                </h4>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] text-xs text-slate-700 leading-relaxed whitespace-pre-line">
+                {project.description ? (
+                  project.description
+                ) : (
+                  <p className="text-slate-400 italic">
+                    No detailed description provided for this project.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* ── 3. PROJECT SPECIFICATIONS & METADATA ────────────── */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
+                <Building2 className="w-4 h-4 text-[var(--color-brand-blue)]" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
+                  Project Specifications
                 </h4>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
-                    Project Name
-                  </span>
-                  <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {project?.name || '—'}
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
                     Project ID
                   </span>
                   <p className="font-mono font-semibold text-[var(--color-brand-navy)]">
-                    {project?.projectId || '—'}
+                    {project.projectId || '—'}
                   </p>
                 </div>
 
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
+                    Category
+                  </span>
+                  <p className="font-semibold text-[var(--color-brand-navy)]">
+                    {project.category || 'General'}
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
+                    Department
+                  </span>
+                  <p className="font-semibold text-[var(--color-brand-navy)]">
+                    {project.department || '—'}
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
+                    Priority Level
+                  </span>
+                  <div>{getPriorityBadge(project.priority)}</div>
+                </div>
+
+                <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
                     Project Lead / Supervisor
                   </span>
                   <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {project?.projectLead || '—'}
+                    {project.projectLead || '—'}
                   </p>
                 </div>
 
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
-                    Project Status
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
+                    Status
                   </span>
                   <div>{getStatusBadge(currentStatus)}</div>
                 </div>
 
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium flex items-center gap-1.5">
+                    <Calendar className="w-3 h-3 text-slate-400" />
                     Start Date
                   </span>
                   <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {project?.startDate || '—'}
+                    {formatDisplayDate(project.startDate)}
                   </p>
                 </div>
 
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium flex items-center gap-1.5">
+                    <Calendar className="w-3 h-3 text-slate-400" />
                     Target Completion Date
                   </span>
                   <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {project?.targetDate || '—'}
+                    {formatDisplayDate(project.targetDate)}
                   </p>
                 </div>
               </div>
+
+              {/* Technology Stack if provided */}
+              {project.technologyStack && (
+                <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1.5 text-xs">
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium flex items-center gap-1.5">
+                    <Cpu className="w-3.5 h-3.5 text-slate-400" />
+                    Technology Stack
+                  </span>
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {project.technologyStack.split(',').map((tech) => (
+                      <span
+                        key={tech.trim()}
+                        className="px-2 py-0.5 rounded bg-white text-[11px] font-medium text-slate-700 border border-slate-200"
+                      >
+                        {tech.trim()}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* ── B. MY ASSIGNMENT ──────────────────────────────── */}
+            {/* ── 4. MY ASSIGNMENT & RESPONSIBILITY ──────────────── */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
-                <Building2 className="w-4 h-4 text-[var(--color-brand-green)]" />
+                <UserCheck className="w-4 h-4 text-[var(--color-brand-green)]" />
                 <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
-                  My Assignment Details
+                  My Assignment & Responsibility
                 </h4>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
                     My Assigned Role
                   </span>
                   <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {project?.myRole || '—'}
+                    {project.myRole || '—'}
                   </p>
                 </div>
 
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
                     Assignment Status
                   </span>
-                  <div>{getAssignmentStatusBadge(project?.assignmentStatus || 'Assigned')}</div>
+                  <div>{getAssignmentStatusBadge(project.assignmentStatus || 'Assigned')}</div>
                 </div>
 
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
                     Assigned Work Items
                   </span>
-                  <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {project?.assignedWorkItemsCount !== undefined && project?.assignedWorkItemsCount !== null
+                  <p className="font-semibold text-[var(--color-brand-navy)] font-mono">
+                    {project.assignedWorkItemsCount !== undefined && project.assignedWorkItemsCount !== null
                       ? project.assignedWorkItemsCount
-                      : '—'}
+                      : (project.workItems ? project.workItems.length : '0')}
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* ── C. MY WORK ITEMS ──────────────────────────────── */}
+            {/* ── 5. WORK ITEM SUMMARY ───────────────────────────── */}
             <div className="space-y-3">
-              <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
-                <Layers className="w-4 h-4 text-[var(--color-brand-blue)]" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
-                  My Assigned Work Items
-                </h4>
-              </div>
-
-              <div className="border border-slate-100 rounded-xl overflow-hidden">
-                <table className="w-full text-left border-collapse text-xs" aria-label="Assigned Work Items Table">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                      <th scope="col" className="py-2 px-3">Work Item</th>
-                      <th scope="col" className="py-2 px-3">Required Role</th>
-                      <th scope="col" className="py-2 px-3 text-center">Weight</th>
-                      <th scope="col" className="py-2 px-3">Status</th>
-                      <th scope="col" className="py-2 px-3 text-right">Progress Contribution</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td colSpan={5} className="p-6">
-                        <EmptyState
-                          icon={<CheckSquare className="w-6 h-6 text-slate-400" />}
-                          title="No assigned work items available"
-                          description="Your project work items will appear here once assignment data is connected."
-                          secondaryAction={
-                            <Badge size="sm" variant="neutral">
-                              Awaiting backend integration
-                            </Badge>
-                          }
-                        />
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* ── D. PROJECT PROGRESS ────────────────────────────── */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
-                <Activity className="w-4 h-4 text-[var(--color-brand-green)]" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
-                  Project Progress
-                </h4>
-              </div>
-
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-[var(--color-brand-navy)]">
-                    Overall Project Progress
-                  </span>
-                  <span className="font-bold text-[var(--color-brand-blue)]">
-                    —%
-                  </span>
+              <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border-subtle)]">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-[var(--color-brand-blue)]" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
+                    Work Item Summary
+                  </h4>
                 </div>
+                {project.workItems && project.workItems.length > 0 && (
+                  <Badge size="sm" variant="blue">
+                    {project.workItems.length} {project.workItems.length === 1 ? 'Item' : 'Items'}
+                  </Badge>
+                )}
+              </div>
 
-                <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-slate-300 rounded-full"
-                    style={{ width: '0%' }}
+              {project.workItems && project.workItems.length > 0 ? (
+                <div className="border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-xs" aria-label="Work Item Summary Table">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                          <th scope="col" className="py-2.5 px-3.5">Work Item</th>
+                          <th scope="col" className="py-2.5 px-3">Role</th>
+                          <th scope="col" className="py-2.5 px-3 text-center">Weight</th>
+                          <th scope="col" className="py-2.5 px-3 text-center">Status</th>
+                          <th scope="col" className="py-2.5 px-3 text-right">Target Date</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white">
+                        {project.workItems.map((item) => (
+                          <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
+                            <td className="py-2.5 px-3.5 font-medium text-[var(--color-brand-navy)]">
+                              {item.title}
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-600">
+                              {item.role || '—'}
+                            </td>
+                            <td className="py-2.5 px-3 text-center font-mono text-slate-700">
+                              {item.weightPercentage !== undefined ? `${item.weightPercentage}%` : '—'}
+                            </td>
+                            <td className="py-2.5 px-3 text-center">
+                              {getWorkItemStatusBadge(item.status)}
+                            </td>
+                            <td className="py-2.5 px-3 text-right text-slate-600 font-mono">
+                              {item.targetDate || '—'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <div className="border border-slate-100 rounded-xl overflow-hidden">
+                  <EmptyState
+                    icon={<CheckSquare className="w-6 h-6 text-slate-400" />}
+                    title="No work items assigned yet"
+                    description="Individual tasks and work items allocated to you will appear here once configured."
+                    minHeight="min-h-[160px]"
                   />
                 </div>
+              )}
+            </div>
 
-                <div className="p-3 bg-white rounded-lg border border-slate-100 space-y-1.5 text-[11px] text-slate-600">
-                  <p className="font-semibold text-[var(--color-brand-navy)]">
-                    Project progress is calculated automatically from completed work-item percentage weights.
-                  </p>
-                  <p className="flex items-center gap-2 text-slate-500 font-medium">
-                    <span>Completed Work Item Weights</span>
-                    <span>→</span>
-                    <span className="text-[var(--color-brand-blue)] font-bold">Project Progress</span>
-                  </p>
-                  <p className="text-[10px] text-slate-400 italic">
-                    Awaiting work-breakdown data integration.
-                  </p>
+            {/* ── 6. PROJECT METADATA & AUDIT ────────────────────── */}
+            {(project.createdAt || project.updatedAt) && (
+              <div className="p-3 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                <div className="flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Project Record Metadata</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  {project.createdAt && <span>Created: {project.createdAt}</span>}
+                  {project.updatedAt && <span>Updated: {project.updatedAt}</span>}
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
-          {/* ── Sticky Drawer Footer / Action Buttons ────────────── */}
+          {/* ── Sticky Drawer Footer (Read-Only Actions) ───────── */}
           <div className="px-6 py-4 border-t border-[var(--color-border-subtle)] bg-[var(--color-surface-subtle)]/60 flex items-center justify-end shrink-0">
             <Button type="button" variant="outline" size="md" onClick={onClose}>
               Close

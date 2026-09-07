@@ -67,8 +67,18 @@ export interface ChangePasswordPayload {
 }
 
 export interface ActivateAccountPayload {
-  token?: string;
-  newPassword: string;
+  token: string;
+  password?: string;
+}
+
+export interface UpdateUserProfilePayload {
+  fullName?: string;
+  phoneNumber?: string;
+  designation?: string;
+  department?: string;
+  employmentType?: string;
+  internRole?: string;
+  password?: string;
 }
 
 export interface AuthContextValue extends AuthState {
@@ -82,6 +92,8 @@ export interface AuthContextValue extends AuthState {
   logout: () => Promise<void>;
   /** Session refresh */
   refreshCurrentUser: () => Promise<void>;
+  /** Update user profile */
+  updateUserProfile: (payload: UpdateUserProfilePayload) => Promise<AuthUser>;
   /** Change password */
   changePassword: (payload: ChangePasswordPayload) => Promise<void>;
   /** Account activation */
@@ -89,3 +101,4 @@ export interface AuthContextValue extends AuthState {
   /** Clear any error */
   clearError: () => void;
 }
+

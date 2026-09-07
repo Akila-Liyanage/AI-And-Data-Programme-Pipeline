@@ -54,7 +54,7 @@ export const ProjectProgressComparison: React.FC<ProjectProgressComparisonProps>
             </div>
           ))}
           <p className="text-[11px] text-[var(--color-text-secondary)] text-center pt-1">
-            Project progress bars will appear once project data is connected.
+            Project progress bars will appear when project records are available.
           </p>
         </>
       ) : (

@@ -26,57 +26,57 @@ import { AuthLayout } from '../../components/layout/AuthLayout';
 /* ── Left Brand Panel ──────────────────────────────────── */
 function PendingBrandPanel() {
   return (
-    <div className="bg-[var(--color-brand-navy)] px-8 py-10 sm:px-10 sm:py-12 text-white flex flex-col justify-between h-full relative overflow-hidden">
-      {/* Ambient glows */}
-      <div className="absolute -top-12 -right-12 w-52 h-52 bg-[var(--color-brand-blue)]/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-10 -left-10 w-44 h-44 bg-[var(--color-brand-green)]/15 rounded-full blur-3xl pointer-events-none" />
+    <div className="bg-gradient-to-br from-[#0B1F3A] via-[#132D52] to-[#1e3a8a] p-8 sm:p-10 lg:p-12 text-white flex flex-col justify-between h-full relative overflow-hidden">
+      {/* Ambient soft glow orbs */}
+      <div className="absolute -top-12 -right-12 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-10 -left-10 w-56 h-56 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="relative space-y-7">
+      <div className="relative space-y-8 z-10">
         {/* Emblem */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center font-bold text-sm shrink-0">
-            <span className="text-[var(--color-brand-blue-light)]">AI</span>
-            <span className="text-[var(--color-brand-green)] font-extrabold">+</span>
+          <div className="w-11 h-11 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center font-bold text-base shrink-0 shadow-sm backdrop-blur-sm">
+            <span className="text-blue-300">AI</span>
+            <span className="text-emerald-400 font-extrabold">+</span>
           </div>
           <div>
-            <p className="font-bold text-sm tracking-tight text-white leading-tight">
+            <p className="font-extrabold text-base tracking-tight text-white leading-tight">
               AI & Data Programme Pipeline
             </p>
-            <p className="text-[11px] text-slate-300 leading-tight">
-              Staff & Intern Progress Dashboard
+            <p className="text-xs text-blue-200/80 leading-tight">
+              Staff & Intern Registration Queue
             </p>
           </div>
         </div>
 
         <div className="space-y-3">
-          <Badge variant="blue" dot size="sm" className="bg-white/10 text-blue-200 border-white/15">
+          <Badge variant="blue" dot size="sm" className="bg-white/10 text-blue-200 border-white/20 px-3 py-1">
             Verification Queue
           </Badge>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight leading-snug">
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-snug text-white">
             Your registration is safely queued for review.
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-            The administrator validates system access to ensure proper role security and division mapping.
+            The administrator validates system access to ensure proper role security and track allocation.
           </p>
         </div>
 
         {/* Informative tips */}
         <div className="space-y-4 pt-1">
-          <div className="flex items-start gap-3">
-            <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center shrink-0 mt-0.5 text-[var(--color-brand-blue-light)]">
+          <div className="flex items-start gap-3.5 group">
+            <div className="w-8 h-8 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center shrink-0 mt-0.5 text-emerald-400">
               <Clock className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-white">Pending Approval</p>
-              <p className="text-xs text-slate-400 leading-snug mt-0.5">
-                Verification status is tracked in real-time. Contact your coordinator if review takes longer than 24 hours.
+              <p className="text-xs sm:text-sm font-bold text-white">Pending Administrative Approval</p>
+              <p className="text-[11px] text-slate-300 leading-snug mt-0.5">
+                Verification status is tracked securely. Once approved, you can sign in with your registered phone number via OTP.
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      <p className="text-[11px] text-slate-400 mt-6 relative z-10">
+      <p className="text-xs text-slate-400 mt-8 relative z-10 pt-4 border-t border-white/10">
         © SLT-MOBITEL AI & Data Team. All rights reserved.
       </p>
     </div>
@@ -97,7 +97,7 @@ export default function PendingVerificationPage() {
 
   return (
     <AuthLayout leftPanel={<PendingBrandPanel />} backTo={{ to: '/login', label: 'Back to Sign In' }}>
-      <div className="max-w-md w-full mx-auto space-y-6">
+      <div className="max-w-xl w-full mx-auto space-y-6">
         
         {/* Header Block */}
         <div className="space-y-1.5">
@@ -175,7 +175,7 @@ export default function PendingVerificationPage() {
           </div>
         </div>
 
-        {/* 3. Account Summary Placeholder */}
+        {/* 3. Account Summary */}
         <div className="space-y-3 p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
           <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
             <FileText className="w-4 h-4 text-[var(--color-brand-blue)]" />
@@ -201,8 +201,8 @@ export default function PendingVerificationPage() {
           </div>
 
           {!registration && (
-            <p className="text-[10px] text-slate-500 text-center italic pt-1 leading-relaxed">
-              "Registration details will be displayed after backend integration."
+            <p className="text-[11px] text-slate-500 text-center pt-1 leading-relaxed">
+              No recent registration session detected. Please sign in or register a new account.
             </p>
           )}
         </div>

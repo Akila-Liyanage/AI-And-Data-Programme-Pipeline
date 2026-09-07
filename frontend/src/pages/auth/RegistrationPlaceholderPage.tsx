@@ -66,7 +66,7 @@ function RegBrandPanel() {
               icon: <Users className="w-4 h-4" />,
               color: 'text-[var(--color-brand-green)]',
               label: 'Staff & Intern Access Only',
-              detail: 'Administrator profiles cannot be self-registered and require manual backend provisioning.',
+              detail: 'Administrator profiles cannot be self-registered and require direct system provisioning.',
             },
             {
               icon: <ShieldAlert className="w-4 h-4" />,
@@ -116,17 +116,17 @@ export default function RegistrationPlaceholderPage() {
           </p>
         </div>
 
-        {/* BRD Info Card */}
+        {/* Verification Info Card */}
         <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-4">
           <div className="flex items-center gap-2 text-[var(--color-brand-navy)]">
             <Settings className="w-4 h-4 text-[var(--color-brand-blue)] animate-spin-slow" />
             <h2 className="text-xs font-bold uppercase tracking-widest">
-              Updated BRD Flow
+              Registration & Verification Protocol
             </h2>
           </div>
           
           <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-            Registration will support Staff and Intern users only. Accounts will require administrator verification before system access.
+            Registration supports Staff and Intern users only. Accounts require administrator verification before system access is granted.
           </p>
 
           <div className="flex items-center gap-2 pt-1">
@@ -135,7 +135,7 @@ export default function RegistrationPlaceholderPage() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
             </span>
             <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">
-              Awaiting registration interface implementation
+              Registration Gateway Active
             </span>
           </div>
         </div>
@@ -156,7 +156,7 @@ export default function RegistrationPlaceholderPage() {
         {/* Security footnote */}
         <p className="text-xs text-[var(--color-text-secondary)] flex items-center justify-center gap-1.5 pt-1">
           <Smartphone className="w-3.5 h-3.5 text-[var(--color-brand-blue)] shrink-0" aria-hidden="true" />
-          <span>Self-Registration Gateway · Awaiting backend integration</span>
+          <span>Self-Registration Gateway · Verified Access</span>
         </p>
 
       </div>

@@ -8,27 +8,39 @@ import {
   Activity,
   Layers,
   ArrowRight,
+  FileText,
+  Clock,
+  CheckCircle2,
+  Play,
 } from 'lucide-react';
 import { Button, Badge } from '../../../components/common';
 
 export interface StaffWorkItem {
   id: string;
+  workItemId?: string;
   title: string;
   projectId: string;
   projectName: string;
-  requiredRole: string;
+  description?: string;
+  requiredRole?: string;
+  responsibility?: string;
   percentageWeight: number;
   status: 'Not Started' | 'In Progress' | 'Completed';
-  targetDate: string;
+  assignedDate?: string;
+  dueDate?: string;
+  targetDate?: string;
+  completionDate?: string;
   assignedUser?: string;
   assignmentStatus?: string;
+  notes?: string;
+  projectProgress?: number;
 }
 
 export interface StaffWorkItemDetailsDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   workItem?: StaffWorkItem | null;
-  onStatusTransition?: (targetStatus: 'Not Started' | 'In Progress' | 'Completed') => void;
+  onStatusTransition?: (targetStatus: 'In Progress' | 'Completed', item: StaffWorkItem) => void;
 }
 
 export const StaffWorkItemDetailsDrawer: React.FC<StaffWorkItemDetailsDrawerProps> = ({
@@ -60,9 +72,11 @@ export const StaffWorkItemDetailsDrawer: React.FC<StaffWorkItemDetailsDrawerProp
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !workItem) return null;
 
-  const currentStatus = workItem?.status || 'Not Started';
+  const currentStatus = workItem.status || 'Not Started';
+  const effectiveItemId = workItem.workItemId || workItem.id;
+  const effectiveDueDate = workItem.dueDate || workItem.targetDate || '—';
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -108,27 +122,30 @@ export const StaffWorkItemDetailsDrawer: React.FC<StaffWorkItemDetailsDrawerProp
           {/* ── Sticky Header ───────────────────────────────────── */}
           <div className="px-6 py-5 border-b border-[var(--color-border-subtle)] flex items-start justify-between gap-4 bg-[var(--color-surface-white)] shrink-0">
             <div className="space-y-1.5 min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="blue" size="sm">
                   Work Item Details
                 </Badge>
+                <span className="font-mono text-xs text-slate-600 bg-slate-100 px-2 py-0.5 rounded font-semibold">
+                  {effectiveItemId}
+                </span>
                 {getStatusBadge(currentStatus)}
               </div>
               <h2
                 id="staff-work-item-details-title"
-                className="text-lg sm:text-xl font-bold tracking-tight text-[var(--color-brand-navy)]"
+                className="text-lg sm:text-xl font-bold tracking-tight text-[var(--color-brand-navy)] truncate"
               >
-                Work Item Overview
+                {workItem.title}
               </h2>
               <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                Review specific task parameters, role requirements, and target completion progress.
+                Review task parameters, role responsibility, contribution weight, and progress.
               </p>
             </div>
 
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-brand-navy)] hover:bg-[var(--color-surface-subtle)] transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)]/40"
+              className="p-2 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-brand-navy)] hover:bg-[var(--color-surface-subtle)] transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)]/40 shrink-0"
               aria-label="Close drawer"
             >
               <X className="w-5 h-5" />
@@ -144,41 +161,41 @@ export const StaffWorkItemDetailsDrawer: React.FC<StaffWorkItemDetailsDrawerProp
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="text-base font-bold text-[var(--color-brand-navy)] truncate">
-                  {workItem?.title || '—'}
+                  {workItem.title}
                 </h3>
-                <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5 mt-0.5">
-                  <span>Project:</span>
-                  <span className="font-semibold text-slate-800">{workItem?.projectName || '—'}</span>
-                  <span>({workItem?.projectId || '—'})</span>
+                <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5 mt-0.5 flex-wrap">
+                  <span className="font-medium text-slate-500">Project:</span>
+                  <span className="font-semibold text-slate-800">{workItem.projectName}</span>
+                  <span className="font-mono text-slate-500">({workItem.projectId})</span>
                 </p>
               </div>
             </div>
 
-            {/* ── A. WORK ITEM INFORMATION ──────────────────────── */}
+            {/* ── A. WORK ITEM SPECIFICATIONS ───────────────────── */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
                 <FolderKanban className="w-4 h-4 text-[var(--color-brand-blue)]" />
                 <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
-                  Work Item Information
+                  Work Item Specifications
                 </h4>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
-                    Work Item / Task
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
+                    Work Item ID
                   </span>
-                  <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {workItem?.title || '—'}
+                  <p className="font-mono font-semibold text-[var(--color-brand-navy)]">
+                    {effectiveItemId}
                   </p>
                 </div>
 
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
                     Associated Project
                   </span>
                   <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {workItem?.projectName || '—'}
+                    {workItem.projectName}
                   </p>
                 </div>
 
@@ -188,133 +205,179 @@ export const StaffWorkItemDetailsDrawer: React.FC<StaffWorkItemDetailsDrawerProp
                     Required Role
                   </span>
                   <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {workItem?.requiredRole || '—'}
+                    {workItem.requiredRole || 'Permanent Staff'}
                   </p>
                 </div>
 
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
-                    Percentage Weight
-                  </span>
-                  <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {workItem?.percentageWeight !== undefined ? `${workItem.percentageWeight}%` : '—'}
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
                     Current Status
                   </span>
                   <div>{getStatusBadge(currentStatus)}</div>
                 </div>
 
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
-                    Target Date
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium flex items-center gap-1">
+                    <Calendar className="w-3 h-3 text-[var(--color-text-muted)]" />
+                    Assigned Date
                   </span>
-                  <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {workItem?.targetDate || '—'}
+                  <p className="font-semibold text-[var(--color-brand-navy)] font-mono">
+                    {workItem.assignedDate || '—'}
                   </p>
                 </div>
+
+                <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-[var(--color-text-muted)]" />
+                    Due Date
+                  </span>
+                  <p className="font-semibold text-[var(--color-brand-navy)] font-mono">
+                    {effectiveDueDate}
+                  </p>
+                </div>
+
+                {workItem.completionDate && (
+                  <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1 sm:col-span-2">
+                    <span className="text-[11px] text-[var(--color-text-secondary)] font-medium flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-[var(--color-status-success)]" />
+                      Completion Date
+                    </span>
+                    <p className="font-semibold text-[var(--color-brand-navy)] font-mono">
+                      {workItem.completionDate}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* ── B. ASSIGNMENT INFORMATION ─────────────────────── */}
+            {/* ── B. TASK DESCRIPTION & SCOPE ───────────────────── */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
-                <UserCheck className="w-4 h-4 text-[var(--color-brand-green)]" />
+                <FileText className="w-4 h-4 text-[var(--color-brand-blue)]" />
                 <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
-                  Assignment Details
+                  Description & Scope
                 </h4>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] text-xs text-slate-700 leading-relaxed whitespace-pre-line">
+                {workItem.description ? (
+                  workItem.description
+                ) : (
+                  <p className="text-slate-400 italic">
+                    No detailed description provided for this work item.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* ── C. RESPONSIBILITY & NOTES ──────────────────────── */}
+            {(workItem.responsibility || workItem.notes) && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
+                  <UserCheck className="w-4 h-4 text-[var(--color-brand-green)]" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
+                    Responsibility & Notes
+                  </h4>
+                </div>
+
+                <div className="p-4 rounded-xl bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] text-xs text-slate-700 leading-relaxed space-y-2">
+                  {workItem.responsibility && (
+                    <div>
+                      <span className="text-[11px] font-semibold text-slate-500 block">Responsibility:</span>
+                      <p className="font-medium text-slate-800">{workItem.responsibility}</p>
+                    </div>
+                  )}
+                  {workItem.notes && (
+                    <div>
+                      <span className="text-[11px] font-semibold text-slate-500 block">Notes:</span>
+                      <p className="text-slate-600">{workItem.notes}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── D. READ-ONLY PROGRESS & CONTRIBUTION ──────────── */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border-subtle)]">
+                <div className="flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-[var(--color-brand-blue)]" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
+                    Progress Contribution (Read-Only)
+                  </h4>
+                </div>
+                <span className="text-[11px] font-semibold text-[var(--color-text-muted)]">
+                  System Governed
+                </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
-                    Assigned User
-                  </span>
-                  <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {workItem?.assignedUser || '—'}
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
-                    User Role
-                  </span>
-                  <p className="font-semibold text-[var(--color-brand-navy)]">
-                    Permanent Staff
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
-                    Assignment Status
-                  </span>
-                  <Badge variant="success" size="sm">
-                    {workItem?.assignmentStatus || 'Assigned'}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-
-            {/* ── C. PROGRESS CONTRIBUTION ──────────────────────── */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
-                <Activity className="w-4 h-4 text-[var(--color-brand-blue)]" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
-                  Progress Contribution
-                </h4>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
                     Predefined Weight
                   </span>
-                  <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {workItem?.percentageWeight !== undefined ? `${workItem.percentageWeight}%` : '—'}
+                  <p className="font-semibold text-[var(--color-brand-navy)] font-mono text-sm">
+                    {workItem.percentageWeight !== undefined ? `${workItem.percentageWeight}%` : '—'}
                   </p>
                 </div>
 
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
                     Current Contribution
                   </span>
-                  <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {currentStatus === 'Completed' && workItem?.percentageWeight !== undefined
-                      ? `${workItem.percentageWeight}%`
-                      : '0%'}
+                  <p className="font-semibold text-[var(--color-brand-navy)] font-mono text-sm">
+                    {currentStatus === 'Completed' ? `${workItem.percentageWeight}%` : '0%'}
                   </p>
                 </div>
 
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
                     Project Progress Impact
                   </span>
-                  <p className="font-semibold text-[var(--color-brand-blue)] font-bold">
-                    {currentStatus === 'Completed' && workItem?.percentageWeight !== undefined
+                  <p className="font-bold text-[var(--color-brand-blue)] font-mono text-sm">
+                    {currentStatus === 'Completed'
                       ? `+${workItem.percentageWeight}% Overall`
                       : '0%'}
                   </p>
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-2">
+              {/* Related Project Progress Context if available */}
+              {workItem.projectProgress !== undefined && (
+                <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-slate-700">Project Overall Progress</span>
+                    <span className="font-bold font-mono text-[var(--color-brand-blue)]">
+                      {workItem.projectProgress}%
+                    </span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[var(--color-brand-blue)] rounded-full transition-all duration-300"
+                      style={{ width: `${workItem.projectProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="p-3.5 rounded-xl bg-slate-50/90 border border-slate-200 text-xs text-slate-600 space-y-2">
                 <p className="font-medium text-[var(--color-brand-navy)]">
-                  Completed work-item weights contribute automatically to project progress:
+                  Completed work-item weights contribute automatically to overall project progress:
                 </p>
-                <div className="flex flex-wrap items-center gap-2 font-mono text-[10px] bg-white p-2 rounded-lg border border-slate-100">
+                <div className="flex flex-wrap items-center gap-2 font-mono text-[10px] bg-white p-2.5 rounded-lg border border-slate-100">
                   <span className="text-slate-800">Work Item Completed</span>
                   <ArrowRight className="w-3 h-3 text-slate-400" />
-                  <span className="text-slate-800">Percentage Weight Counted</span>
+                  <span className="text-slate-800">Predefined Weight ({workItem.percentageWeight}%)</span>
                   <ArrowRight className="w-3 h-3 text-slate-400" />
                   <span className="text-[var(--color-brand-blue)] font-bold">Project Progress Updated</span>
                 </div>
+                <p className="text-[10px] text-slate-500 leading-relaxed">
+                  Overall project progress is calculated automatically by the system. Staff members cannot manually edit or slide progress percentages.
+                </p>
               </div>
             </div>
 
-            {/* ── D. STATUS / ACTIVITY ──────────────────────────── */}
+            {/* ── E. ALLOWED STATUS ACTIONS (BRD ALIGNED) ────────── */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
                 <Calendar className="w-4 h-4 text-[var(--color-brand-green)]" />
@@ -325,13 +388,16 @@ export const StaffWorkItemDetailsDrawer: React.FC<StaffWorkItemDetailsDrawerProp
 
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs">
                 {currentStatus === 'Not Started' && (
-                  <div className="space-y-2">
-                    <p className="text-slate-600">This work item is waiting to start. You can transition it to In Progress to begin work.</p>
+                  <div className="space-y-3">
+                    <p className="text-slate-600 leading-relaxed">
+                      This work item is waiting to start. You can transition it to In Progress to begin work on assigned tasks.
+                    </p>
                     <Button
                       type="button"
                       variant="primary"
                       size="sm"
-                      onClick={() => onStatusTransition && onStatusTransition('In Progress')}
+                      leftIcon={<Play className="w-3.5 h-3.5" />}
+                      onClick={() => onStatusTransition && onStatusTransition('In Progress', workItem)}
                     >
                       Start Work
                     </Button>
@@ -340,36 +406,31 @@ export const StaffWorkItemDetailsDrawer: React.FC<StaffWorkItemDetailsDrawerProp
 
                 {currentStatus === 'In Progress' && (
                   <div className="space-y-3">
-                    <p className="text-slate-600">This work item is currently active. You can mark it completed or revert it to not started.</p>
-                    <div className="flex flex-wrap gap-2">
+                    <p className="text-slate-600 leading-relaxed">
+                      This work item is currently active. Once all deliverables are completed, confirm completion to contribute this item&apos;s weight to project progress.
+                    </p>
+                    <div>
                       <Button
                         type="button"
                         variant="green"
                         size="sm"
-                        onClick={() => onStatusTransition && onStatusTransition('Completed')}
+                        leftIcon={<CheckCircle2 className="w-3.5 h-3.5" />}
+                        onClick={() => onStatusTransition && onStatusTransition('Completed', workItem)}
                       >
-                        Mark as Completed
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onStatusTransition && onStatusTransition('Not Started')}
-                      >
-                        Revert to Not Started
+                        Mark Complete
                       </Button>
                     </div>
                   </div>
                 )}
 
                 {currentStatus === 'Completed' && (
-                  <div className="space-y-1">
-                    <p className="text-slate-600 font-semibold text-[var(--color-brand-navy)] flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-[var(--color-brand-green)]" />
+                  <div className="space-y-1.5">
+                    <p className="text-slate-700 font-semibold text-[var(--color-brand-navy)] flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[var(--color-status-success)]" />
                       Completed & Read-Only
                     </p>
                     <p className="text-slate-500 text-[11px] leading-relaxed">
-                      Completed work items are archived. Reopening completed items is currently not permitted by standard governance rules.
+                      This work item has been successfully completed. Its predefined weight ({workItem.percentageWeight}%) has been credited to overall project progress. Completed items cannot be moved backward.
                     </p>
                   </div>
                 )}

@@ -311,7 +311,19 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       const message = err?.message || 'Invalid or expired verification code.';
-      setPhoneError(message);
+      if (message.toLowerCase().includes('pending')) {
+        setStatusNotice({
+          type: 'pending',
+          message,
+        });
+      } else if (message.toLowerCase().includes('reject') || message.toLowerCase().includes('deactivat')) {
+        setStatusNotice({
+          type: 'rejected',
+          message,
+        });
+      } else {
+        setPhoneError(message);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -530,17 +542,17 @@ export default function LoginPage() {
           </form>
         )}
 
-        {/* ── 1-CLICK QUICK DEMO ACCOUNTS ────────────────────────── */}
+        {/* ── ROLE-BASED QUICK ACCESS ────────────────────────────── */}
         <div className="space-y-3 pt-2">
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              Quick 1-Click Demo Accounts
+              Role-Based Quick Access
             </span>
             <div className="h-px bg-slate-200 flex-1" />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-            {/* Admin Demo */}
+            {/* Admin Account */}
             <button
               type="button"
               onClick={() => handleQuickFillPhone('0774943291')}
@@ -558,7 +570,7 @@ export default function LoginPage() {
               <span className="text-[10px] text-emerald-600 font-bold block mt-0.5">Verified</span>
             </button>
 
-            {/* Staff Demo */}
+            {/* Staff Account */}
             <button
               type="button"
               onClick={() => handleQuickFillPhone('0771234567')}
@@ -576,7 +588,7 @@ export default function LoginPage() {
               <span className="text-[10px] text-emerald-600 font-bold block mt-0.5">Permanent</span>
             </button>
 
-            {/* Intern Demo */}
+            {/* Intern Account */}
             <button
               type="button"
               onClick={() => handleQuickFillPhone('0777654321')}
@@ -595,9 +607,9 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* Pending Demo Accounts */}
+          {/* Pending Approval Accounts */}
           <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs shadow-2xs">
-            <span className="text-slate-600 font-medium">Test Approval Flow:</span>
+            <span className="text-slate-600 font-medium">Pending Verification:</span>
             <div className="flex items-center gap-2">
               <button
                 type="button"

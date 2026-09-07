@@ -198,7 +198,7 @@ export default function UserManagementPage() {
       user={userDisplay}
       notificationsCount={2}
       onNotificationClick={() => { }}
-      onProfileClick={() => { }}
+      onProfileClick={() => navigate('/admin/profile')}
       onLogoutClick={handleLogout}
     >
       {/* ── Page Header ────────────────────────────────────────── */}

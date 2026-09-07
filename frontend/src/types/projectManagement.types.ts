@@ -25,6 +25,14 @@ export type ProjectPriority =
   | 'Critical'
   | (string & {});
 
+export interface ProjectWorkItem {
+  workItemId: string;
+  title: string;
+  role: string;
+  percentage: number;
+  status: 'TODO' | 'IN_PROGRESS' | 'DONE' | string;
+}
+
 export interface ManagedProject {
   id: string;
   name: string;
@@ -41,6 +49,8 @@ export interface ManagedProject {
   priority: ProjectPriority;
   progress?: number;
   milestoneInfo?: string;
+  workItems?: ProjectWorkItem[];
   createdAt?: string;
   updatedAt?: string;
 }
+
