@@ -312,10 +312,10 @@ export const StaffProjectDetailsDrawer: React.FC<StaffProjectDetailsDrawerProps>
                         <EmptyState
                           icon={<CheckSquare className="w-6 h-6 text-slate-400" />}
                           title="No assigned work items available"
-                          description="Your project work items will appear here once assignment data is connected."
+                          description="Your project work items will appear here once allocated."
                           secondaryAction={
                             <Badge size="sm" variant="neutral">
-                              Awaiting backend integration
+                              No items allocated
                             </Badge>
                           }
                         />
@@ -362,7 +362,7 @@ export const StaffProjectDetailsDrawer: React.FC<StaffProjectDetailsDrawerProps>
                     <span className="text-[var(--color-brand-blue)] font-bold">Project Progress</span>
                   </p>
                   <p className="text-[10px] text-slate-400 italic">
-                    Awaiting work-breakdown data integration.
+                    Work breakdown structure will be shown when tasks are active.
                   </p>
                 </div>
               </div>

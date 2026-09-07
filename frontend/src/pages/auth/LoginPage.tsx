@@ -312,7 +312,19 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       const message = err?.message || 'Invalid or expired verification code.';
-      setPhoneError(message);
+      if (message.toLowerCase().includes('pending')) {
+        setStatusNotice({
+          type: 'pending',
+          message,
+        });
+      } else if (message.toLowerCase().includes('reject') || message.toLowerCase().includes('deactivat')) {
+        setStatusNotice({
+          type: 'rejected',
+          message,
+        });
+      } else {
+        setPhoneError(message);
+      }
     } finally {
       setIsSubmitting(false);
     }

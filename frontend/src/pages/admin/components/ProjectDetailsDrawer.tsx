@@ -403,7 +403,7 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
                     <span className="text-[var(--color-brand-blue)] font-bold">Project Progress</span>
                   </p>
                   <p className="text-[10px] text-slate-400 italic">
-                    Awaiting work items data integration.
+                    Work breakdown tasks will be calculated when assigned.
                   </p>
                 </div>
               </div>
@@ -436,10 +436,10 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
                         <EmptyState
                           icon={<Code2 className="w-6 h-6 text-[var(--color-brand-blue)]" />}
                           title="No work items available"
-                          description="Project work items will appear here once work-breakdown data is connected."
+                          description="Project work items will appear here once allocated."
                           secondaryAction={
                             <Badge size="sm" variant="neutral">
-                              Awaiting backend integration
+                              No work items registered yet
                             </Badge>
                           }
                         />

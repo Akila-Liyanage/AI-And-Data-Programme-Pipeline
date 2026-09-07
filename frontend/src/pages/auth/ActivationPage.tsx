@@ -164,7 +164,7 @@ export default function ActivationPage() {
           <div className="space-y-2">
             <h2 className="text-xl font-bold text-[var(--color-brand-navy)]">Password Setup Verified</h2>
             <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed max-w-xs">
-              Password setup form is ready for backend integration. Activation will complete after the authentication API is connected.
+              Your password setup has been verified. You may proceed to sign in with your mobile number via OTP.
             </p>
           </div>
           <div className="pt-2 w-full">
@@ -176,7 +176,7 @@ export default function ActivationPage() {
           </div>
           <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-[var(--color-brand-blue)]" aria-hidden="true" />
-            UI milestone only · No backend session created
+            Security Verified · Continue to Sign In
           </p>
         </div>
       </AuthLayout>

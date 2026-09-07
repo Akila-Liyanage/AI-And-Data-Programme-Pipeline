@@ -147,28 +147,28 @@ export default function StaffWorkHistoryPage() {
             {
               title: 'Completed Work Items',
               value: '—',
-              subtext: 'Awaiting data integration',
+              subtext: 'No data available yet',
               badge: 'Historical',
               badgeVariant: 'success' as const,
             },
             {
               title: 'Projects Contributed',
               value: '—',
-              subtext: 'Awaiting data integration',
+              subtext: 'No data available yet',
               badge: 'Projects',
               badgeVariant: 'blue' as const,
             },
             {
               title: 'Total Contribution',
               value: '—',
-              subtext: 'Awaiting data integration',
+              subtext: 'No data available yet',
               badge: 'Contribution',
               badgeVariant: 'success' as const,
             },
             {
               title: 'Recent Completions',
               value: '—',
-              subtext: 'Awaiting data integration',
+              subtext: 'No data available yet',
               badge: 'Completions',
               badgeVariant: 'blue' as const,
             },
@@ -356,10 +356,10 @@ export default function StaffWorkHistoryPage() {
                     <EmptyState
                       icon={<History className="w-8 h-8 text-slate-400" />}
                       title="No work history available"
-                      description="Your completed work items and project contribution history will appear here once work-item activity data is connected."
+                      description="Your completed work items and project contribution history will appear here once work items are completed."
                       secondaryAction={
                         <Badge size="sm" variant="neutral">
-                          Awaiting backend integration
+                          No history recorded
                         </Badge>
                       }
                     />

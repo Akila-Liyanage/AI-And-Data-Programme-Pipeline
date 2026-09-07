@@ -132,28 +132,28 @@ export default function StaffProgressPage() {
             {
               title: 'Assigned Work Items',
               value: '—',
-              subtext: 'Awaiting data integration',
+              subtext: 'No data available yet',
               badge: 'Work Items',
               badgeVariant: 'blue' as const,
             },
             {
               title: 'In Progress',
               value: '—',
-              subtext: 'Awaiting data integration',
+              subtext: 'No data available yet',
               badge: 'Active',
               badgeVariant: 'blue' as const,
             },
             {
               title: 'Completed Work Items',
               value: '—',
-              subtext: 'Awaiting data integration',
+              subtext: 'No data available yet',
               badge: 'Completed',
               badgeVariant: 'success' as const,
             },
             {
               title: 'Total Contribution',
               value: '—',
-              subtext: 'Awaiting data integration',
+              subtext: 'No data available yet',
               badge: 'Contribution',
               badgeVariant: 'success' as const,
             },
@@ -258,10 +258,10 @@ export default function StaffProgressPage() {
                     <EmptyState
                       icon={<Activity className="w-8 h-8 text-slate-400" />}
                       title="No project contribution data available"
-                      description="Your project contribution summary will appear here once work-item activity data is connected."
+                      description="Your project contribution summary will appear here once active contributions are logged."
                       secondaryAction={
                         <Badge size="sm" variant="neutral">
-                          Awaiting backend integration
+                          No contributions yet
                         </Badge>
                       }
                     />
@@ -299,7 +299,7 @@ export default function StaffProgressPage() {
                 <div className="h-full bg-slate-300 rounded-full" style={{ width: '0%' }} />
               </div>
               <p className="text-[10px] text-slate-400 italic">
-                Awaiting data integration.
+                No progress data available yet.
               </p>
             </div>
           </div>
@@ -325,10 +325,10 @@ export default function StaffProgressPage() {
                     <EmptyState
                       icon={<CheckSquare className="w-8 h-8 text-slate-400" />}
                       title="No completed contributions available"
-                      description="Completed work items and their project progress contributions will appear here once work-item activity is connected."
+                      description="Completed work items and their project progress contributions will appear here once tasks are completed."
                       secondaryAction={
                         <Badge size="sm" variant="neutral">
-                          Awaiting backend integration
+                          No contributions yet
                         </Badge>
                       }
                     />
@@ -358,10 +358,10 @@ export default function StaffProgressPage() {
                     <EmptyState
                       icon={<Layers className="w-8 h-8 text-slate-400" />}
                       title="No recent work activity"
-                      description="Your work-item status activity will appear here once activity data is connected."
+                      description="Your work-item status activity will appear here as tasks are updated."
                       secondaryAction={
                         <Badge size="sm" variant="neutral">
-                          Awaiting backend integration
+                          No recent activity
                         </Badge>
                       }
                     />

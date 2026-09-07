@@ -87,7 +87,7 @@ export default function StaffProfilePage() {
 
   // Status mapping
   const getStatusBadge = (status?: string) => {
-    if (!status) return <Badge variant="neutral">Awaiting profile integration</Badge>;
+    if (!status) return <Badge variant="neutral">Profile pending update</Badge>;
     switch (status.toLowerCase()) {
       case 'verified':
       case 'active':
@@ -156,7 +156,7 @@ export default function StaffProfilePage() {
                     Profile Editing Inactive
                   </h3>
                   <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                    Profile editing is awaiting backend integration. Modifications to registered Staff records must be synchronized with central data stores.
+                    Profile editing is currently restricted. Please contact your system administrator to request modifications to your registered staff profile.
                   </p>
                 </div>
               </div>
@@ -271,7 +271,7 @@ export default function StaffProfilePage() {
               </div>
 
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-500 leading-relaxed text-[11px] italic">
-                Employment Type is currently not configured in the authentication records. Awaiting database integration.
+                Employment Type is not currently configured for this account.
               </div>
             </div>
           </Card>

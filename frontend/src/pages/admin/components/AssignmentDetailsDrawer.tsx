@@ -94,8 +94,8 @@ export const AssignmentDetailsDrawer: React.FC<AssignmentDetailsDrawerProps> = (
     if (actionName === 'remove') {
       setStatusNotice({
         type: 'info',
-        title: 'Awaiting backend integration',
-        message: 'Awaiting backend integration. Assignment deletion will be handled by the assignment service once connected.',
+        title: 'Action Unavailable',
+        message: 'Assignment modification is currently restricted. Please contact the administrator.',
       });
       return;
     }

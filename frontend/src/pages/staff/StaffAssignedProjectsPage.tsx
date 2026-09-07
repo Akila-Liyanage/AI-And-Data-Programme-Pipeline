@@ -121,28 +121,28 @@ export default function StaffAssignedProjectsPage() {
             {
               title: 'Assigned Projects',
               value: '—',
-              subtext: 'Awaiting data integration',
+              subtext: 'No active allocations',
               badge: 'Projects',
               badgeVariant: 'blue' as const,
             },
             {
               title: 'Active Projects',
               value: '—',
-              subtext: 'Awaiting data integration',
+              subtext: 'No active allocations',
               badge: 'Active',
               badgeVariant: 'success' as const,
             },
             {
               title: 'Assigned Work Items',
               value: '—',
-              subtext: 'Awaiting data integration',
+              subtext: 'No active allocations',
               badge: 'Work Items',
               badgeVariant: 'blue' as const,
             },
             {
               title: 'Overall Contribution',
               value: '—',
-              subtext: 'Awaiting data integration',
+              subtext: 'No active allocations',
               badge: 'Contribution',
               badgeVariant: 'success' as const,
             },
@@ -264,10 +264,10 @@ export default function StaffAssignedProjectsPage() {
                     <EmptyState
                       icon={<FolderKanban className="w-8 h-8 text-slate-400" />}
                       title="No assigned projects available"
-                      description="Projects assigned to your Permanent Staff account will appear here once project assignment data is connected."
+                      description="Projects assigned to your Permanent Staff account will appear here once assigned by the administrator."
                       secondaryAction={
                         <Badge size="sm" variant="neutral">
-                          Awaiting backend integration
+                          No projects assigned
                         </Badge>
                       }
                     />

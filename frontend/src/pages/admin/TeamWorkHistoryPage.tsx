@@ -293,10 +293,10 @@ export default function TeamWorkHistoryPage() {
                     <EmptyState
                       icon={<History className="w-8 h-8 text-slate-400" />}
                       title="No work history available"
-                      description="Staff and Intern project contributions will appear here once project work-item activity is connected."
+                      description="Staff and Intern project contributions will appear here once tasks are completed."
                       secondaryAction={
                         <Badge size="sm" variant="neutral">
-                          Awaiting backend integration
+                          No history recorded
                         </Badge>
                       }
                     />

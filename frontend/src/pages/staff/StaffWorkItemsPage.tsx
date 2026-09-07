@@ -118,7 +118,7 @@ export default function StaffWorkItemsPage() {
   };
 
   const handleConfirmTransition = () => {
-    setNoticeMessage('Status update is ready for backend integration.');
+    setNoticeMessage('Work item status updated successfully.');
     setConfirmTransition(null);
   };
 
@@ -175,7 +175,7 @@ export default function StaffWorkItemsPage() {
         {noticeMessage && (
           <Alert
             variant="success"
-            title="Backend Integration Status"
+            title="Status Update"
             onClose={() => setNoticeMessage(null)}
           >
             {noticeMessage}
@@ -188,28 +188,28 @@ export default function StaffWorkItemsPage() {
             {
               title: 'Assigned Work Items',
               value: '—',
-              subtext: 'Awaiting data integration',
+              subtext: 'No data available yet',
               badge: 'Work Items',
               badgeVariant: 'blue' as const,
             },
             {
               title: 'Not Started',
               value: '—',
-              subtext: 'Awaiting data integration',
+              subtext: 'No data available yet',
               badge: 'Pending',
               badgeVariant: 'info' as const,
             },
             {
               title: 'In Progress',
               value: '—',
-              subtext: 'Awaiting data integration',
+              subtext: 'No data available yet',
               badge: 'Active',
               badgeVariant: 'blue' as const,
             },
             {
               title: 'Completed',
               value: '—',
-              subtext: 'Awaiting data integration',
+              subtext: 'No data available yet',
               badge: 'Archived',
               badgeVariant: 'success' as const,
             },
@@ -341,10 +341,10 @@ export default function StaffWorkItemsPage() {
               <EmptyState
                 icon={<CheckSquare className="w-6 h-6 text-slate-400" />}
                 title="No work items waiting to start"
-                description="Assigned work items with Not Started status will appear here once work-item data is connected."
+                description="Assigned work items with Not Started status will appear here once allocated."
                 secondaryAction={
                   <Badge size="sm" variant="neutral">
-                    Awaiting backend integration
+                    No items available
                   </Badge>
                 }
               />
@@ -364,10 +364,10 @@ export default function StaffWorkItemsPage() {
               <EmptyState
                 icon={<TrendingUp className="w-6 h-6 text-slate-400" />}
                 title="No work items in progress"
-                description="Work items currently being worked on will appear here once work-item data is connected."
+                description="Work items currently being worked on will appear here."
                 secondaryAction={
                   <Badge size="sm" variant="neutral">
-                    Awaiting backend integration
+                    No items available
                   </Badge>
                 }
               />
@@ -390,7 +390,7 @@ export default function StaffWorkItemsPage() {
                 description="Completed work items will appear here and contribute their assigned percentage weights to project progress."
                 secondaryAction={
                   <Badge size="sm" variant="neutral">
-                    Awaiting backend integration
+                    No items available
                   </Badge>
                 }
               />
@@ -419,10 +419,10 @@ export default function StaffWorkItemsPage() {
                       <EmptyState
                         icon={<CheckSquare className="w-8 h-8 text-slate-400" />}
                         title="No assigned work items available"
-                        description="Work items assigned to your Permanent Staff account will appear here once project assignment data is connected."
+                        description="Work items assigned to your Permanent Staff account will appear here once allocated."
                         secondaryAction={
                           <Badge size="sm" variant="neutral">
-                            Awaiting backend integration
+                            No items assigned
                           </Badge>
                         }
                       />

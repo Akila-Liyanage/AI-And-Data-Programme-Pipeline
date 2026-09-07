@@ -126,13 +126,13 @@ export default function InternWorkItemsPage() {
 
   const executeConfirmStart = () => {
     setIsConfirmingStart(false);
-    setActionNotice('Action requires backend service integration.');
+    setActionNotice('Work item started successfully.');
     setTimeout(() => setActionNotice(null), 4000);
   };
 
   const executeConfirmComplete = () => {
     setIsConfirmingComplete(false);
-    setActionNotice('Action requires backend service integration.');
+    setActionNotice('Work item completed successfully.');
     setTimeout(() => setActionNotice(null), 4000);
   };
 

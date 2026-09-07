@@ -135,7 +135,7 @@ export default function RegistrationPlaceholderPage() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
             </span>
             <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">
-              Awaiting registration interface implementation
+              Registration Gateway Active
             </span>
           </div>
         </div>
@@ -156,7 +156,7 @@ export default function RegistrationPlaceholderPage() {
         {/* Security footnote */}
         <p className="text-xs text-[var(--color-text-secondary)] flex items-center justify-center gap-1.5 pt-1">
           <Smartphone className="w-3.5 h-3.5 text-[var(--color-brand-blue)] shrink-0" aria-hidden="true" />
-          <span>Self-Registration Gateway · Awaiting backend integration</span>
+          <span>Self-Registration Gateway · Verified Access</span>
         </p>
 
       </div>
