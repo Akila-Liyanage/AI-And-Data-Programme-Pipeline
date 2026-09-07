@@ -132,7 +132,7 @@ export default function RegistrationPage() {
 
   /* Conditional Fields */
   const [internRole, setInternRole] = useState('AI/ML');
-  const [professionalRole, setProfessionalRole] = useState('Senior AI Engineer');
+  const [professionalRole, setProfessionalRole] = useState('AI Engineer');
   const [employmentType, setEmploymentType] = useState('Permanent');
 
   /* Validation & API states */
@@ -440,22 +440,26 @@ export default function RegistrationPage() {
                 {errors.employmentType && <p className="text-[11px] text-rose-600 font-semibold">{errors.employmentType}</p>}
               </div>
 
-              {/* Designation */}
+              {/* Designation / Professional Role */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-blue-900">
-                  Professional Designation <span className="text-rose-500">*</span>
+                  Professional Role <span className="text-rose-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  required
+                <select
                   value={professionalRole}
                   onChange={(e) => {
                     setProfessionalRole(e.target.value);
                     clearError('professionalRole');
                   }}
-                  placeholder="e.g. Senior AI Engineer"
-                  className="w-full h-11 px-3.5 text-xs sm:text-sm rounded-xl border border-blue-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-2xs"
-                />
+                  className="w-full h-11 px-3.5 text-xs sm:text-sm rounded-xl border border-blue-200 bg-white text-slate-900 focus:outline-hidden focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-2xs cursor-pointer"
+                >
+                  <option value="Business Analyst">Business Analyst</option>
+                  <option value="Data Analyst">Data Analyst</option>
+                  <option value="Data Scientist">Data Scientist</option>
+                  <option value="Software Engineer">Software Engineer</option>
+                  <option value="QA">Quality Assurance (QA)</option>
+                  <option value="AI Engineer">AI Engineer</option>
+                </select>
                 {errors.professionalRole && <p className="text-[11px] text-rose-600 font-semibold">{errors.professionalRole}</p>}
               </div>
             </div>

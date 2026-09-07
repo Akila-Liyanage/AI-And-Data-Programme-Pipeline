@@ -36,7 +36,7 @@ export interface ApiProject {
   assignedMembersCount?: number;
   startDate: string;
   targetDate: string;
-  status: 'Planned' | 'Active' | 'On Hold' | 'Completed' | string;
+  status: 'Not Started' | 'Ongoing' | 'On Hold' | 'Completed' | 'Cancelled' | 'Planned' | 'Active' | string;
   priority: 'Low' | 'Medium' | 'High' | 'Critical' | string;
   progress: number;
   workItems: ApiWorkItem[];
@@ -142,6 +142,30 @@ export async function updateWorkItemStatus(
   } catch (err: unknown) {
     console.error('Error updating work item status:', err);
     const msg = err instanceof Error ? err.message : 'Failed to update status';
+    return { success: false, message: msg };
+  }
+}
+
+/**
+ * Self-enroll an authenticated user (Intern/Staff) into a project with role-matching
+ */
+export async function selfEnrollProject(
+  projectId: string
+): Promise<{ success: boolean; message?: string; assignment?: ApiAssignment; roleMatched?: boolean }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/assignments/self-enroll`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ projectId }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || 'Failed to enroll in project');
+    }
+    return data;
+  } catch (err: unknown) {
+    console.error('Error self-enrolling in project:', err);
+    const msg = err instanceof Error ? err.message : 'Enrollment failed';
     return { success: false, message: msg };
   }
 }

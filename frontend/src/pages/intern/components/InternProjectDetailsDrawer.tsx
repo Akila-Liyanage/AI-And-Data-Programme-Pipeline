@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   X,
   FolderKanban,
@@ -9,6 +9,7 @@ import {
   UserCheck,
   Building2,
   Cpu,
+  Users,
 } from 'lucide-react';
 import { Button, Badge, EmptyState } from '../../../components/common';
 
@@ -65,6 +66,34 @@ export const InternProjectDetailsDrawer: React.FC<InternProjectDetailsDrawerProp
   onClose,
   project,
 }) => {
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const [isLoadingTeam, setIsLoadingTeam] = useState<boolean>(false);
+
+  useEffect(() => {
+    const projId = project?.projectId || project?.id;
+    if (!isOpen || !projId) return;
+
+    const loadTeam = async () => {
+      setIsLoadingTeam(true);
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`http://localhost:5000/api/assignments?projectId=${projId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (res.ok && data.assignments) {
+          setTeamMembers(data.assignments);
+        }
+      } catch (err) {
+        console.error('Failed to load project team:', err);
+      } finally {
+        setIsLoadingTeam(false);
+      }
+    };
+
+    loadTeam();
+  }, [isOpen, project?.projectId, project?.id]);
+
   // Close on Escape key press
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -420,7 +449,72 @@ export const InternProjectDetailsDrawer: React.FC<InternProjectDetailsDrawerProp
               </div>
             </div>
 
-            {/* ── 5. WORK ITEM SUMMARY ───────────────────────────── */}
+            {/* ── 5. PROJECT TEAM MEMBERS ────────────────────────── */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border-subtle)]">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-[var(--color-brand-blue)]" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
+                    Project Team ({teamMembers.length} {teamMembers.length === 1 ? 'Member' : 'Members'})
+                  </h4>
+                </div>
+              </div>
+
+              {isLoadingTeam ? (
+                <div className="p-3 rounded-xl border border-slate-200 bg-slate-50/50 text-center text-xs text-slate-500 animate-pulse">
+                  Loading project team...
+                </div>
+              ) : teamMembers.length === 0 ? (
+                <div className="p-3 rounded-xl border border-slate-200 bg-slate-50/50 text-xs text-slate-500">
+                  No other team members assigned yet.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {teamMembers.map((m: any) => {
+                    const isIntern = m.userCategory?.toLowerCase().includes('intern');
+                    const initials = (m.userName || 'Member')
+                      .split(' ')
+                      .map((n: string) => n[0])
+                      .join('')
+                      .toUpperCase()
+                      .slice(0, 2);
+
+                    return (
+                      <div
+                        key={m._id || m.assignmentId}
+                        className="p-2.5 rounded-xl border border-slate-200 bg-white flex items-center justify-between gap-3 text-xs"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-[10px] shrink-0 ${
+                              isIntern
+                                ? 'bg-purple-100 text-purple-700'
+                                : 'bg-blue-100 text-blue-700'
+                            }`}
+                          >
+                            {initials}
+                          </div>
+                          <div className="min-w-0">
+                            <span className="font-bold text-slate-900 truncate block">
+                              {m.userName}
+                            </span>
+                            <span className="text-[10px] text-slate-500">
+                              {m.assignmentRole || m.professionalRole || 'Contributor'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <Badge size="sm" variant={isIntern ? 'neutral' : 'blue'}>
+                          {m.userCategory || (isIntern ? 'Intern' : 'Staff')}
+                        </Badge>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* ── 6. WORK ITEM SUMMARY ───────────────────────────── */}
             <div className="space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border-subtle)]">
                 <div className="flex items-center gap-2">

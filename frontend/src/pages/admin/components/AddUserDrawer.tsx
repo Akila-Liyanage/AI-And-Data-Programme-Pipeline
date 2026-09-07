@@ -26,6 +26,7 @@ interface FormState {
   phoneNumber: string;
   email: string;
   category: string;
+  employmentType: string;
   professionalRole: string;
   department: string;
 }
@@ -36,20 +37,26 @@ interface FormErrors {
   phoneNumber?: string;
   email?: string;
   category?: string;
+  employmentType?: string;
   professionalRole?: string;
   department?: string;
 }
 
 const PROFESSIONAL_ROLES = [
-  'Senior AI Engineer',
-  'AI Engineer',
-  'Data Scientist',
-  'Data Analyst',
-  'Software Engineer',
   'Business Analyst',
+  'Data Analyst',
+  'Data Scientist',
+  'Software Engineer',
   'QA',
+  'AI Engineer',
   'Frontend Developer',
   'Backend Developer',
+];
+
+const EMPLOYMENT_TYPES = [
+  'Permanent',
+  'Contract Based',
+  'Freelance',
 ];
 
 const DEPARTMENTS = [
@@ -66,7 +73,8 @@ const INITIAL_FORM_STATE: FormState = {
   phoneNumber: '',
   email: '',
   category: 'PERMANENT_STAFF',
-  professionalRole: 'Senior AI Engineer',
+  employmentType: 'Permanent',
+  professionalRole: 'AI Engineer',
   department: 'AI & Data Team',
 };
 
@@ -178,6 +186,11 @@ export const AddUserDrawer: React.FC<AddUserDrawerProps> = ({
           phoneNumber: formData.phoneNumber.trim(),
           email: formData.email.trim(),
           role: formData.category,
+          employmentType:
+            formData.category === 'PERMANENT_STAFF' || formData.category === 'STAFF'
+              ? formData.employmentType
+              : undefined,
+          internRole: formData.category === 'INTERN' ? formData.professionalRole : undefined,
           designation: formData.professionalRole.trim(),
           department: formData.department.trim(),
           accountStatus: 'ACTIVE',
@@ -471,6 +484,29 @@ export const AddUserDrawer: React.FC<AddUserDrawerProps> = ({
                     </p>
                   )}
                 </div>
+
+                {/* Staff Employment Type */}
+                {(formData.category === 'PERMANENT_STAFF' || formData.category === 'STAFF') && (
+                  <div className="space-y-1.5">
+                    <label htmlFor="user-emp-type" className="text-xs font-medium text-[var(--color-text-primary)] flex items-center gap-1">
+                      <span>Employment Type</span>
+                      <span className="text-[var(--color-status-error)]" aria-hidden="true">*</span>
+                    </label>
+                    <select
+                      id="user-emp-type"
+                      required
+                      value={formData.employmentType}
+                      onChange={(e) => handleChange('employmentType', e.target.value)}
+                      className="w-full h-10 px-3 text-xs sm:text-sm rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-white)] text-[var(--color-brand-navy)] focus:outline-hidden focus:border-[var(--color-brand-blue)] focus:ring-2 focus:ring-[var(--color-brand-blue)]/20 transition-all shadow-2xs cursor-pointer"
+                    >
+                      {EMPLOYMENT_TYPES.map((type) => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 {/* Professional Role */}
                 <div className="space-y-1.5">

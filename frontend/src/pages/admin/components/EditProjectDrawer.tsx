@@ -59,10 +59,11 @@ const PROJECT_CATEGORIES = [
 ];
 
 const PROJECT_STATUSES = [
-  'Planned',
-  'Active',
+  'Not Started',
+  'Ongoing',
   'On Hold',
   'Completed',
+  'Cancelled',
 ];
 
 const DEPARTMENTS = [
