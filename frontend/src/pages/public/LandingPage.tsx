@@ -1,32 +1,42 @@
+/**
+ * LandingPage.tsx
+ *
+ * ULTRA-MODERN SLT-MOBITEL ENTERPRISE LANDING PAGE
+ * Features:
+ * - 3D Rotating Interactive World Globe with live telemetry beams & orbit rings
+ * - Clean high-contrast typography using Plus Jakarta Sans & Inter
+ * - Curated SLT Blue & Mobitel Green light-mode color palette
+ * - Interactive Role-based Workspace Portals (Admin / Staff / Intern)
+ * - 4-stage Pipeline Architecture & WBS weight calculation showcase
+ * - Direct Phone OTP Login & Self-Registration gateways
+ */
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  Button,
-  Card,
-  Badge,
-  BrandLogo,
-} from '../../components/common';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   ArrowRight,
+  ShieldCheck,
   FolderKanban,
   Users,
   TrendingUp,
-  ShieldCheck,
-  Layers,
-  Activity,
-  CheckCircle2,
+  Sparkles,
+  Cpu,
+  Smartphone,
+  Bot,
+  Zap,
+  Building,
+  GraduationCap,
   Menu,
   X,
-  Lock,
-  Compass,
-  Briefcase,
-  GraduationCap,
-  Sparkles,
+  FileCheck,
+  ArrowUpRight,
 } from 'lucide-react';
+import { Button } from '../../components/common';
+import { AnimatedGlobe } from '../../components/common/AnimatedGlobe';
 
 export default function LandingPage() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeRoleTab, setActiveRoleTab] = useState<'admin' | 'staff' | 'intern'>('admin');
 
   const scrollToSection = (id: string) => {
     setMobileMenuOpen(false);
@@ -37,658 +47,647 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-app-bg)] text-[var(--color-text-primary)] flex flex-col selection:bg-[var(--color-brand-blue-light)] selection:text-[var(--color-brand-blue)]">
-      {/* ========================================================================= */}
-      {/* 1. Header / Navigation                                                    */}
-      {/* ========================================================================= */}
-      <header className="sticky top-0 z-50 bg-[var(--color-surface-white)]/95 backdrop-blur-xs border-b border-[var(--color-border-subtle)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          {/* Left: Brand */}
-          <div className="flex items-center">
-            <BrandLogo size="md" />
+    <div className="min-h-screen bg-white text-slate-900 selection:bg-blue-100 selection:text-blue-900 flex flex-col font-sans">
+      {/* ── TOP LIVE ANNOUNCEMENT BAR ──────────────────────────── */}
+      <div className="bg-gradient-to-r from-[#0057A8] via-[#0284C7] to-[#00A651] text-white text-xs font-semibold py-2 px-4 text-center flex items-center justify-center gap-2 shadow-xs">
+        <span className="flex h-2 w-2 rounded-full bg-emerald-300 animate-ping" />
+        <span className="font-medium">SLT-MOBITEL AI & Data Programme Pipeline • Next-Gen Telecommunication Intelligence</span>
+        <Link to="/login" className="underline font-bold hover:text-emerald-200 ml-1 inline-flex items-center gap-0.5">
+          <span>Sign In (OTP)</span>
+          <ArrowRight className="w-3 h-3" />
+        </Link>
+      </div>
+
+      {/* ── MAIN HEADER NAVIGATION ─────────────────────────────── */}
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-2xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
+          {/* Official Brand Logo */}
+          <Link to="/" className="flex items-center gap-3 group">
+            <img
+              src="/slt-mobitel-logo.png"
+              alt="SLTMOBITEL - The Connection"
+              className="h-10 sm:h-11 w-auto object-contain transition-transform duration-200 group-hover:scale-102"
+            />
+          </Link>
+
+          {/* Desktop Navigation Links */}
+          <nav className="hidden md:flex items-center gap-1 lg:gap-2" aria-label="Main Navigation">
+            {[
+              { label: 'Overview', id: 'overview' },
+              { label: 'Interactive Roles', id: 'roles' },
+              { label: 'Pipeline Architecture', id: 'architecture' },
+              { label: 'AI Tracks', id: 'tracks' },
+            ].map((link) => (
+              <button
+                key={link.id}
+                type="button"
+                onClick={() => scrollToSection(link.id)}
+                className="px-3.5 py-2 rounded-xl text-xs lg:text-sm font-semibold text-slate-700 hover:text-[#0057A8] hover:bg-blue-50/80 transition-all duration-150 cursor-pointer"
+              >
+                {link.label}
+              </button>
+            ))}
+          </nav>
+
+          {/* Right Action Buttons */}
+          <div className="hidden md:flex items-center gap-3">
+            <Link
+              to="/register"
+              className="px-4 py-2 text-xs lg:text-sm font-bold text-slate-700 hover:text-[#0057A8] hover:bg-slate-100 rounded-xl transition-colors"
+            >
+              Self-Register
+            </Link>
+            <Button
+              variant="primary"
+              size="md"
+              leftIcon={<Smartphone className="w-4 h-4" />}
+              onClick={() => navigate('/login')}
+              className="shadow-md hover:shadow-lg shadow-blue-600/20 font-bold bg-[#0057A8] hover:bg-[#00488B] text-white transform hover:-translate-y-0.5 transition-all duration-200"
+            >
+              Phone OTP Login
+            </Button>
           </div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8" aria-label="Main Navigation">
-            <button
-              type="button"
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="text-sm font-medium text-[var(--color-text-primary)] hover:text-[var(--color-brand-blue)] transition-colors cursor-pointer"
-            >
-              Home
-            </button>
+          {/* Mobile Menu Trigger */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            className="md:hidden p-2 rounded-xl text-slate-700 hover:bg-slate-100 focus:outline-hidden"
+            aria-label="Toggle navigation menu"
+          >
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
+
+        {/* Mobile Dropdown Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-white border-b border-slate-200 px-4 py-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
             <button
               type="button"
               onClick={() => scrollToSection('overview')}
-              className="text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-brand-blue)] transition-colors cursor-pointer"
+              className="block w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-slate-800 hover:bg-blue-50"
             >
-              Platform Overview
+              Overview
             </button>
             <button
               type="button"
               onClick={() => scrollToSection('roles')}
-              className="text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-brand-blue)] transition-colors cursor-pointer"
+              className="block w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-slate-800 hover:bg-blue-50"
             >
-              Programme Roles
+              Interactive Roles
             </button>
             <button
               type="button"
-              onClick={() => scrollToSection('workflow')}
-              className="text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-brand-blue)] transition-colors cursor-pointer"
+              onClick={() => scrollToSection('architecture')}
+              className="block w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-slate-800 hover:bg-blue-50"
             >
-              Workflow
+              Pipeline Architecture
             </button>
-          </nav>
-
-          {/* Right: Primary Navigation CTA */}
-          <div className="hidden md:flex items-center gap-3">
-            <Button
-              variant="primary"
-              size="md"
-              leftIcon={<Lock className="w-4 h-4" />}
-              onClick={() => navigate('/login')}
-            >
-              Sign In
-            </Button>
-          </div>
-
-          {/* Mobile Menu Toggle Button */}
-          <div className="md:hidden flex items-center">
             <button
               type="button"
-              onClick={() => setMobileMenuOpen((prev) => !prev)}
-              aria-label={mobileMenuOpen ? 'Close Navigation Menu' : 'Open Navigation Menu'}
-              aria-expanded={mobileMenuOpen}
-              className="p-2 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-subtle)] focus:outline-hidden focus:ring-2 focus:ring-[var(--color-brand-blue)]/20"
+              onClick={() => scrollToSection('tracks')}
+              className="block w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-slate-800 hover:bg-blue-50"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              AI Tracks
             </button>
-          </div>
-        </div>
-
-        {/* Mobile Dropdown Navigation */}
-        {mobileMenuOpen && (
-          <div className="md:hidden bg-[var(--color-surface-white)] border-b border-[var(--color-border-subtle)] px-4 pt-3 pb-5 space-y-3 animate-fadeIn">
-            <nav className="flex flex-col space-y-2">
-              <button
-                type="button"
-                onClick={() => {
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                  setMobileMenuOpen(false);
-                }}
-                className="text-left px-3 py-2 text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-subtle)] rounded-lg transition-colors"
-              >
-                Home
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollToSection('overview')}
-                className="text-left px-3 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-subtle)] rounded-lg transition-colors"
-              >
-                Platform Overview
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollToSection('roles')}
-                className="text-left px-3 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-subtle)] rounded-lg transition-colors"
-              >
-                Programme Roles
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollToSection('workflow')}
-                className="text-left px-3 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-subtle)] rounded-lg transition-colors"
-              >
-                Workflow
-              </button>
-            </nav>
-            <div className="pt-2 border-t border-[var(--color-border-subtle)]">
+            <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
               <Button
                 variant="primary"
                 fullWidth
-                leftIcon={<Lock className="w-4 h-4" />}
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  navigate('/login');
-                }}
+                size="md"
+                onClick={() => navigate('/login')}
+                leftIcon={<Smartphone className="w-4 h-4" />}
               >
-                Sign In to Workspace
+                Phone OTP Login
+              </Button>
+              <Button
+                variant="outline"
+                fullWidth
+                size="md"
+                onClick={() => navigate('/register')}
+              >
+                Register as Staff / Intern
               </Button>
             </div>
           </div>
         )}
       </header>
 
-      {/* ========================================================================= */}
-      {/* 2. Hero Section                                                           */}
-      {/* ========================================================================= */}
-      <section className="relative overflow-hidden pt-12 pb-16 lg:pt-20 lg:pb-24 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-white)]">
-        {/* Subtle grid pattern background */}
-        <div className="absolute inset-0 bg-[radial-gradient(#E4E7EC_1px,transparent_1px)] [background-size:24px_24px] opacity-40 pointer-events-none" />
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-            {/* Hero Left Content */}
-            <div className="lg:col-span-7 space-y-6 text-left">
-              {/* Eyebrow Badge */}
-              <div className="inline-flex items-center">
-                <Badge variant="blue" dot size="md">
-                  AI & Data Programme
-                </Badge>
+      {/* ── HERO SECTION (WITH 3D ROTATING WORLD GLOBE) ────────── */}
+      <section id="overview" className="relative pt-8 pb-16 sm:pt-14 sm:pb-24 bg-white overflow-hidden border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+            {/* Left Content Column */}
+            <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-blue-200 text-[#0057A8] text-xs font-bold shadow-xs">
+                <Sparkles className="w-3.5 h-3.5 text-[#0057A8]" />
+                <span className="tracking-wide">AI & DATA PROGRAMME PIPELINE</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#00A651] animate-ping" />
               </div>
 
-              {/* Main Heading */}
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-[var(--color-brand-navy)] leading-[1.18]">
-                One Platform. <br />
-                <span className="text-[var(--color-brand-blue)]">Clear Progress.</span> <br />
-                Better Collaboration.
+              {/* Main Headline */}
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.12]">
+                Architecting Intelligent{' '}
+                <span className="text-[#0057A8]">Telecom AI</span> &{' '}
+                <span className="text-[#00A651]">Data Science</span> Systems.
               </h1>
 
-              {/* Supporting Description */}
-              <p className="text-base sm:text-lg text-[var(--color-text-secondary)] max-w-2xl leading-relaxed">
-                A centralized workspace for managing AI & Data projects, team assignments, intern activities and programme progress.
+              {/* Subtitle */}
+              <p className="text-sm sm:text-base lg:text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto lg:mx-0 font-normal">
+                Enterprise project management built for SLT-MOBITEL. Track AI work-item completion weights in real-time, orchestrate Permanent Staff engineers and Intern trainees, and monitor high-impact telecommunication deliverables.
               </p>
 
               {/* Action Buttons */}
-              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-2">
                 <Button
                   variant="primary"
-                  size="lg"
-                  rightIcon={<ArrowRight className="w-4 h-4" />}
+                  size="md"
+                  leftIcon={<Smartphone className="w-4 h-4" />}
+                  rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
                   onClick={() => navigate('/login')}
+                  className="w-full sm:w-auto h-11 px-6 text-xs sm:text-sm font-bold bg-[#0057A8] hover:bg-[#00488B] text-white shadow-md hover:shadow-lg shadow-blue-700/15 transform hover:-translate-y-0.5 transition-all duration-150 rounded-xl"
                 >
-                  Sign In to Workspace
+                  Launch Platform (Phone OTP)
                 </Button>
-
                 <Button
                   variant="outline"
-                  size="lg"
-                  leftIcon={<Compass className="w-4 h-4" />}
-                  onClick={() => scrollToSection('overview')}
+                  size="md"
+                  onClick={() => navigate('/register')}
+                  className="w-full sm:w-auto h-11 px-5 text-xs sm:text-sm font-semibold border-slate-300 hover:border-blue-500 hover:bg-slate-50 text-slate-800 bg-white shadow-2xs rounded-xl"
                 >
-                  Explore Platform
+                  Staff / Intern Registration
                 </Button>
               </div>
 
-              {/* Trust & Structure Note */}
-              <div className="pt-4 flex items-center gap-6 text-xs text-[var(--color-text-secondary)] border-t border-[var(--color-border-subtle)]">
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-[var(--color-brand-green)] shrink-0" />
-                  <span>Role-Guided Workflows</span>
+              {/* Live Metric Badges */}
+              <div className="grid grid-cols-3 gap-3 pt-6 border-t border-slate-200/80 max-w-xl mx-auto lg:mx-0">
+                <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs text-center lg:text-left">
+                  <p className="text-xl sm:text-2xl font-extrabold text-[#0057A8] font-mono">100%</p>
+                  <p className="text-[11px] font-bold text-slate-600">Dynamic Weights</p>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-[var(--color-brand-green)] shrink-0" />
-                  <span>Centralized Dashboard</span>
+                <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs text-center lg:text-left">
+                  <p className="text-xl sm:text-2xl font-extrabold text-[#00A651] font-mono">3 Portals</p>
+                  <p className="text-[11px] font-bold text-slate-600">Admin, Staff & Intern</p>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-[var(--color-brand-green)] shrink-0" />
-                  <span>Secure Enterprise Access</span>
+                <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs text-center lg:text-left">
+                  <p className="text-xl sm:text-2xl font-extrabold text-sky-600 font-mono">SMS OTP</p>
+                  <p className="text-[11px] font-bold text-slate-600">Instant Access</p>
                 </div>
               </div>
             </div>
 
-            {/* Hero Right Visual (Enterprise Platform Preview Mockup) */}
-            <div className="lg:col-span-5 relative">
-              <div className="relative mx-auto max-w-md lg:max-w-none">
-                {/* Decorative border card representing abstract UI */}
-                <div className="bg-[var(--color-surface-white)] rounded-2xl border border-[var(--color-border-subtle)] shadow-[0_12px_32px_rgba(11,31,58,0.08)] p-5 sm:p-6 space-y-5">
-                  {/* Mock Window Top Bar */}
-                  <div className="flex items-center justify-between pb-3 border-b border-[var(--color-border-subtle)]">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-[#EF4444]/80" />
-                      <div className="w-3 h-3 rounded-full bg-[#F59E0B]/80" />
-                      <div className="w-3 h-3 rounded-full bg-[#10B981]/80" />
-                      <span className="ml-2 text-xs font-semibold text-[var(--color-brand-navy)]">
-                        Pipeline Dashboard Overview
-                      </span>
-                    </div>
-                    <Badge variant="success" dot size="sm">
-                      Live
-                    </Badge>
-                  </div>
+            {/* Right Column: 3D ROTATING WORLD GLOBE */}
+            <div className="lg:col-span-5 flex items-center justify-center relative">
+              <AnimatedGlobe />
+            </div>
+          </div>
+        </div>
+      </section>
 
-                  {/* Mock KPI Mini Stats */}
-                  <div className="grid grid-cols-3 gap-3 text-center">
-                    <div className="bg-[var(--color-app-bg)] p-2.5 rounded-lg border border-[var(--color-border-subtle)]">
-                      <p className="text-[11px] text-[var(--color-text-secondary)] font-medium">Projects</p>
-                      <p className="text-base font-bold text-[var(--color-brand-navy)]">18</p>
+      {/* ── SECTION: LIVE DEMO SHOWCASE ────────────────────────── */}
+      <section className="py-14 bg-white border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <span className="text-xs font-extrabold text-[#0057A8] uppercase tracking-wider">
+                Interactive Project Simulator
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+                Automated Work-Item Weight Calculation
+              </h2>
+            </div>
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0057A8] hover:underline"
+            >
+              <span>Explore full Admin Dashboard</span>
+              <ArrowUpRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Project Card 1 */}
+            <div className="p-6 rounded-3xl bg-slate-50 border border-slate-200/90 shadow-xs space-y-4 hover:shadow-md transition-all">
+              <div className="flex items-center justify-between">
+                <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-[#0057A8] text-[11px] font-extrabold font-mono">
+                  PRJ-101 • AI Engine
+                </span>
+                <span className="text-xs font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                  75% Complete
+                </span>
+              </div>
+              <h4 className="text-base font-bold text-slate-900">Customer Churn AI Prediction Model</h4>
+              <p className="text-xs text-slate-600">Predict churn with XGBoost & neural embeddings.</p>
+
+              <div className="space-y-1.5 pt-1">
+                <div className="flex justify-between text-xs font-bold text-slate-700">
+                  <span>Work Items (3/4 Done)</span>
+                  <span className="font-mono text-[#0057A8]">75%</span>
+                </div>
+                <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-[#0057A8] to-[#00A651] rounded-full" style={{ width: '75%' }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Project Card 2 */}
+            <div className="p-6 rounded-3xl bg-slate-50 border border-slate-200/90 shadow-xs space-y-4 hover:shadow-md transition-all">
+              <div className="flex items-center justify-between">
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-[#00A651] text-[11px] font-extrabold font-mono">
+                  PRJ-102 • Data Science
+                </span>
+                <span className="text-xs font-extrabold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md">
+                  45% Complete
+                </span>
+              </div>
+              <h4 className="text-base font-bold text-slate-900">Telecom Network Anomaly Detection</h4>
+              <p className="text-xs text-slate-600">Real-time telemetry stream processing with Kafka.</p>
+
+              <div className="space-y-1.5 pt-1">
+                <div className="flex justify-between text-xs font-bold text-slate-700">
+                  <span>Work Items (2/4 Done)</span>
+                  <span className="font-mono text-amber-600">45%</span>
+                </div>
+                <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-amber-500 to-[#00A651] rounded-full" style={{ width: '45%' }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Project Card 3 */}
+            <div className="p-6 rounded-3xl bg-slate-50 border border-slate-200/90 shadow-xs space-y-4 hover:shadow-md transition-all">
+              <div className="flex items-center justify-between">
+                <span className="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 text-[11px] font-extrabold font-mono">
+                  PRJ-103 • Analytics
+                </span>
+                <span className="text-xs font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                  90% Complete
+                </span>
+              </div>
+              <h4 className="text-base font-bold text-slate-900">Programme Progress Analytics Hub</h4>
+              <p className="text-xs text-slate-600">Dynamic executive reporting and audit logs.</p>
+
+              <div className="space-y-1.5 pt-1">
+                <div className="flex justify-between text-xs font-bold text-slate-700">
+                  <span>Work Items (3/4 Done)</span>
+                  <span className="font-mono text-[#0057A8]">90%</span>
+                </div>
+                <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-[#0057A8] to-[#00A651] rounded-full" style={{ width: '90%' }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── SECTION: ROLE PORTALS (INTERACTIVE TABS) ───────────── */}
+      <section id="roles" className="py-16 bg-white border-b border-slate-200 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+          {/* Header */}
+          <div className="text-center max-w-3xl mx-auto space-y-3">
+            <span className="px-3 py-1 rounded-full bg-blue-100 text-[#0057A8] text-xs font-extrabold uppercase tracking-wider">
+              Specialized Portals
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900">
+              Tailored Workspaces For Every Role
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600">
+              Select a programme role to explore specific dashboard features, governance permissions, and workflows.
+            </p>
+          </div>
+
+          {/* Role Tabs */}
+          <div className="flex justify-center">
+            <div className="p-1.5 rounded-2xl bg-white border border-slate-200 inline-flex gap-1.5 shadow-xs">
+              {[
+                { key: 'admin', label: 'System Administrator', icon: <ShieldCheck className="w-4 h-4" /> },
+                { key: 'staff', label: 'Permanent Staff', icon: <Building className="w-4 h-4" /> },
+                { key: 'intern', label: 'Intern Trainee', icon: <GraduationCap className="w-4 h-4" /> },
+              ].map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveRoleTab(tab.key as any)}
+                  className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer ${
+                    activeRoleTab === tab.key
+                      ? 'bg-[#0057A8] text-white shadow-md'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  {tab.icon}
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Role Tab Content Cards */}
+          <div className="max-w-4xl mx-auto">
+            {activeRoleTab === 'admin' && (
+              <div className="p-6 sm:p-8 rounded-3xl bg-white border border-blue-200 shadow-xl space-y-6 animate-in fade-in duration-300">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                  <div className="flex items-center gap-3.5">
+                    <div className="p-3 rounded-2xl bg-blue-50 border border-blue-200 text-[#0057A8]">
+                      <ShieldCheck className="w-6 h-6" />
                     </div>
-                    <div className="bg-[var(--color-app-bg)] p-2.5 rounded-lg border border-[var(--color-border-subtle)]">
-                      <p className="text-[11px] text-[var(--color-text-secondary)] font-medium">Active Staff</p>
-                      <p className="text-base font-bold text-[var(--color-brand-blue)]">24</p>
-                    </div>
-                    <div className="bg-[var(--color-app-bg)] p-2.5 rounded-lg border border-[var(--color-border-subtle)]">
-                      <p className="text-[11px] text-[var(--color-text-secondary)] font-medium">Intern Cohort</p>
-                      <p className="text-base font-bold text-[var(--color-brand-green)]">32</p>
+                    <div>
+                      <h3 className="text-lg sm:text-xl font-bold text-slate-900">System Administrator Console</h3>
+                      <p className="text-xs text-slate-500">Full Governance, Project Lifecycle & Account Verification</p>
                     </div>
                   </div>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => navigate('/login')}
+                    className="bg-[#0057A8] hover:bg-[#00488B] text-white font-bold"
+                  >
+                    Admin Access (0774943291)
+                  </Button>
+                </div>
 
-                  {/* Mock Project Progress Card 1 */}
-                  <div className="p-3.5 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-subtle)] space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-[var(--color-text-primary)]">
-                        AI Analytics & Prediction Engine
-                      </span>
-                      <span className="text-[11px] font-bold text-[var(--color-brand-green)]">
-                        82% Completed
-                      </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                    <p className="text-xs font-bold text-[#0057A8]">User Approvals</p>
+                    <p className="text-xs text-slate-600">Review, verify, or reject self-registered staff and intern trainees with 1-click status switches.</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                    <p className="text-xs font-bold text-[#00A651]">Project Weights</p>
+                    <p className="text-xs text-slate-600">Create AI projects, assign project leads, and define work-item completion percentage weights.</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                    <p className="text-xs font-bold text-sky-600">Resource Allocations</p>
+                    <p className="text-xs text-slate-600">Assign members to AI tracks and monitor aggregate delivery metrics across the entire programme.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeRoleTab === 'staff' && (
+              <div className="p-6 sm:p-8 rounded-3xl bg-white border border-emerald-200 shadow-xl space-y-6 animate-in fade-in duration-300">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                  <div className="flex items-center gap-3.5">
+                    <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-[#00A651]">
+                      <Building className="w-6 h-6" />
                     </div>
-                    <div className="w-full bg-[var(--color-border-subtle)] h-2 rounded-full overflow-hidden">
-                      <div className="bg-[var(--color-brand-green)] h-full rounded-full w-[82%]" />
-                    </div>
-                    <div className="flex items-center justify-between text-[11px] text-[var(--color-text-secondary)] pt-0.5">
-                      <span className="flex items-center gap-1">
-                        <Users className="w-3 h-3 text-[var(--color-brand-blue)]" /> 4 Assigned
-                      </span>
-                      <span className="font-medium text-[var(--color-text-primary)]">Sprint 04</span>
+                    <div>
+                      <h3 className="text-lg sm:text-xl font-bold text-slate-900">Permanent Staff Workspace</h3>
+                      <p className="text-xs text-slate-500">Engineering Lead, Sprint Management & Deliverables</p>
                     </div>
                   </div>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => navigate('/login')}
+                    className="bg-[#00A651] hover:bg-[#008D44] text-white font-bold"
+                  >
+                    Staff Access (0771234567)
+                  </Button>
+                </div>
 
-                  {/* Mock Project Progress Card 2 */}
-                  <div className="p-3.5 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-subtle)] space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-[var(--color-text-primary)]">
-                        Data Ingestion & Governance Pipeline
-                      </span>
-                      <span className="text-[11px] font-bold text-[var(--color-brand-blue)]">
-                        64% Completed
-                      </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                    <p className="text-xs font-bold text-[#00A651]">Project Leadership</p>
+                    <p className="text-xs text-slate-600">Guide technical implementations, manage repositories, and supervise intern deliverables.</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                    <p className="text-xs font-bold text-teal-600">Work Item Updates</p>
+                    <p className="text-xs text-slate-600">Transition work-item statuses from TODO to IN_PROGRESS and DONE to compute progress.</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                    <p className="text-xs font-bold text-sky-600">Work History Logs</p>
+                    <p className="text-xs text-slate-600">Maintain permanent audit trails and technical contribution records across sprints.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeRoleTab === 'intern' && (
+              <div className="p-6 sm:p-8 rounded-3xl bg-white border border-purple-200 shadow-xl space-y-6 animate-in fade-in duration-300">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                  <div className="flex items-center gap-3.5">
+                    <div className="p-3 rounded-2xl bg-purple-50 border border-purple-200 text-purple-600">
+                      <GraduationCap className="w-6 h-6" />
                     </div>
-                    <div className="w-full bg-[var(--color-border-subtle)] h-2 rounded-full overflow-hidden">
-                      <div className="bg-[var(--color-brand-blue)] h-full rounded-full w-[64%]" />
-                    </div>
-                    <div className="flex items-center justify-between text-[11px] text-[var(--color-text-secondary)] pt-0.5">
-                      <span className="flex items-center gap-1">
-                        <Users className="w-3 h-3 text-[var(--color-brand-blue)]" /> 6 Assigned
-                      </span>
-                      <span className="font-medium text-[var(--color-text-primary)]">In Progress</span>
+                    <div>
+                      <h3 className="text-lg sm:text-xl font-bold text-slate-900">Intern Trainee Portal</h3>
+                      <p className="text-xs text-slate-500">Hands-on AI/ML Contribution & Progress Tracking</p>
                     </div>
                   </div>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => navigate('/login')}
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold"
+                  >
+                    Intern Access (0777654321)
+                  </Button>
+                </div>
 
-                  {/* Mock Role Activity Tagline */}
-                  <div className="flex items-center justify-between px-3 py-2 bg-[var(--color-brand-blue-light)] rounded-lg text-xs text-[var(--color-brand-blue)] font-medium">
-                    <span className="flex items-center gap-1.5">
-                      <ShieldCheck className="w-4 h-4" /> Single Secure Portal
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                    <p className="text-xs font-bold text-purple-700">Assigned Tasks</p>
+                    <p className="text-xs text-slate-600">Execute ML model tuning, data engineering scripts, and frontend user interfaces.</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                    <p className="text-xs font-bold text-pink-700">Skill Progression</p>
+                    <p className="text-xs text-slate-600">Demonstrate contribution rates and work-item deliveries for internship evaluations.</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                    <p className="text-xs font-bold text-indigo-700">Mentor Guidance</p>
+                    <p className="text-xs text-slate-600">Collaborate directly under Senior Engineers and Programme Leads in real time.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ── SECTION: PIPELINE ARCHITECTURE (4 STAGES) ──────────── */}
+      <section id="architecture" className="py-20 bg-white border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-14">
+          <div className="text-center max-w-3xl mx-auto space-y-3">
+            <span className="px-3 py-1 rounded-full bg-emerald-100 text-[#00A651] text-xs font-extrabold uppercase tracking-wider">
+              End-To-End Architecture
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900">
+              The AI & Data Programme Pipeline
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600">
+              A 4-step structured workflow for delivering high-impact telecom intelligence solutions.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                step: '01',
+                title: 'User Registration & Verification',
+                desc: 'Staff and Interns register with specialization tracks. Administrator verifies credentials before dashboard access.',
+                icon: <FileCheck className="w-5 h-5 text-[#0057A8]" />,
+                badge: 'Security Gate',
+              },
+              {
+                step: '02',
+                title: 'Project Setup & Work Breakdown',
+                desc: 'Projects are configured with tech stacks, milestone target dates, and percentage-weighted work items.',
+                icon: <FolderKanban className="w-5 h-5 text-[#00A651]" />,
+                badge: 'WBS Engine',
+              },
+              {
+                step: '03',
+                title: 'Team Allocation & Role Mapping',
+                desc: 'Permanent Staff leads and Intern trainees are assigned to active projects with clear role responsibilities.',
+                icon: <Users className="w-5 h-5 text-purple-600" />,
+                badge: 'Resource Mgmt',
+              },
+              {
+                step: '04',
+                title: 'Progress Weight Calculation',
+                desc: 'Completed work items automatically calculate project completion and aggregate programme health rates.',
+                icon: <TrendingUp className="w-5 h-5 text-sky-600" />,
+                badge: 'Live Analytics',
+              },
+            ].map((st) => (
+              <div
+                key={st.step}
+                className="p-6 rounded-3xl bg-slate-50 border border-slate-200 hover:border-blue-300 shadow-xs hover:shadow-lg transition-all duration-300 space-y-4 group transform hover:-translate-y-1"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    {st.icon}
+                  </div>
+                  <span className="text-2xl font-extrabold text-slate-300 font-mono">{st.step}</span>
+                </div>
+
+                <div className="space-y-2">
+                  <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-white border border-slate-200 text-slate-700">
+                    {st.badge}
+                  </span>
+                  <h4 className="text-base font-bold text-slate-900 leading-snug">{st.title}</h4>
+                  <p className="text-xs text-slate-600 leading-relaxed">{st.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── SECTION: TECHNICAL TRACKS ──────────────────────────── */}
+      <section id="tracks" className="py-16 bg-white border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+          <div className="text-center max-w-3xl mx-auto space-y-3">
+            <span className="px-3 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-extrabold uppercase tracking-wider">
+              Programme Tracks
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900">
+              AI & Data Science Disciplines
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600">
+              Supporting next-generation telecommunication models and stream analytics.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              {
+                title: 'AI & Deep Learning',
+                desc: 'Predictive churn models, network anomaly detection, neural embeddings, and PyTorch / TensorFlow pipelines.',
+                icon: <Bot className="w-5 h-5 text-[#0057A8]" />,
+                tech: ['PyTorch', 'FastAPI', 'XGBoost'],
+              },
+              {
+                title: 'Data Science & Stream Analytics',
+                desc: 'Real-time telemetry ingestion, Kafka producers, TimescaleDB temporal indexing, and Apache Spark clusters.',
+                icon: <Zap className="w-5 h-5 text-[#00A651]" />,
+                tech: ['Kafka', 'Spark', 'TimescaleDB'],
+              },
+              {
+                title: 'Software & Cloud Engineering',
+                desc: 'Containerized microservices, full-stack operational dashboards, RESTful orchestration, and React frontends.',
+                icon: <Cpu className="w-5 h-5 text-purple-600" />,
+                tech: ['React', 'TypeScript', 'Node.js', 'Docker'],
+              },
+            ].map((track) => (
+              <div
+                key={track.title}
+                className="p-6 rounded-3xl bg-white border border-slate-200 shadow-xs hover:shadow-md transition-all space-y-4"
+              >
+                <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center">
+                  {track.icon}
+                </div>
+                <h4 className="text-base font-bold text-slate-900">{track.title}</h4>
+                <p className="text-xs text-slate-600 leading-relaxed">{track.desc}</p>
+                <div className="flex flex-wrap gap-1.5 pt-2">
+                  {track.tech.map((t) => (
+                    <span
+                      key={t}
+                      className="px-2 py-0.5 rounded-md bg-blue-50 text-[#0057A8] font-mono text-[10px] font-bold border border-blue-100"
+                    >
+                      {t}
                     </span>
-                    <span>Role-Based Access</span>
-                  </div>
+                  ))}
                 </div>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ========================================================================= */}
-      {/* 3. Platform Overview Section (id="overview")                             */}
-      {/* ========================================================================= */}
-      <section id="overview" className="py-16 sm:py-20 lg:py-24 bg-[var(--color-app-bg)] scroll-mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          {/* Section Header */}
-          <div className="text-center max-w-3xl mx-auto space-y-3">
-            <Badge variant="blue" size="md">
-              Platform Overview
-            </Badge>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--color-brand-navy)]">
-              Everything in One Workspace
-            </h2>
-            <p className="text-sm sm:text-base text-[var(--color-text-secondary)] leading-relaxed">
-              Managing AI & Data initiatives across disconnected channels leads to fragmented progress and lost insights.
-              This platform brings project definitions, team assignments, and programme oversight into a unified internal system.
-            </p>
-          </div>
+      {/* ── CALL TO ACTION FOOTER BANNER ───────────────────────── */}
+      <section className="py-16 bg-gradient-to-r from-[#0057A8] via-[#00488C] to-[#003366] text-white relative overflow-hidden">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6 relative z-10">
+          <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
+            Ready to Access the AI & Data Workspace?
+          </h2>
+          <p className="text-xs sm:text-sm text-blue-100 max-w-2xl mx-auto leading-relaxed font-normal">
+            Sign in with your authorized mobile phone number to receive a secure SMS one-time passcode or register for a new account.
+          </p>
 
-          {/* 3 Capability Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-            {/* Card 1: Project Visibility */}
-            <Card padding="lg" className="h-full flex flex-col justify-between border-[var(--color-border-subtle)] hover:border-[var(--color-border-hover)] transition-all">
-              <div className="space-y-4">
-                <div className="w-12 h-12 rounded-xl bg-[var(--color-brand-blue-light)] text-[var(--color-brand-blue)] flex items-center justify-center">
-                  <FolderKanban className="w-6 h-6" />
-                </div>
-                <h3 className="text-lg font-semibold text-[var(--color-brand-navy)]">
-                  Project Visibility
-                </h3>
-                <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                  View project information, assignments, status and programme activity from a centralized workspace.
-                </p>
-              </div>
-              <div className="pt-6 mt-6 border-t border-[var(--color-border-subtle)] text-xs font-medium text-[var(--color-brand-blue)] flex items-center gap-1">
-                <span>Centralized Data</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </div>
-            </Card>
-
-            {/* Card 2: Team Collaboration */}
-            <Card padding="lg" className="h-full flex flex-col justify-between border-[var(--color-border-subtle)] hover:border-[var(--color-border-hover)] transition-all">
-              <div className="space-y-4">
-                <div className="w-12 h-12 rounded-xl bg-[var(--color-brand-green-light)] text-[var(--color-brand-green)] flex items-center justify-center">
-                  <Users className="w-6 h-6" />
-                </div>
-                <h3 className="text-lg font-semibold text-[var(--color-brand-navy)]">
-                  Team Collaboration
-                </h3>
-                <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                  Keep administrators, permanent staff and interns connected to their relevant project responsibilities.
-                </p>
-              </div>
-              <div className="pt-6 mt-6 border-t border-[var(--color-border-subtle)] text-xs font-medium text-[var(--color-brand-green)] flex items-center gap-1">
-                <span>Unified Roles</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </div>
-            </Card>
-
-            {/* Card 3: Progress Tracking */}
-            <Card padding="lg" className="h-full flex flex-col justify-between border-[var(--color-border-subtle)] hover:border-[var(--color-border-hover)] transition-all">
-              <div className="space-y-4">
-                <div className="w-12 h-12 rounded-xl bg-[var(--color-brand-blue-light)] text-[var(--color-brand-blue)] flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6" />
-                </div>
-                <h3 className="text-lg font-semibold text-[var(--color-brand-navy)]">
-                  Progress Tracking
-                </h3>
-                <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                  Provide clear visibility into ongoing work, project progress and programme activity.
-                </p>
-              </div>
-              <div className="pt-6 mt-6 border-t border-[var(--color-border-subtle)] text-xs font-medium text-[var(--color-brand-blue)] flex items-center gap-1">
-                <span>Clear Milestones</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </div>
-            </Card>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <Button
+              variant="primary"
+              size="md"
+              onClick={() => navigate('/login')}
+              leftIcon={<Smartphone className="w-4 h-4" />}
+              rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+              className="w-full sm:w-auto h-11 px-6 text-xs sm:text-sm font-bold bg-[#00A651] hover:bg-[#008D44] text-white shadow-lg transform hover:-translate-y-0.5 transition-all rounded-xl"
+            >
+              Sign In with Mobile OTP
+            </Button>
+            <Button
+              variant="outline"
+              size="md"
+              onClick={() => navigate('/register')}
+              className="w-full sm:w-auto h-11 px-5 text-xs sm:text-sm font-semibold border-white/40 hover:bg-white/10 text-white rounded-xl"
+            >
+              Create Account
+            </Button>
           </div>
         </div>
       </section>
 
-      {/* ========================================================================= */}
-      {/* 4. User Role Overview Section (id="roles")                                */}
-      {/* ========================================================================= */}
-      <section id="roles" className="py-16 sm:py-20 lg:py-24 bg-[var(--color-surface-white)] border-y border-[var(--color-border-subtle)] scroll-mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          {/* Section Header */}
-          <div className="text-center max-w-3xl mx-auto space-y-3">
-            <Badge variant="blue" size="md">
-              Role-Based Architecture
-            </Badge>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--color-brand-navy)]">
-              Built for Every Programme Role
-            </h2>
-            <p className="text-sm sm:text-base text-[var(--color-text-secondary)] leading-relaxed">
-              Every stakeholder interacts with tailored views designed around their specific responsibilities,
-              all accessed through a single authorized sign-in portal.
-            </p>
-          </div>
-
-          {/* 3 Informational Role Cards (strictly non-interactive) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-            {/* Role 1: Administrator */}
-            <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-subtle)] p-6 sm:p-7 flex flex-col justify-between space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="w-10 h-10 rounded-lg bg-[var(--color-brand-navy)] text-white flex items-center justify-center">
-                    <ShieldCheck className="w-5 h-5" />
-                  </div>
-                  <Badge variant="neutral">System Admin</Badge>
-                </div>
-
-                <div className="space-y-1.5">
-                  <h3 className="text-lg font-bold text-[var(--color-brand-navy)]">
-                    Administrator
-                  </h3>
-                  <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                    Manage users, projects, assignments and overall programme progress.
-                  </p>
-                </div>
-
-                <div className="pt-2 space-y-2">
-                  <p className="text-xs font-semibold text-[var(--color-brand-navy)] uppercase tracking-wider">
-                    Key Responsibilities:
-                  </p>
-                  <ul className="space-y-1.5 text-xs text-[var(--color-text-secondary)]">
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-brand-blue)]" />
-                      <span>User Management & Onboarding</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-brand-blue)]" />
-                      <span>Project Oversight & Governance</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-brand-blue)]" />
-                      <span>Assignment Management & Resource Allocation</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-[var(--color-border-subtle)] text-[11px] text-[var(--color-text-secondary)]">
-                Admin credentials configured by system seeding and invitation.
-              </div>
+      {/* ── FOOTER ─────────────────────────────────────────────── */}
+      <footer className="bg-slate-900 text-slate-400 text-xs py-10 border-t border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-white inline-flex items-center shadow-xs">
+              <img
+                src="/slt-mobitel-logo.png"
+                alt="SLTMOBITEL"
+                className="h-7 w-auto object-contain"
+              />
             </div>
-
-            {/* Role 2: Permanent Staff */}
-            <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-subtle)] p-6 sm:p-7 flex flex-col justify-between space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="w-10 h-10 rounded-lg bg-[var(--color-brand-blue)] text-white flex items-center justify-center">
-                    <Briefcase className="w-5 h-5" />
-                  </div>
-                  <Badge variant="blue">Staff Lead</Badge>
-                </div>
-
-                <div className="space-y-1.5">
-                  <h3 className="text-lg font-bold text-[var(--color-brand-navy)]">
-                    Permanent Staff
-                  </h3>
-                  <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                    Access assigned projects, current work and progress information.
-                  </p>
-                </div>
-
-                <div className="pt-2 space-y-2">
-                  <p className="text-xs font-semibold text-[var(--color-brand-navy)] uppercase tracking-wider">
-                    Key Responsibilities:
-                  </p>
-                  <ul className="space-y-1.5 text-xs text-[var(--color-text-secondary)]">
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-brand-blue)]" />
-                      <span>Assigned Projects & Workstreams</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-brand-blue)]" />
-                      <span>Current Work & Activity Updates</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-brand-blue)]" />
-                      <span>Progress Visibility & Milestone Tracking</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-[var(--color-border-subtle)] text-[11px] text-[var(--color-text-secondary)]">
-                Accounts provisioned by programme administration.
-              </div>
-            </div>
-
-            {/* Role 3: Intern */}
-            <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-subtle)] p-6 sm:p-7 flex flex-col justify-between space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="w-10 h-10 rounded-lg bg-[var(--color-brand-green)] text-white flex items-center justify-center">
-                    <GraduationCap className="w-5 h-5" />
-                  </div>
-                  <Badge variant="success">Internship</Badge>
-                </div>
-
-                <div className="space-y-1.5">
-                  <h3 className="text-lg font-bold text-[var(--color-brand-navy)]">
-                    Intern
-                  </h3>
-                  <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                    Access assigned project work, internship progress and eligible project opportunities.
-                  </p>
-                </div>
-
-                <div className="pt-2 space-y-2">
-                  <p className="text-xs font-semibold text-[var(--color-brand-navy)] uppercase tracking-wider">
-                    Key Responsibilities:
-                  </p>
-                  <ul className="space-y-1.5 text-xs text-[var(--color-text-secondary)]">
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-brand-green)]" />
-                      <span>Project Work & Task Completion</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-brand-green)]" />
-                      <span>Progress Tracking & Work History</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-brand-green)]" />
-                      <span>Eligible Project Discovery & Enrollment</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-[var(--color-border-subtle)] text-[11px] text-[var(--color-text-secondary)]">
-                Intern onboarding activated through admin invitation.
-              </div>
-            </div>
-          </div>
-
-          {/* Unified Access Note */}
-          <div className="max-w-2xl mx-auto p-4 rounded-xl bg-[var(--color-brand-blue-light)] border border-[#BFDBFE] flex items-center justify-center gap-2.5 text-xs sm:text-sm text-[var(--color-brand-blue)] text-center font-medium">
-            <Sparkles className="w-4 h-4 shrink-0" />
-            <span>
-              All roles sign in through the single combined Login Portal. Verified roles are authenticated automatically.
+            <span className="text-xs text-slate-400 font-medium">
+              AI & Data Programme Pipeline • Enterprise Management System
             </span>
           </div>
-        </div>
-      </section>
 
-      {/* ========================================================================= */}
-      {/* 5. Simple Process Section (id="workflow")                                 */}
-      {/* ========================================================================= */}
-      <section id="workflow" className="py-16 sm:py-20 lg:py-24 bg-[var(--color-app-bg)] scroll-mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          {/* Section Header */}
-          <div className="text-center max-w-3xl mx-auto space-y-3">
-            <Badge variant="blue" size="md">
-              Operating Process
-            </Badge>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--color-brand-navy)]">
-              A Simple, Controlled Workflow
-            </h2>
-            <p className="text-sm sm:text-base text-[var(--color-text-secondary)] leading-relaxed">
-              Structured operational lifecycle ensuring governance, clear task ownership, and continuous progress monitoring.
-            </p>
-          </div>
-
-          {/* 3 Steps */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-            {/* Step 1: Access */}
-            <div className="bg-[var(--color-surface-white)] border border-[var(--color-border-subtle)] rounded-xl p-6 sm:p-7 space-y-4 relative shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-[var(--color-brand-blue-light)] text-[var(--color-brand-blue)]">
-                  Step 01
-                </span>
-                <ShieldCheck className="w-5 h-5 text-[var(--color-brand-blue)]" />
-              </div>
-              <h3 className="text-lg font-bold text-[var(--color-brand-navy)]">
-                Access
-              </h3>
-              <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                Authorized users securely sign in to the platform through the combined enterprise portal.
-              </p>
-            </div>
-
-            {/* Step 2: Work */}
-            <div className="bg-[var(--color-surface-white)] border border-[var(--color-border-subtle)] rounded-xl p-6 sm:p-7 space-y-4 relative shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-[var(--color-brand-green-light)] text-[var(--color-brand-green)]">
-                  Step 02
-                </span>
-                <Layers className="w-5 h-5 text-[var(--color-brand-green)]" />
-              </div>
-              <h3 className="text-lg font-bold text-[var(--color-brand-navy)]">
-                Work
-              </h3>
-              <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                Users access projects and activities relevant to their responsibilities and assigned roles.
-              </p>
-            </div>
-
-            {/* Step 3: Track */}
-            <div className="bg-[var(--color-surface-white)] border border-[var(--color-border-subtle)] rounded-xl p-6 sm:p-7 space-y-4 relative shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-[var(--color-brand-blue-light)] text-[var(--color-brand-blue)]">
-                  Step 03
-                </span>
-                <Activity className="w-5 h-5 text-[var(--color-brand-blue)]" />
-              </div>
-              <h3 className="text-lg font-bold text-[var(--color-brand-navy)]">
-                Track
-              </h3>
-              <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                Project and programme progress can be monitored from one centralized system in real time.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 6. Final Call to Action Section                                           */}
-      {/* ========================================================================= */}
-      <section className="py-16 sm:py-20 bg-[var(--color-surface-white)] border-t border-[var(--color-border-subtle)]">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="bg-[var(--color-app-bg)] border border-[var(--color-border-subtle)] rounded-2xl p-8 sm:p-12 space-y-6 shadow-xs">
-            <div className="w-12 h-12 rounded-full bg-[var(--color-brand-blue-light)] text-[var(--color-brand-blue)] flex items-center justify-center mx-auto">
-              <Lock className="w-6 h-6" />
-            </div>
-
-            <div className="space-y-2 max-w-xl mx-auto">
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--color-brand-navy)]">
-                Ready to Access Your Workspace?
-              </h2>
-              <p className="text-sm sm:text-base text-[var(--color-text-secondary)]">
-                Sign in using your authorized programme account to access your assigned projects and dashboard.
-              </p>
-            </div>
-
-            <div className="pt-2 flex justify-center">
-              <Button
-                variant="primary"
-                size="lg"
-                rightIcon={<ArrowRight className="w-4 h-4" />}
-                onClick={() => navigate('/login')}
-              >
-                Sign In
-              </Button>
-            </div>
-
-            <p className="text-xs text-[var(--color-text-secondary)] pt-2">
-              Note: Account creation and activation are managed by system administrators.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 7. Footer                                                                 */}
-      {/* ========================================================================= */}
-      <footer className="bg-[var(--color-surface-white)] border-t border-[var(--color-border-subtle)] py-8 text-sm text-[var(--color-text-secondary)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
-            <BrandLogo size="sm" showSubtitle={false} />
-            <span className="hidden sm:inline text-[var(--color-border-hover)]">|</span>
-            <span className="text-xs">Staff & Intern Progress Dashboard</span>
-          </div>
-
-          <div className="text-xs text-[var(--color-text-secondary)] text-center sm:text-right">
-            © {new Date().getFullYear()} AI & Data Programme Pipeline. Internal Enterprise System.
-          </div>
+          <p className="text-xs text-slate-500 text-center md:text-right">
+            © {new Date().getFullYear()} SLT-MOBITEL (The Connection). All rights reserved.
+          </p>
         </div>
       </footer>
     </div>

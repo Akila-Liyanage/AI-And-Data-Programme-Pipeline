@@ -1,9 +1,8 @@
 import React, { useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import { X, User as UserIcon } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 import { Badge } from '../../common/Badge';
-import { BrandLogo } from '../../common/Brand';
 import { isNavSection, type SidebarProps, type NavItem } from './types';
 
 /**
@@ -98,10 +97,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const sidebarContent = (
     <div className="flex flex-col h-full bg-[var(--color-surface-white)] border-r border-[var(--color-border-subtle)]">
       {/* ── Brand Header ────────────────────────────────────── */}
-      <div className="h-16 px-5 flex items-center justify-between border-b border-[var(--color-border-subtle)] shrink-0">
-        <div className="flex items-center min-w-0">
-          <BrandLogo size="sm" showSubtitle={false} className="min-w-0" />
-        </div>
+      <div className="h-16 px-4 sm:px-5 flex items-center justify-between border-b border-[var(--color-border-subtle)] shrink-0">
+        <Link to="/" className="flex items-center min-w-0 py-1" aria-label="SLT-MOBITEL Home">
+          <img
+            src="/slt-mobitel-logo.png"
+            alt="SLTMOBITEL - The Connection"
+            className="h-9 sm:h-10 w-auto max-w-[195px] object-contain object-left transition-transform hover:scale-[1.02] duration-200"
+          />
+        </Link>
 
         {/* Mobile close button */}
         <button

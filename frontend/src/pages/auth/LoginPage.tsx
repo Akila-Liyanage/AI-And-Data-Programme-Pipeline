@@ -43,10 +43,9 @@ function LoginBrandPanel() {
 
       <div className="relative space-y-8 z-10">
         {/* Product emblem */}
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center font-bold text-base shrink-0 shadow-sm backdrop-blur-sm">
-            <span className="text-blue-300">AI</span>
-            <span className="text-emerald-400 font-extrabold">+</span>
+        <div className="flex items-center gap-3.5">
+          <div className="p-2.5 rounded-2xl bg-white/95 backdrop-blur-md inline-flex items-center shadow-md shrink-0">
+            <img src="/slt-mobitel-logo.png" alt="SLTMOBITEL" className="h-8 w-auto object-contain" />
           </div>
           <div>
             <p className="font-extrabold text-base tracking-tight text-white leading-tight">
