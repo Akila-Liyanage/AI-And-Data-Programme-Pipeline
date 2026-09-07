@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   LayoutDashboard,
   FolderKanban,
@@ -30,6 +30,12 @@ import {
 } from '../../components/common';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import {
+  fetchAssignments,
+  fetchProjects,
+  mapWorkItemStatusToDisplay,
+  type ApiProject,
+} from '../../utils/apiDataService';
 import {
   StaffProjectDetailsDrawer,
   type StaffProjectDetails,
@@ -89,8 +95,8 @@ export default function StaffAssignedProjectsPage() {
   const navigate = useNavigate();
 
   // State Management
-  const [projects] = useState<StaffProjectDetails[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [projects, setProjects] = useState<StaffProjectDetails[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Filters State
@@ -118,14 +124,76 @@ export default function StaffAssignedProjectsPage() {
     setProgressFilter('ALL');
   };
 
-  const handleRefresh = () => {
+  const loadAssignedProjects = async () => {
+    if (!user?.userId) return;
     setIsLoading(true);
     setError(null);
-    // Refresh indicator simulation
-    setTimeout(() => {
+    try {
+      const [assignments, allProjects] = await Promise.all([
+        fetchAssignments(user.userId),
+        fetchProjects(),
+      ]);
+
+      const projectMap = new Map<string, ApiProject>();
+      allProjects.forEach((p) => projectMap.set(p.projectId, p));
+
+      const mappedProjects: StaffProjectDetails[] = [];
+
+      assignments.forEach((asg) => {
+        const prj = projectMap.get(asg.projectId);
+        if (prj) {
+          const workItems = prj.workItems || [];
+          const completedCount = workItems.filter((wi) => wi.status === 'DONE').length;
+
+          mappedProjects.push({
+            id: prj._id || prj.projectId,
+            name: prj.name,
+            projectId: prj.projectId,
+            description: prj.description,
+            category: prj.category,
+            status: prj.status || 'Active',
+            priority: prj.priority || 'Medium',
+            projectLead: prj.projectLead || 'Unassigned',
+            department: prj.department || 'AI & Data Team',
+            technologyStack: prj.technologyStack,
+            myRole: asg.assignmentRole || asg.professionalRole || 'Senior Contributor',
+            assignmentStatus: asg.status || 'Assigned',
+            startDate: prj.startDate,
+            targetDate: prj.targetDate,
+            overallProgress: prj.progress || 0,
+            assignedWorkItemsCount: workItems.length,
+            completedWorkItemsCount: completedCount,
+            workItems: workItems.map((wi) => ({
+              id: wi.workItemId,
+              title: wi.title,
+              role: wi.role,
+              weightPercentage: wi.percentage,
+              status: mapWorkItemStatusToDisplay(wi.status),
+              progressPercentage: wi.status === 'DONE' ? 100 : wi.status === 'IN_PROGRESS' ? 50 : 0,
+            })),
+            createdAt: prj.createdAt,
+            updatedAt: prj.updatedAt,
+          });
+        }
+      });
+
+      setProjects(mappedProjects);
+    } catch (err: unknown) {
+      console.error('Error loading assigned projects:', err);
+      setError('Could not retrieve assigned projects from server.');
+    } finally {
       setIsLoading(false);
-    }, 400);
+    }
   };
+
+  useEffect(() => {
+    loadAssignedProjects();
+  }, [user?.userId]);
+
+  const handleRefresh = () => {
+    loadAssignedProjects();
+  };
+
 
   // KPI Calculations
   const totalAssigned = projects.length;
@@ -214,7 +282,7 @@ export default function StaffAssignedProjectsPage() {
       user={userDisplay}
       notificationsCount={0}
       onNotificationClick={() => {}}
-      onProfileClick={() => {}}
+      onProfileClick={() => navigate('/staff/profile')}
       onLogoutClick={handleLogout}
     >
       <PageHeader

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   LayoutDashboard,
   FolderKanban,
@@ -31,6 +31,12 @@ import {
 } from '../../components/common';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import {
+  fetchAssignments,
+  fetchProjects,
+  mapWorkItemStatusToDisplay,
+  type ApiProject,
+} from '../../utils/apiDataService';
 import {
   InternWorkHistoryDetailsDrawer,
   type InternHistoryRecord,
@@ -91,8 +97,8 @@ export default function InternWorkHistoryPage() {
   const navigate = useNavigate();
 
   // History Records State
-  const [historyRecords] = useState<InternHistoryRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [historyRecords, setHistoryRecords] = useState<InternHistoryRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Selected history record for Details Drawer
@@ -116,12 +122,63 @@ export default function InternWorkHistoryPage() {
     navigate('/login');
   };
 
-  const handleRefresh = () => {
+  const loadWorkHistory = async () => {
+    if (!user?.userId) return;
     setIsLoading(true);
     setError(null);
-    setTimeout(() => {
+    try {
+      const [assignments, allProjects] = await Promise.all([
+        fetchAssignments(user.userId),
+        fetchProjects(),
+      ]);
+
+      const projectMap = new Map<string, ApiProject>();
+      allProjects.forEach((p) => projectMap.set(p.projectId, p));
+
+      const records: InternHistoryRecord[] = [];
+
+      assignments.forEach((asg) => {
+        const prj = projectMap.get(asg.projectId);
+        if (prj && prj.workItems) {
+          prj.workItems.forEach((wi) => {
+            records.push({
+              id: `${prj.projectId}-${wi.workItemId}`,
+              workItemId: wi.workItemId,
+              workItemTitle: wi.title,
+              projectId: prj.projectId,
+              projectName: prj.name,
+              description: `Project: ${prj.name} • Assigned Role: ${wi.role}`,
+              requiredRole: wi.role,
+              responsibility: wi.role,
+              percentageWeight: wi.percentage,
+              finalStatus: mapWorkItemStatusToDisplay(wi.status),
+              assignedDate: asg.startDate || prj.startDate,
+              startedDate: asg.startDate || prj.startDate,
+              completionDate: wi.status === 'DONE' ? prj.targetDate : undefined,
+              progressContribution: wi.status === 'DONE' ? wi.percentage : 0,
+              assignedRole: asg.assignmentRole || asg.professionalRole || 'Intern Contributor',
+              assignmentStatus: asg.status || 'Assigned',
+              projectProgress: prj.progress || 0,
+            });
+          });
+        }
+      });
+
+      setHistoryRecords(records);
+    } catch (err: unknown) {
+      console.error('Error loading intern work history:', err);
+      setError('Could not retrieve work history from server.');
+    } finally {
       setIsLoading(false);
-    }, 400);
+    }
+  };
+
+  useEffect(() => {
+    loadWorkHistory();
+  }, [user?.userId]);
+
+  const handleRefresh = () => {
+    loadWorkHistory();
   };
 
   const handleResetFilters = () => {

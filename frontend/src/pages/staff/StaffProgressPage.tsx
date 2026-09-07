@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   LayoutDashboard,
   FolderKanban,
@@ -32,6 +32,12 @@ import {
 } from '../../components/common';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import {
+  fetchAssignments,
+  fetchProjects,
+  mapWorkItemStatusToDisplay,
+  type ApiProject,
+} from '../../utils/apiDataService';
 import {
   StaffProgressDetailsDrawer,
   type ProjectContribution,
@@ -97,9 +103,9 @@ export default function StaffProgressPage() {
   const navigate = useNavigate();
 
   // State Management
-  const [projects] = useState<ProjectContribution[]>([]);
-  const [workItems] = useState<DetailedWorkItemContribution[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [projects, setProjects] = useState<ProjectContribution[]>([]);
+  const [workItems, setWorkItems] = useState<DetailedWorkItemContribution[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Filters State
@@ -122,19 +128,98 @@ export default function StaffProgressPage() {
     navigate('/login');
   };
 
-  const handleRefresh = () => {
-    setIsLoading(true);
-    setError(null);
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 400);
-  };
-
   const handleResetFilters = () => {
     setSearchQuery('');
     setStatusFilter('ALL');
     setProgressFilter('ALL');
   };
+
+  const loadProgressData = async () => {
+    if (!user?.userId) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [assignments, allProjects] = await Promise.all([
+        fetchAssignments(user.userId),
+        fetchProjects(),
+      ]);
+
+      const projectMap = new Map<string, ApiProject>();
+      allProjects.forEach((p) => projectMap.set(p.projectId, p));
+
+      const mappedProjects: ProjectContribution[] = [];
+      const detailedItems: DetailedWorkItemContribution[] = [];
+
+      assignments.forEach((asg) => {
+        const prj = projectMap.get(asg.projectId);
+        if (prj) {
+          const projectWorkItems = prj.workItems || [];
+          const notStarted = projectWorkItems.filter((wi) => wi.status === 'TODO').length;
+          const inProgress = projectWorkItems.filter((wi) => wi.status === 'IN_PROGRESS').length;
+          const completed = projectWorkItems.filter((wi) => wi.status === 'DONE').length;
+
+          const staffCompletedWeight = projectWorkItems
+            .filter((wi) => wi.status === 'DONE')
+            .reduce((sum, wi) => sum + (Number(wi.percentage) || 0), 0);
+
+          const mappedWorkItems: ProjectWorkItemContribution[] = projectWorkItems.map((wi) => {
+            const itemContribution: ProjectWorkItemContribution = {
+              id: `${prj.projectId}-${wi.workItemId}`,
+              workItemId: wi.workItemId,
+              title: wi.title,
+              percentageWeight: wi.percentage,
+              status: mapWorkItemStatusToDisplay(wi.status),
+              targetDate: prj.targetDate,
+              completionDate: wi.status === 'DONE' ? prj.targetDate : undefined,
+            };
+
+            detailedItems.push({
+              ...itemContribution,
+              projectId: prj.projectId,
+              projectName: prj.name,
+            });
+
+            return itemContribution;
+          });
+
+          mappedProjects.push({
+            id: prj._id || prj.projectId,
+            projectId: prj.projectId,
+            projectName: prj.name,
+            projectStatus: prj.status || 'Active',
+            myRole: asg.assignmentRole || asg.professionalRole || 'Senior Contributor',
+            startDate: prj.startDate,
+            targetDate: prj.targetDate,
+            overallProgress: prj.progress || 0,
+            staffCompletedContribution: Math.min(100, staffCompletedWeight),
+            remainingContribution: Math.max(0, 100 - staffCompletedWeight),
+            assignedWorkItemsCount: projectWorkItems.length,
+            notStartedCount: notStarted,
+            inProgressCount: inProgress,
+            completedCount: completed,
+            workItems: mappedWorkItems,
+          });
+        }
+      });
+
+      setProjects(mappedProjects);
+      setWorkItems(detailedItems);
+    } catch (err: unknown) {
+      console.error('Error loading progress data:', err);
+      setError('Could not retrieve progress data from server.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadProgressData();
+  }, [user?.userId]);
+
+  const handleRefresh = () => {
+    loadProgressData();
+  };
+
 
   // KPI Calculations
   const assignedProjectsCount = projects.length;
@@ -270,7 +355,7 @@ export default function StaffProgressPage() {
       user={userDisplay}
       notificationsCount={0}
       onNotificationClick={() => {}}
-      onProfileClick={() => {}}
+      onProfileClick={() => navigate('/staff/profile')}
       onLogoutClick={handleLogout}
     >
       <PageHeader

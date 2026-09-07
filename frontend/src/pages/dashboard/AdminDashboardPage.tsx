@@ -49,6 +49,7 @@ export default function AdminDashboardPage() {
 
   // State
   const [users, setUsers] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<ManagedUser | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -56,19 +57,27 @@ export default function AdminDashboardPage() {
   const [quickVerifyLoadingId, setQuickVerifyLoadingId] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
 
-  // Fetch real users from backend
+  // Fetch real users and projects from backend
   const fetchDashboardData = async () => {
     setIsLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/users`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setUsers(data.users || []);
+      const [userRes, projRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/users`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_BASE_URL}/projects`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        setUsers(userData.users || []);
+      }
+      if (projRes.ok) {
+        const projData = await projRes.json();
+        setProjects(projData.projects || []);
       }
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
@@ -88,6 +97,13 @@ export default function AdminDashboardPage() {
   const internCount = users.filter((u) => u.role === 'INTERN').length;
   const pendingCount = pendingUsers.length;
   const activeCount = activeUsers.length;
+  const totalProjects = projects.length;
+  const avgProgress =
+    projects.length > 0
+      ? Math.round(
+          projects.reduce((acc, p) => acc + (p.progress || 0), 0) / projects.length
+        )
+      : 0;
 
   // Direct Quick Verify from Dashboard
   const handleQuickVerify = async (userId: string, userName: string) => {
@@ -152,7 +168,7 @@ export default function AdminDashboardPage() {
       user={userDisplay}
       notificationsCount={pendingCount}
       onNotificationClick={() => navigate('/admin/users')}
-      onProfileClick={() => {}}
+      onProfileClick={() => navigate('/admin/profile')}
       onLogoutClick={handleLogout}
     >
       {/* ── Page Header ────────────────────────────────────────── */}
@@ -340,7 +356,9 @@ export default function AdminDashboardPage() {
             <div className="mt-4">
               <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Monitored Projects</p>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-3xl font-extrabold tracking-tight text-slate-900">—</span>
+                <span className="text-3xl font-extrabold tracking-tight text-slate-900">
+                  {isLoading ? '—' : totalProjects}
+                </span>
                 <span className="text-[11px] text-slate-500 font-medium">pipeline tracks</span>
               </div>
             </div>
@@ -364,13 +382,18 @@ export default function AdminDashboardPage() {
             <div className="mt-4">
               <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Completed Progress</p>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-3xl font-extrabold tracking-tight text-slate-900">—%</span>
+                <span className="text-3xl font-extrabold tracking-tight text-slate-900">
+                  {isLoading ? '—%' : `${avgProgress}%`}
+                </span>
                 <span className="text-[11px] text-slate-500 font-medium">weighted milestone avg</span>
               </div>
             </div>
             <div className="mt-3 pt-2 border-t border-slate-100">
               <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full bg-slate-200 rounded-full" style={{ width: '0%' }} />
+                <div
+                  className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                  style={{ width: `${avgProgress}%` }}
+                />
               </div>
             </div>
           </div>

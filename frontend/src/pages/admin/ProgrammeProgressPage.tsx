@@ -296,7 +296,7 @@ export default function ProgrammeProgressPage() {
       user={userDisplay}
       notificationsCount={1}
       onNotificationClick={() => {}}
-      onProfileClick={() => {}}
+      onProfileClick={() => navigate('/admin/profile')}
       onLogoutClick={handleLogout}
     >
       {/* ── Page Header ────────────────────────────────────────── */}

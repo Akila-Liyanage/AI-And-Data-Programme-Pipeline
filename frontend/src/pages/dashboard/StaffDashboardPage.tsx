@@ -4,10 +4,11 @@
  * MODERN LIGHT BLUE STAFF WORKSPACE
  * Features:
  * - Crisp Light Blue theme with motion hover effects
- * - Live Staff KPI statistics (Assigned Projects, Work Items, Progress %)
+ * - Live Staff KPI statistics from MongoDB (Assigned Projects, Work Items, Progress %)
  * - Active Project Tracks & Interactive Work-Item Progress Breakdown
  * - Personal Capacity, Role Assignment, and Quick Navigation
  */
+import { useState, useEffect } from 'react';
 import {
   LayoutDashboard,
   FolderKanban,
@@ -27,6 +28,11 @@ import {
 import { Button, Badge, EmptyState } from '../../components/common';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import {
+  fetchAssignments,
+  fetchProjects,
+  type ApiProject,
+} from '../../utils/apiDataService';
 
 const STAFF_NAVIGATION: NavSection[] = [
   {
@@ -77,9 +83,37 @@ const STAFF_NAVIGATION: NavSection[] = [
   },
 ];
 
+interface DashboardAssignedProject {
+  id: string;
+  projectId: string;
+  title: string;
+  role: string;
+  dueDate: string;
+  status: string;
+  progress: number;
+  workItemsCompleted: number;
+  workItemsTotal: number;
+}
+
+interface DashboardWorkItem {
+  id: string;
+  task: string;
+  project: string;
+  projectId: string;
+  weight: string;
+  priority: string;
+  status: string;
+}
+
 export default function StaffDashboardPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  const [assignedProjects, setAssignedProjects] = useState<DashboardAssignedProject[]>([]);
+  const [pendingWorkItems, setPendingWorkItems] = useState<DashboardWorkItem[]>([]);
+  const [completedTasksCount, setCompletedTasksCount] = useState<number>(0);
+  const [averageProgress, setAverageProgress] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const userDisplay: UserDisplayInfo = {
     name: user?.fullName || 'Permanent Staff Member',
@@ -92,15 +126,84 @@ export default function StaffDashboardPage() {
     navigate('/login');
   };
 
-  // Staff assigned projects & work items (safe production state — no fake records)
-  const assignedProjects: any[] = [];
-  const pendingWorkItems: any[] = [];
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      if (!user?.userId) return;
+      setIsLoading(true);
+      try {
+        const [assignments, projects] = await Promise.all([
+          fetchAssignments(user.userId),
+          fetchProjects(),
+        ]);
+
+        const projectMap = new Map<string, ApiProject>();
+        projects.forEach((p) => projectMap.set(p.projectId, p));
+
+        const dashboardProjects: DashboardAssignedProject[] = [];
+        const pendingItems: DashboardWorkItem[] = [];
+        let totalCompletedWorkItems = 0;
+        let totalProgressSum = 0;
+
+        assignments.forEach((asg) => {
+          const prj = projectMap.get(asg.projectId);
+          if (prj) {
+            const workItems = prj.workItems || [];
+            const doneCount = workItems.filter((wi) => wi.status === 'DONE').length;
+            totalCompletedWorkItems += doneCount;
+            totalProgressSum += prj.progress || 0;
+
+            dashboardProjects.push({
+              id: prj.projectId,
+              projectId: prj.projectId,
+              title: prj.name,
+              role: asg.assignmentRole || asg.professionalRole || 'Senior Contributor',
+              dueDate: prj.targetDate || '—',
+              status: prj.status || 'Active',
+              progress: prj.progress || 0,
+              workItemsCompleted: doneCount,
+              workItemsTotal: workItems.length,
+            });
+
+            // Gather pending / in-progress work items
+            workItems.forEach((wi) => {
+              if (wi.status !== 'DONE') {
+                pendingItems.push({
+                  id: wi.workItemId,
+                  task: wi.title,
+                  project: prj.name,
+                  projectId: prj.projectId,
+                  weight: `${wi.percentage}%`,
+                  priority: prj.priority || 'Medium',
+                  status: wi.status,
+                });
+              }
+            });
+          }
+        });
+
+        setAssignedProjects(dashboardProjects);
+        setPendingWorkItems(pendingItems);
+        setCompletedTasksCount(totalCompletedWorkItems);
+        setAverageProgress(
+          dashboardProjects.length > 0
+            ? Math.round(totalProgressSum / dashboardProjects.length)
+            : 0
+        );
+      } catch (err) {
+        console.error('Failed to load staff dashboard data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDashboardData();
+  }, [user?.userId]);
 
   return (
     <DashboardLayout
       navigation={STAFF_NAVIGATION}
       user={userDisplay}
-      notificationsCount={1}
+      notificationsCount={pendingWorkItems.length}
       onNotificationClick={() => navigate('/staff/work-items')}
       onProfileClick={() => navigate('/staff/profile')}
       onLogoutClick={handleLogout}
@@ -159,7 +262,7 @@ export default function StaffDashboardPage() {
                 Welcome back, {userDisplay.name}
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 max-w-xl leading-relaxed">
-                You have <strong className="text-blue-700 font-bold">{pendingWorkItems.length} active work items</strong> across {assignedProjects.length} assigned programme projects. Completed work-item weights automatically contribute to overall project progress once assigned.
+                You have <strong className="text-blue-700 font-bold">{pendingWorkItems.length} active work items</strong> across {assignedProjects.length} assigned programme projects. Completed work-item weights automatically contribute to overall project progress.
               </p>
             </div>
 
@@ -178,7 +281,6 @@ export default function StaffDashboardPage() {
 
         {/* ── KPI METRICS CARDS ─────────────────────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-          
           {/* KPI 1: Assigned Projects */}
           <div
             onClick={() => navigate('/staff/projects')}
@@ -193,7 +295,9 @@ export default function StaffDashboardPage() {
             <div className="mt-4">
               <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Assigned Projects</p>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-3xl font-extrabold tracking-tight text-slate-900">{assignedProjects.length}</span>
+                <span className="text-3xl font-extrabold tracking-tight text-slate-900">
+                  {isLoading ? '...' : assignedProjects.length}
+                </span>
                 <span className="text-[11px] text-slate-500 font-medium">project tracks</span>
               </div>
             </div>
@@ -217,7 +321,9 @@ export default function StaffDashboardPage() {
             <div className="mt-4">
               <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Pending Work Items</p>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-3xl font-extrabold tracking-tight text-slate-900">{pendingWorkItems.length}</span>
+                <span className="text-3xl font-extrabold tracking-tight text-slate-900">
+                  {isLoading ? '...' : pendingWorkItems.length}
+                </span>
                 <span className="text-[11px] text-slate-500 font-medium">in queue</span>
               </div>
             </div>
@@ -229,7 +335,7 @@ export default function StaffDashboardPage() {
 
           {/* KPI 3: Completed Milestones */}
           <div
-            onClick={() => navigate('/staff/history')}
+            onClick={() => navigate('/staff/work-history')}
             className="p-5 rounded-2xl bg-white border border-slate-200 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md cursor-pointer hover:border-blue-300"
           >
             <div className="flex items-center justify-between">
@@ -241,7 +347,9 @@ export default function StaffDashboardPage() {
             <div className="mt-4">
               <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Completed Tasks</p>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-3xl font-extrabold tracking-tight text-slate-900">0</span>
+                <span className="text-3xl font-extrabold tracking-tight text-slate-900">
+                  {isLoading ? '...' : completedTasksCount}
+                </span>
                 <span className="text-[11px] text-slate-500 font-medium">milestones</span>
               </div>
             </div>
@@ -265,25 +373,27 @@ export default function StaffDashboardPage() {
             <div className="mt-4">
               <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Average Progress</p>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-3xl font-extrabold tracking-tight text-slate-900">0%</span>
+                <span className="text-3xl font-extrabold tracking-tight text-slate-900">
+                  {isLoading ? '...' : `${averageProgress}%`}
+                </span>
                 <span className="text-[11px] text-slate-500 font-medium">clamped 0–100</span>
               </div>
             </div>
             <div className="mt-3 pt-2 border-t border-slate-100">
               <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full bg-slate-200 rounded-full" style={{ width: '0%' }} />
+                <div
+                  className="h-full bg-gradient-to-r from-blue-500 to-sky-500 rounded-full transition-all duration-500"
+                  style={{ width: `${averageProgress}%` }}
+                />
               </div>
             </div>
           </div>
-
         </div>
 
         {/* ── 2-COLUMN MAIN WORKSPACE ──────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          
           {/* LEFT: Assigned Projects & Action Items */}
           <div className="lg:col-span-2 space-y-6">
-            
             {/* 1. Assigned Project Streams */}
             <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -296,7 +406,7 @@ export default function StaffDashboardPage() {
                       My Assigned Projects
                     </h3>
                     <p className="text-[11px] text-[var(--color-text-secondary)]">
-                      Projects where you are assigned as Supervisor or Senior Contributor.
+                      Projects where you are assigned as Lead, Supervisor, or Senior Contributor.
                     </p>
                   </div>
                 </div>
@@ -321,7 +431,7 @@ export default function StaffDashboardPage() {
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-mono text-[10px] font-bold text-slate-500">{p.id}</span>
+                            <span className="font-mono text-[10px] font-bold text-slate-500">{p.projectId}</span>
                             <span className="text-slate-300">•</span>
                             <span className="text-xs font-bold text-slate-900">{p.title}</span>
                           </div>
@@ -330,7 +440,7 @@ export default function StaffDashboardPage() {
                           </p>
                         </div>
 
-                        <Badge size="sm" variant="success">Active</Badge>
+                        <Badge size="sm" variant="success">{p.status}</Badge>
                       </div>
 
                       <div className="space-y-1.5 pt-1">
@@ -415,7 +525,7 @@ export default function StaffDashboardPage() {
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                        <Badge size="sm" variant={wi.priority === 'HIGH' ? 'warning' : 'neutral'}>
+                        <Badge size="sm" variant={wi.priority === 'High' ? 'warning' : 'neutral'}>
                           {wi.priority}
                         </Badge>
                         <Button
@@ -448,12 +558,10 @@ export default function StaffDashboardPage() {
                 />
               )}
             </div>
-
           </div>
 
           {/* RIGHT: Profile, Allocation & Quick Navigation */}
           <div className="lg:col-span-1 space-y-6">
-            
             {/* 1. Staff Profile & Allocation Summary */}
             <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
@@ -542,9 +650,7 @@ export default function StaffDashboardPage() {
                 ))}
               </div>
             </div>
-
           </div>
-
         </div>
       </div>
     </DashboardLayout>

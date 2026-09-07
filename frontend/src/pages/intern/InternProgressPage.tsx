@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   LayoutDashboard,
   FolderKanban,
@@ -33,6 +33,12 @@ import {
 } from '../../components/common';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import {
+  fetchAssignments,
+  fetchProjects,
+  mapWorkItemStatusToDisplay,
+  type ApiProject,
+} from '../../utils/apiDataService';
 import {
   InternProgressDetailsDrawer,
   type InternProjectContribution,
@@ -98,9 +104,9 @@ export default function InternProgressPage() {
   const navigate = useNavigate();
 
   // State Management
-  const [projects] = useState<InternProjectContribution[]>([]);
-  const [workItems] = useState<DetailedWorkItemContribution[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [projects, setProjects] = useState<InternProjectContribution[]>([]);
+  const [workItems, setWorkItems] = useState<DetailedWorkItemContribution[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Filters State
@@ -123,12 +129,90 @@ export default function InternProgressPage() {
     navigate('/login');
   };
 
-  const handleRefresh = () => {
+  const loadProgressData = async () => {
+    if (!user?.userId) return;
     setIsLoading(true);
     setError(null);
-    setTimeout(() => {
+    try {
+      const [assignments, allProjects] = await Promise.all([
+        fetchAssignments(user.userId),
+        fetchProjects(),
+      ]);
+
+      const projectMap = new Map<string, ApiProject>();
+      allProjects.forEach((p) => projectMap.set(p.projectId, p));
+
+      const mappedProjects: InternProjectContribution[] = [];
+      const detailedItems: DetailedWorkItemContribution[] = [];
+
+      assignments.forEach((asg) => {
+        const prj = projectMap.get(asg.projectId);
+        if (prj) {
+          const projectWorkItems = prj.workItems || [];
+          const notStarted = projectWorkItems.filter((wi) => wi.status === 'TODO').length;
+          const inProgress = projectWorkItems.filter((wi) => wi.status === 'IN_PROGRESS').length;
+          const completed = projectWorkItems.filter((wi) => wi.status === 'DONE').length;
+
+          const internCompletedWeight = projectWorkItems
+            .filter((wi) => wi.status === 'DONE')
+            .reduce((sum, wi) => sum + (Number(wi.percentage) || 0), 0);
+
+          const mappedWorkItems: InternWorkItemContribution[] = projectWorkItems.map((wi) => {
+            const itemContribution: InternWorkItemContribution = {
+              id: `${prj.projectId}-${wi.workItemId}`,
+              workItemId: wi.workItemId,
+              title: wi.title,
+              percentageWeight: wi.percentage,
+              status: mapWorkItemStatusToDisplay(wi.status),
+              targetDate: prj.targetDate,
+              completionDate: wi.status === 'DONE' ? prj.targetDate : undefined,
+            };
+
+            detailedItems.push({
+              ...itemContribution,
+              projectId: prj.projectId,
+              projectName: prj.name,
+            });
+
+            return itemContribution;
+          });
+
+          mappedProjects.push({
+            id: prj._id || prj.projectId,
+            projectId: prj.projectId,
+            projectName: prj.name,
+            projectStatus: prj.status || 'Active',
+            myRole: asg.assignmentRole || asg.professionalRole || 'Intern Contributor',
+            startDate: prj.startDate,
+            targetDate: prj.targetDate,
+            overallProgress: prj.progress || 0,
+            internCompletedContribution: Math.min(100, internCompletedWeight),
+            remainingContribution: Math.max(0, 100 - internCompletedWeight),
+            assignedWorkItemsCount: projectWorkItems.length,
+            notStartedCount: notStarted,
+            inProgressCount: inProgress,
+            completedCount: completed,
+            workItems: mappedWorkItems,
+          });
+        }
+      });
+
+      setProjects(mappedProjects);
+      setWorkItems(detailedItems);
+    } catch (err: unknown) {
+      console.error('Error loading intern progress data:', err);
+      setError('Could not retrieve progress data from server.');
+    } finally {
       setIsLoading(false);
-    }, 400);
+    }
+  };
+
+  useEffect(() => {
+    loadProgressData();
+  }, [user?.userId]);
+
+  const handleRefresh = () => {
+    loadProgressData();
   };
 
   const handleResetFilters = () => {
@@ -271,7 +355,7 @@ export default function InternProgressPage() {
       user={userDisplay}
       notificationsCount={0}
       onNotificationClick={() => {}}
-      onProfileClick={() => {}}
+      onProfileClick={() => navigate('/intern/profile')}
       onLogoutClick={handleLogout}
     >
       <PageHeader

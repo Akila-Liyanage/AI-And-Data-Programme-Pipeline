@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   LayoutDashboard,
   FolderKanban,
@@ -32,6 +32,12 @@ import {
 } from '../../components/common';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import {
+  fetchAssignments,
+  fetchProjects,
+  mapWorkItemStatusToDisplay,
+  type ApiProject,
+} from '../../utils/apiDataService';
 import {
   StaffWorkHistoryDetailsDrawer,
   type StaffHistoryRecord,
@@ -91,8 +97,8 @@ export default function StaffWorkHistoryPage() {
   const navigate = useNavigate();
 
   // History Records State
-  const [historyRecords] = useState<StaffHistoryRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [historyRecords, setHistoryRecords] = useState<StaffHistoryRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Selected history record for Details Drawer
@@ -116,14 +122,6 @@ export default function StaffWorkHistoryPage() {
     navigate('/login');
   };
 
-  const handleRefresh = () => {
-    setIsLoading(true);
-    setError(null);
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 400);
-  };
-
   const handleResetFilters = () => {
     setSearchQuery('');
     setProjectFilter('ALL');
@@ -131,6 +129,67 @@ export default function StaffWorkHistoryPage() {
     setFromDate('');
     setToDate('');
   };
+
+  const loadWorkHistory = async () => {
+    if (!user?.userId) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [assignments, allProjects] = await Promise.all([
+        fetchAssignments(user.userId),
+        fetchProjects(),
+      ]);
+
+      const projectMap = new Map<string, ApiProject>();
+      allProjects.forEach((p) => projectMap.set(p.projectId, p));
+
+      const records: StaffHistoryRecord[] = [];
+
+      assignments.forEach((asg) => {
+        const prj = projectMap.get(asg.projectId);
+        if (prj && prj.workItems) {
+          prj.workItems.forEach((wi) => {
+            records.push({
+              id: `${prj.projectId}-${wi.workItemId}`,
+              workItemId: wi.workItemId,
+              workItemTitle: wi.title,
+              projectId: prj.projectId,
+              projectName: prj.name,
+              description: `Project: ${prj.name} • Responsibility: ${wi.role}`,
+              requiredRole: wi.role,
+              responsibility: wi.role,
+              percentageWeight: wi.percentage,
+              finalStatus: mapWorkItemStatusToDisplay(wi.status),
+              assignedDate: asg.startDate || prj.startDate,
+              startedDate: asg.startDate || prj.startDate,
+              completionDate: wi.status === 'DONE' ? prj.targetDate : undefined,
+              progressContribution: wi.status === 'DONE' ? wi.percentage : 0,
+              assignedUser: `${user.fullName || 'Staff Member'} (${user.userId})`,
+              userRole: asg.assignmentRole || asg.professionalRole || 'Senior Contributor',
+              assignmentStatus: asg.status || 'Assigned',
+              projectProgress: prj.progress || 0,
+            });
+          });
+        }
+      });
+
+      setHistoryRecords(records);
+    } catch (err: unknown) {
+      console.error('Error loading work history:', err);
+      setError('Could not retrieve work history from server.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadWorkHistory();
+  }, [user?.userId]);
+
+  const handleRefresh = () => {
+    loadWorkHistory();
+  };
+
 
   // Distinct projects list for the project filter
   const availableProjects = useMemo(() => {
@@ -229,7 +288,7 @@ export default function StaffWorkHistoryPage() {
       user={userDisplay}
       notificationsCount={0}
       onNotificationClick={() => {}}
-      onProfileClick={() => {}}
+      onProfileClick={() => navigate('/staff/profile')}
       onLogoutClick={handleLogout}
     >
       <PageHeader

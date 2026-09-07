@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   LayoutDashboard,
   FolderKanban,
@@ -35,6 +35,14 @@ import {
 } from '../../components/common';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import {
+  fetchAssignments,
+  fetchProjects,
+  updateWorkItemStatus,
+  mapWorkItemStatusToDisplay,
+  mapDisplayStatusToApi,
+  type ApiProject,
+} from '../../utils/apiDataService';
 import {
   StaffWorkItemDetailsDrawer,
   type StaffWorkItem,
@@ -103,7 +111,7 @@ export default function StaffWorkItemsPage() {
 
   // Work Items State
   const [workItems, setWorkItems] = useState<StaffWorkItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Filters State
@@ -137,12 +145,62 @@ export default function StaffWorkItemsPage() {
     setStatusFilter('ALL');
   };
 
-  const handleRefresh = () => {
+  const loadWorkItems = async () => {
+    if (!user?.userId) return;
     setIsLoading(true);
     setError(null);
-    setTimeout(() => {
+    try {
+      const [assignments, allProjects] = await Promise.all([
+        fetchAssignments(user.userId),
+        fetchProjects(),
+      ]);
+
+      const projectMap = new Map<string, ApiProject>();
+      allProjects.forEach((p) => projectMap.set(p.projectId, p));
+
+      const items: StaffWorkItem[] = [];
+
+      assignments.forEach((asg) => {
+        const prj = projectMap.get(asg.projectId);
+        if (prj && prj.workItems) {
+          prj.workItems.forEach((wi) => {
+            items.push({
+              id: `${prj.projectId}-${wi.workItemId}`,
+              workItemId: wi.workItemId,
+              title: wi.title,
+              projectId: prj.projectId,
+              projectName: prj.name,
+              description: `Project: ${prj.name} • Responsibility: ${wi.role}`,
+              requiredRole: wi.role,
+              responsibility: wi.role,
+              percentageWeight: wi.percentage,
+              status: mapWorkItemStatusToDisplay(wi.status),
+              assignedDate: asg.startDate || prj.startDate,
+              dueDate: prj.targetDate,
+              targetDate: prj.targetDate,
+              assignedUser: `${user.fullName || 'Staff Member'} (${user.userId})`,
+              assignmentStatus: asg.status || 'Assigned',
+              projectProgress: prj.progress || 0,
+            });
+          });
+        }
+      });
+
+      setWorkItems(items);
+    } catch (err: unknown) {
+      console.error('Failed to load work items:', err);
+      setError('Could not retrieve work items from server.');
+    } finally {
       setIsLoading(false);
-    }, 400);
+    }
+  };
+
+  useEffect(() => {
+    loadWorkItems();
+  }, [user?.userId]);
+
+  const handleRefresh = () => {
+    loadWorkItems();
   };
 
   // Distinct projects available from work items for the project filter
@@ -198,45 +256,67 @@ export default function StaffWorkItemsPage() {
     setConfirmTransition({ item, targetStatus });
   };
 
-  const handleConfirmTransition = () => {
+  const handleConfirmTransition = async () => {
     if (!confirmTransition) return;
     const { item, targetStatus } = confirmTransition;
 
-    // Apply state transition in UI
-    setWorkItems((prev) =>
-      prev.map((wi) =>
-        wi.id === item.id
-          ? {
-              ...wi,
-              status: targetStatus,
-              completionDate:
-                targetStatus === 'Completed'
-                  ? new Date().toISOString().split('T')[0]
-                  : wi.completionDate,
-            }
-          : wi
-      )
+    const apiStatus = mapDisplayStatusToApi(targetStatus);
+    const result = await updateWorkItemStatus(
+      item.projectId,
+      item.workItemId || item.id,
+      apiStatus
     );
 
-    // Keep drawer updated if currently open
-    if (selectedWorkItem && selectedWorkItem.id === item.id) {
-      setSelectedWorkItem((prev) =>
-        prev
-          ? {
-              ...prev,
-              status: targetStatus,
-              completionDate:
-                targetStatus === 'Completed'
-                  ? new Date().toISOString().split('T')[0]
-                  : prev.completionDate,
-            }
-          : null
+    if (result.success) {
+      // Apply state transition in UI
+      setWorkItems((prev) =>
+        prev.map((wi) =>
+          wi.id === item.id ||
+          (wi.projectId === item.projectId && wi.workItemId === item.workItemId)
+            ? {
+                ...wi,
+                status: targetStatus,
+                projectProgress:
+                  result.progress !== undefined ? result.progress : wi.projectProgress,
+                completionDate:
+                  targetStatus === 'Completed'
+                    ? new Date().toISOString().split('T')[0]
+                    : wi.completionDate,
+              }
+            : wi
+        )
       );
+
+      // Keep drawer updated if currently open
+      if (
+        selectedWorkItem &&
+        (selectedWorkItem.id === item.id ||
+          (selectedWorkItem.projectId === item.projectId &&
+            selectedWorkItem.workItemId === item.workItemId))
+      ) {
+        setSelectedWorkItem((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: targetStatus,
+                projectProgress:
+                  result.progress !== undefined ? result.progress : prev.projectProgress,
+                completionDate:
+                  targetStatus === 'Completed'
+                    ? new Date().toISOString().split('T')[0]
+                    : prev.completionDate,
+              }
+            : null
+        );
+      }
+
+      setNoticeMessage(
+        `Work item ${item.workItemId || item.id} status updated to "${targetStatus}". Overall project progress updated to ${result.progress ?? ''}%.`
+      );
+    } else {
+      setError(result.message || 'Failed to update work item status on server.');
     }
 
-    setNoticeMessage(
-      `Work item ${item.workItemId || item.id} status updated to "${targetStatus}".`
-    );
     setConfirmTransition(null);
   };
 
@@ -275,9 +355,10 @@ export default function StaffWorkItemsPage() {
       user={userDisplay}
       notificationsCount={0}
       onNotificationClick={() => {}}
-      onProfileClick={() => {}}
+      onProfileClick={() => navigate('/staff/profile')}
       onLogoutClick={handleLogout}
     >
+
       <PageHeader
         title="My Work Items"
         description="Review and manage work assigned across your projects."

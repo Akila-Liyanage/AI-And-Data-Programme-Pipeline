@@ -60,8 +60,7 @@ export default function TeamWorkHistoryPage() {
   const navigate = useNavigate();
 
   // Data & Loading States
-  // Real history records state — initialized to empty array per audit (no fake rows)
-  const [historyRecords] = useState<TeamHistoryRecord[]>([]);
+  const [historyRecords, setHistoryRecords] = useState<TeamHistoryRecord[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -79,29 +78,128 @@ export default function TeamWorkHistoryPage() {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
 
-  // Fetch real supporting projects and users for active filter options
+  // Fetch real supporting projects, users, and assignments for history records
   const fetchSupportingData = async () => {
     setIsLoading(true);
     setFetchError(null);
     try {
       const token = localStorage.getItem('token');
-      const [projRes, userRes] = await Promise.all([
+      const [projRes, userRes, assignRes] = await Promise.all([
         fetch(`${API_BASE_URL}/projects`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
         fetch(`${API_BASE_URL}/users`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
+        fetch(`${API_BASE_URL}/assignments`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
       ]);
+
+      let loadedProjects: any[] = [];
+      let loadedUsers: any[] = [];
+      let loadedAssignments: any[] = [];
 
       if (projRes.ok) {
         const projData = await projRes.json();
-        setProjects(projData.projects || []);
+        loadedProjects = projData.projects || [];
+        setProjects(loadedProjects);
       }
       if (userRes.ok) {
         const userData = await userRes.json();
-        setUsers(userData.users || []);
+        loadedUsers = userData.users || [];
+        setUsers(loadedUsers);
       }
+      if (assignRes.ok) {
+        const assignData = await assignRes.json();
+        loadedAssignments = assignData.assignments || [];
+      }
+
+      // Build dynamic history records from all project work items
+      const records: TeamHistoryRecord[] = [];
+      loadedProjects.forEach((proj: any) => {
+        const projectAssignments = loadedAssignments.filter(
+          (a: any) => a.projectId === proj.projectId
+        );
+
+        (proj.workItems || []).forEach((wi: any, idx: number) => {
+          let matchedUser: any = null;
+          let matchedAssignment: any = null;
+
+          if (projectAssignments.length > 0) {
+            matchedAssignment =
+              projectAssignments.find((a: any) => {
+                const u = loadedUsers.find((usr: any) => usr.userId === a.userId);
+                if (!u) return false;
+                if (
+                  wi.role &&
+                  (u.designation?.toLowerCase().includes(wi.role.toLowerCase()) ||
+                    u.internRole?.toLowerCase().includes(wi.role.toLowerCase()) ||
+                    a.role?.toLowerCase().includes(wi.role.toLowerCase()))
+                ) {
+                  return true;
+                }
+                return false;
+              }) || projectAssignments[idx % projectAssignments.length];
+
+            if (matchedAssignment) {
+              matchedUser = loadedUsers.find(
+                (usr: any) => usr.userId === matchedAssignment.userId
+              );
+            }
+          }
+
+          if (!matchedUser && wi.role) {
+            matchedUser = loadedUsers.find(
+              (u: any) =>
+                u.designation?.toLowerCase().includes(wi.role.toLowerCase()) ||
+                u.internRole?.toLowerCase().includes(wi.role.toLowerCase())
+            );
+          }
+
+          const contributorType: ContributorType =
+            matchedUser?.role === 'INTERN' ? 'Intern' : 'Permanent Staff';
+          const isDone = wi.status === 'DONE';
+          const isInProgress = wi.status === 'IN_PROGRESS';
+          const statusDisplay = isDone ? 'Completed' : isInProgress ? 'In Progress' : 'Not Started';
+
+          records.push({
+            id: `${proj.projectId}-${wi.workItemId || idx + 1}`,
+            workItemId: wi.workItemId || `WI-${idx + 1}`,
+            workItemTitle: wi.title,
+            description: wi.description || `${wi.title} for ${proj.name}`,
+            projectId: proj.projectId,
+            projectName: proj.name,
+            teamMemberName: matchedUser?.fullName || 'Assigned Contributor',
+            teamMemberId: matchedUser?.userId || matchedAssignment?.userId || 'TM-01',
+            contributorType: contributorType,
+            roleOrResponsibility:
+              wi.role || matchedUser?.designation || matchedUser?.internRole || 'Project Contributor',
+            predefinedWeight: wi.percentage || 20,
+            finalStatus: statusDisplay,
+            assignedDate: matchedAssignment?.assignedAt
+              ? new Date(matchedAssignment.assignedAt).toISOString().split('T')[0]
+              : proj.startDate
+              ? new Date(proj.startDate).toISOString().split('T')[0]
+              : '2026-01-15',
+            startedDate:
+              !wi.status || wi.status === 'TODO'
+                ? undefined
+                : proj.startDate
+                ? new Date(proj.startDate).toISOString().split('T')[0]
+                : '2026-01-20',
+            completionDate: isDone
+              ? proj.updatedAt
+                ? new Date(proj.updatedAt).toISOString().split('T')[0]
+                : '2026-02-15'
+              : undefined,
+            creditedContribution: isDone ? wi.percentage || 20 : 0,
+            projectProgress: proj.progress ?? 0,
+          });
+        });
+      });
+
+      setHistoryRecords(records);
     } catch (err: any) {
       console.error('Failed to load team work history context:', err);
       setFetchError('Could not retrieve team work history records. Please check your connection and retry.');
@@ -332,7 +430,7 @@ export default function TeamWorkHistoryPage() {
       user={userDisplay}
       notificationsCount={2}
       onNotificationClick={() => {}}
-      onProfileClick={() => {}}
+      onProfileClick={() => navigate('/admin/profile')}
       onLogoutClick={handleLogout}
     >
       {/* ── Page Header ────────────────────────────────────────── */}

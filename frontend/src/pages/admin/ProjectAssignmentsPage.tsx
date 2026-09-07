@@ -235,7 +235,7 @@ export default function ProjectAssignmentsPage() {
       user={userDisplay}
       notificationsCount={1}
       onNotificationClick={() => {}}
-      onProfileClick={() => {}}
+      onProfileClick={() => navigate('/admin/profile')}
       onLogoutClick={handleLogout}
     >
       {/* ── Page Header ────────────────────────────────────────── */}
