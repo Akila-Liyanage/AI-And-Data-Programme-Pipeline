@@ -5,7 +5,6 @@ import {
   FolderKanban,
   FileText,
   Code2,
-  Building2,
   Calendar,
   Layers,
   Users,
@@ -13,9 +12,12 @@ import {
   Edit3,
   UserCheck,
   Trash2,
+  Plus,
+  UserMinus,
 } from 'lucide-react';
 import { Button, Badge, Alert, EmptyState } from '../../../components/common';
 import type { ManagedProject } from '../../../types/projectManagement.types';
+import { CreateAssignmentDrawer } from './CreateAssignmentDrawer';
 
 export interface ProjectDetailsDrawerProps {
   isOpen: boolean;
@@ -51,6 +53,63 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
     message: string;
   } | null>(null);
 
+  // Live assigned team members state
+  const [assignedMembers, setAssignedMembers] = useState<any[]>([]);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+  const [isAssignDrawerOpen, setIsAssignDrawerOpen] = useState(false);
+
+  // Fetch real-time assigned members for this project
+  const loadProjectAssignments = async () => {
+    if (!project?.projectId) return;
+    setIsLoadingMembers(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:5000/api/assignments?projectId=${project.projectId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok && data.assignments) {
+        setAssignedMembers(data.assignments);
+      }
+    } catch (err) {
+      console.error('Failed to load project assignments:', err);
+    } finally {
+      setIsLoadingMembers(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen && project?.projectId) {
+      loadProjectAssignments();
+    }
+  }, [isOpen, project?.projectId]);
+
+  // Remove / Unassign member
+  const handleUnassignMember = async (assignmentId: string, memberName: string) => {
+    if (!window.confirm(`Are you sure you want to unassign ${memberName} from this project?`)) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:5000/api/assignments/${assignmentId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setStatusNotice({
+          type: 'success',
+          title: 'Member Unassigned',
+          message: `Successfully unassigned ${memberName} from project ${project?.name}.`,
+        });
+        loadProjectAssignments();
+      }
+    } catch (err: any) {
+      setStatusNotice({
+        type: 'error',
+        title: 'Action Failed',
+        message: err.message || 'Could not unassign team member.',
+      });
+    }
+  };
+
   // Close on Escape key press
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -85,10 +144,11 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
+      case 'ongoing':
       case 'active':
         return (
           <Badge variant="success" size="sm">
-            Active
+            Ongoing
           </Badge>
         );
       case 'completed':
@@ -103,11 +163,18 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
             On Hold
           </Badge>
         );
+      case 'cancelled':
+        return (
+          <Badge variant="error" size="sm">
+            Cancelled
+          </Badge>
+        );
+      case 'not started':
       case 'planned':
       default:
         return (
           <Badge variant="info" size="sm">
-            Planned
+            Not Started
           </Badge>
         );
     }
@@ -291,19 +358,32 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
               </div>
             </div>
 
-            {/* ── 2. PROJECT OWNERSHIP ────────────────────────────── */}
+            {/* ── 2. PROJECT OWNERSHIP & ASSIGNED TEAM ─────────── */}
             <div className="space-y-3">
-              <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
-                <Building2 className="w-4 h-4 text-[var(--color-brand-green)]" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
-                  Project Ownership & Team
-                </h4>
+              <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border-subtle)]">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-[var(--color-brand-green)]" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
+                    Assigned Project Team ({assignedMembers.length} {assignedMembers.length === 1 ? 'Member' : 'Members'})
+                  </h4>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  leftIcon={<Plus className="w-3.5 h-3.5" />}
+                  onClick={() => setIsAssignDrawerOpen(true)}
+                >
+                  Assign Member
+                </Button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              {/* Ownership Metadata Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
                   <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
-                    Project Lead
+                    Project Lead / Supervisor
                   </span>
                   <p className="font-semibold text-[var(--color-brand-navy)]">
                     {project?.projectLead || '—'}
@@ -312,24 +392,108 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
 
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
                   <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
-                    Department / Team
+                    Department / Programme Unit
                   </span>
                   <p className="font-semibold text-[var(--color-brand-navy)]">
                     {project?.department || '—'}
                   </p>
                 </div>
+              </div>
 
-                <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium flex items-center gap-1">
-                    <Users className="w-3 h-3 text-[var(--color-text-muted)]" />
-                    Assigned Members
-                  </span>
-                  <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {project?.assignedMembersCount !== undefined
-                      ? `${project.assignedMembersCount} Members`
-                      : '—'}
-                  </p>
-                </div>
+              {/* Live Assigned Team Members List */}
+              <div className="space-y-2 pt-1">
+                {isLoadingMembers ? (
+                  <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 text-center text-xs text-slate-500 animate-pulse">
+                    Loading assigned team members...
+                  </div>
+                ) : assignedMembers.length === 0 ? (
+                  <div className="p-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 text-center space-y-2">
+                    <Users className="w-6 h-6 text-slate-400 mx-auto" />
+                    <p className="text-xs font-semibold text-slate-700">No Team Members Assigned Yet</p>
+                    <p className="text-[11px] text-slate-500">
+                      Allocate Staff engineers or Intern trainees to work on this project stream.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      leftIcon={<Plus className="w-3.5 h-3.5" />}
+                      onClick={() => setIsAssignDrawerOpen(true)}
+                    >
+                      Assign First Member
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {assignedMembers.map((m: any) => {
+                      const isIntern = m.userCategory?.toLowerCase().includes('intern');
+                      const initials = (m.userName || 'Member')
+                        .split(' ')
+                        .map((n: string) => n[0])
+                        .join('')
+                        .toUpperCase()
+                        .slice(0, 2);
+
+                      return (
+                        <div
+                          key={m._id || m.assignmentId}
+                          className="p-3 rounded-xl border border-slate-200/90 bg-white hover:border-blue-300 hover:shadow-2xs transition-all flex items-center justify-between gap-3"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div
+                              className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
+                                isIntern
+                                  ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                                  : 'bg-blue-100 text-blue-700 border border-blue-200'
+                              }`}
+                            >
+                              {initials}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-xs font-bold text-slate-900 truncate">
+                                  {m.userName}
+                                </span>
+                                <Badge size="sm" variant={isIntern ? 'neutral' : 'blue'}>
+                                  {m.userCategory || (isIntern ? 'Intern' : 'Staff')}
+                                </Badge>
+                              </div>
+                              <p className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5 truncate">
+                                <span className="font-medium text-slate-700 font-mono">
+                                  {m.userId}
+                                </span>
+                                <span>•</span>
+                                <span className="font-semibold text-blue-700">
+                                  {m.assignmentRole || m.professionalRole || 'Contributor'}
+                                </span>
+                                {m.startDate && (
+                                  <>
+                                    <span>•</span>
+                                    <span>Since {formatDisplayDate(m.startDate)}</span>
+                                  </>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Badge size="sm" variant="success">
+                              {m.status || 'Assigned'}
+                            </Badge>
+                            <button
+                              type="button"
+                              onClick={() => handleUnassignMember(m._id || m.assignmentId, m.userName)}
+                              title="Unassign member"
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                            >
+                              <UserMinus className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -562,6 +726,21 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
           </div>
         </div>
       </div>
+
+      {/* ── Assign Member Drawer ───────────────────────────────── */}
+      <CreateAssignmentDrawer
+        isOpen={isAssignDrawerOpen}
+        onClose={() => setIsAssignDrawerOpen(false)}
+        defaultProjectId={project?.projectId}
+        onAssignmentCreated={() => {
+          loadProjectAssignments();
+          setStatusNotice({
+            type: 'success',
+            title: 'Member Assigned',
+            message: `Successfully allocated team member to ${project?.name}.`,
+          });
+        }}
+      />
     </div>
   );
 };

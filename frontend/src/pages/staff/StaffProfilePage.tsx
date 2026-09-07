@@ -290,25 +290,36 @@ export default function StaffProfilePage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="font-semibold text-slate-700">Professional Role / Designation</label>
-                    <Input
+                    <label className="font-semibold text-slate-700 block text-xs">Professional Role</label>
+                    <select
                       value={editFormData.designation}
                       onChange={(e) =>
                         setEditFormData({ ...editFormData, designation: e.target.value })
                       }
-                      placeholder="e.g. Senior AI Engineer"
-                    />
+                      className="w-full h-9 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer"
+                    >
+                      <option value="Business Analyst">Business Analyst</option>
+                      <option value="Data Analyst">Data Analyst</option>
+                      <option value="Data Scientist">Data Scientist</option>
+                      <option value="Software Engineer">Software Engineer</option>
+                      <option value="QA">Quality Assurance (QA)</option>
+                      <option value="AI Engineer">AI Engineer</option>
+                    </select>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="font-semibold text-slate-700">Employment Type</label>
-                    <Input
+                    <label className="font-semibold text-slate-700 block text-xs">Employment Type</label>
+                    <select
                       value={editFormData.employmentType}
                       onChange={(e) =>
                         setEditFormData({ ...editFormData, employmentType: e.target.value })
                       }
-                      placeholder="e.g. Permanent"
-                    />
+                      className="w-full h-9 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer"
+                    >
+                      <option value="Permanent">Permanent</option>
+                      <option value="Contract Based">Contract Based</option>
+                      <option value="Freelance">Freelance</option>
+                    </select>
                   </div>
                 </div>
 

@@ -12,6 +12,8 @@ import {
   CheckCircle2,
   Eye,
   X,
+  Sparkles,
+  UserCheck,
 } from 'lucide-react';
 import {
   DashboardLayout,
@@ -29,10 +31,11 @@ import {
   Skeleton,
 } from '../../components/common';
 import { useAuth } from '../../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   fetchAssignments,
   fetchProjects,
+  selfEnrollProject,
   mapWorkItemStatusToDisplay,
   type ApiProject,
 } from '../../utils/apiDataService';
@@ -93,9 +96,17 @@ const INTERN_NAVIGATION: NavSection[] = [
 export default function InternAssignedProjectsPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // State Management
   const [projects, setProjects] = useState<InternProject[]>([]);
+  const [allRawProjects, setAllRawProjects] = useState<ApiProject[]>([]);
+  const [assignedProjectIds, setAssignedProjectIds] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState<'assigned' | 'available'>(() => {
+    return searchParams.get('tab') === 'available' ? 'available' : 'assigned';
+  });
+  const [enrollingId, setEnrollingId] = useState<string | null>(null);
+  const [enrollSuccess, setEnrollSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -134,6 +145,12 @@ export default function InternAssignedProjectsPage() {
         fetchProjects(),
       ]);
 
+      setAllRawProjects(allProjects);
+
+      const assignedIds = new Set<string>();
+      assignments.forEach((a) => assignedIds.add(a.projectId));
+      setAssignedProjectIds(assignedIds);
+
       const projectMap = new Map<string, ApiProject>();
       allProjects.forEach((p) => projectMap.set(p.projectId, p));
 
@@ -149,14 +166,14 @@ export default function InternAssignedProjectsPage() {
             projectName: prj.name,
             description: prj.description,
             category: prj.category,
-            projectStatus: prj.status || 'Active',
+            projectStatus: prj.status || 'Ongoing',
             priority: prj.priority || 'Medium',
             startDate: prj.startDate,
             targetDate: prj.targetDate,
             supervisorName: prj.projectLead || 'Senior AI Lead',
             department: prj.department || 'AI & Data Team',
             technologyStack: prj.technologyStack,
-            assignedRole: asg.assignmentRole || asg.professionalRole || 'Intern Contributor',
+            assignedRole: asg.assignmentRole || asg.professionalRole || user?.internRole || 'Intern Contributor',
             assignmentStatus: asg.status || 'Assigned',
             projectProgress: prj.progress || 0,
             workItems: workItems.map((wi) => ({
@@ -188,6 +205,52 @@ export default function InternAssignedProjectsPage() {
 
   const handleRefresh = () => {
     loadAssignedProjects();
+  };
+
+  // BRD Role Matching Checker (FR-14)
+  const checkRoleMatch = (proj: ApiProject, userRole?: string) => {
+    if (!userRole) return true;
+    const uRole = userRole.toLowerCase();
+    return (proj.workItems || []).some((wi) => {
+      const wiRole = (wi.role || '').toLowerCase();
+      return (
+        wiRole.includes(uRole) ||
+        uRole.includes(wiRole) ||
+        (uRole.includes('ai') && wiRole.includes('ai')) ||
+        (uRole.includes('data') && wiRole.includes('data')) ||
+        (uRole.includes('frontend') && (wiRole.includes('frontend') || wiRole.includes('ui'))) ||
+        (uRole.includes('backend') && (wiRole.includes('backend') || wiRole.includes('api'))) ||
+        (uRole.includes('qa') && (wiRole.includes('qa') || wiRole.includes('test'))) ||
+        (uRole.includes('analyst') &&
+          (wiRole.includes('analyst') || wiRole.includes('brd') || wiRole.includes('requirement')))
+      );
+    });
+  };
+
+  // Available projects not yet enrolled (BRD FR-15)
+  const availableProjectsToEnroll = useMemo(() => {
+    return allRawProjects.filter((p) => !assignedProjectIds.has(p.projectId));
+  }, [allRawProjects, assignedProjectIds]);
+
+  // Handle Self Enrollment Action (BRD FR-15)
+  const handleSelfEnroll = async (proj: ApiProject) => {
+    setEnrollingId(proj.projectId);
+    setError(null);
+    setEnrollSuccess(null);
+    try {
+      const res = await selfEnrollProject(proj.projectId);
+      if (res.success) {
+        setEnrollSuccess(`Successfully enrolled in "${proj.name}"!`);
+        await loadAssignedProjects();
+      } else {
+        setError(res.message || 'Failed to self-enroll in project.');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('An error occurred during project self-enrollment.');
+    } finally {
+      setEnrollingId(null);
+    }
   };
 
 
@@ -304,17 +367,38 @@ export default function InternAssignedProjectsPage() {
       />
 
       <div className="space-y-6">
+        {/* ── SUCCESS NOTICE ──────────────────────────────────── */}
+        {enrollSuccess && (
+          <Alert
+            variant="success"
+            title="Project Self-Enrollment Successful"
+            onClose={() => setEnrollSuccess(null)}
+          >
+            <div className="flex items-center justify-between gap-3 mt-1">
+              <span>{enrollSuccess}</span>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  setEnrollSuccess(null);
+                  setActiveTab('assigned');
+                }}
+              >
+                View in Assigned Projects
+              </Button>
+            </div>
+          </Alert>
+        )}
+
         {/* ── ERROR STATE ALERT ────────────────────────────────── */}
         {error && (
           <Alert
             variant="error"
-            title="Unable to load assigned projects"
+            title="Notice"
             onClose={() => setError(null)}
           >
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-1">
-              <span>
-                There was a problem retrieving your assigned internship projects. Please check your connection or try refreshing the page.
-              </span>
+              <span>{error}</span>
               <Button
                 variant="outline"
                 size="sm"
@@ -326,6 +410,41 @@ export default function InternAssignedProjectsPage() {
             </div>
           </Alert>
         )}
+
+        {/* ── TAB NAVIGATION (BRD FR-11, FR-15) ────────────────── */}
+        <div className="flex items-center gap-3 border-b border-slate-200 pb-3 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setActiveTab('assigned')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === 'assigned'
+                ? 'bg-[var(--color-brand-blue)] text-white shadow-xs'
+                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 shadow-2xs'
+            }`}
+          >
+            <FolderKanban className="w-4 h-4" />
+            <span>My Assigned Projects</span>
+            <Badge size="sm" variant={activeTab === 'assigned' ? 'neutral' : 'blue'}>
+              {projects.length}
+            </Badge>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('available')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === 'available'
+                ? 'bg-[var(--color-brand-blue)] text-white shadow-xs'
+                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 shadow-2xs'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-amber-500" />
+            <span>Available Projects & Self-Enrollment</span>
+            <Badge size="sm" variant={activeTab === 'available' ? 'neutral' : 'success'}>
+              {availableProjectsToEnroll.length} Available
+            </Badge>
+          </button>
+        </div>
 
         {/* ── 1. KPI SUMMARY CARDS ─────────────────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -411,330 +530,430 @@ export default function InternAssignedProjectsPage() {
                 />
               </div>
             </div>
-            <p className="text-xs text-[var(--color-text-secondary)]">
-              {totalAssigned > 0 ? 'Across assigned projects' : 'No active allocations'}
-            </p>
           </Card>
         </div>
 
-        {/* ── 2. SEARCH AND FILTERS ────────────────────────────── */}
-        <Card padding="md" className="shadow-2xs">
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {/* Search Query */}
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="searchQuery"
-                  className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block"
-                >
-                  Search Projects
-                </label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-                  <Input
-                    id="searchQuery"
-                    type="text"
-                    placeholder="Search by project name or ID..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full text-xs pl-8 pr-8 py-2 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-[var(--color-brand-blue)] placeholder:text-slate-400"
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
-                      aria-label="Clear search"
+        {/* ── 2. TAB CONTENT ───────────────────────────────────── */}
+        {activeTab === 'assigned' ? (
+          <>
+            {/* Search and Filters */}
+            <Card padding="md" className="shadow-2xs">
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {/* Search Query */}
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="searchQuery"
+                      className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block"
                     >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
+                      Search Projects
+                    </label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                      <Input
+                        id="searchQuery"
+                        type="text"
+                        placeholder="Search by project name or ID..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full text-xs pl-8 pr-8 py-2 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-[var(--color-brand-blue)] placeholder:text-slate-400"
+                      />
+                      {searchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setSearchQuery('')}
+                          className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                          aria-label="Clear search"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Status Filter */}
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="statusFilter"
+                      className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block"
+                    >
+                      Status Filter
+                    </label>
+                    <select
+                      id="statusFilter"
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-[var(--color-brand-blue)] text-slate-700 bg-white"
+                    >
+                      <option value="ALL">All Statuses</option>
+                      <option value="Ongoing">Ongoing / Active</option>
+                      <option value="Completed">Completed</option>
+                      <option value="On Hold">On Hold</option>
+                      <option value="Not Started">Not Started / Planned</option>
+                    </select>
+                  </div>
+
+                  {/* Progress Filter */}
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="progressFilter"
+                      className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block"
+                    >
+                      Progress Range
+                    </label>
+                    <select
+                      id="progressFilter"
+                      value={progressFilter}
+                      onChange={(e) => setProgressFilter(e.target.value)}
+                      className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-[var(--color-brand-blue)] text-slate-700 bg-white"
+                    >
+                      <option value="ALL">All Progress Ranges</option>
+                      <option value="NOT_STARTED">Not Started (0%)</option>
+                      <option value="IN_PROGRESS">In Progress (1-99%)</option>
+                      <option value="COMPLETED">Completed (100%)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Filter Actions */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100 flex-wrap gap-2">
+                  <span className="text-[11px] text-slate-500">
+                    {isFiltering ? (
+                      <>
+                        Filtered:{' '}
+                        <strong className="text-slate-700">
+                          {filteredProjects.length}
+                        </strong>{' '}
+                        of {projects.length} {projects.length === 1 ? 'project' : 'projects'}
+                      </>
+                    ) : (
+                      <>
+                        Total Assigned:{' '}
+                        <strong className="text-slate-700">{projects.length}</strong>{' '}
+                        {projects.length === 1 ? 'project' : 'projects'}
+                      </>
+                    )}
+                  </span>
+
+                  {isFiltering && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
+                      onClick={handleResetFilters}
+                      aria-label="Clear all applied filters"
+                    >
+                      Clear Filters
+                    </Button>
                   )}
                 </div>
               </div>
+            </Card>
 
-              {/* Status Filter */}
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="statusFilter"
-                  className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block"
+            {/* Assigned Projects Table */}
+            <Card padding="none" className="shadow-2xs border border-slate-100 overflow-hidden">
+              <div className="overflow-x-auto w-full">
+                <table
+                  className="w-full text-left text-xs border-collapse min-w-[950px]"
+                  aria-label="Intern Assigned Projects Table"
                 >
-                  Status Filter
-                </label>
-                <select
-                  id="statusFilter"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-[var(--color-brand-blue)] text-slate-700 bg-white"
-                >
-                  <option value="ALL">All Statuses</option>
-                  <option value="Active">Active</option>
-                  <option value="Planned">Planned</option>
-                  <option value="On Hold">On Hold</option>
-                  <option value="Completed">Completed</option>
-                </select>
-              </div>
-
-              {/* Progress Filter */}
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="progressFilter"
-                  className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block"
-                >
-                  Progress Range
-                </label>
-                <select
-                  id="progressFilter"
-                  value={progressFilter}
-                  onChange={(e) => setProgressFilter(e.target.value)}
-                  className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-[var(--color-brand-blue)] text-slate-700 bg-white"
-                >
-                  <option value="ALL">All Progress Ranges</option>
-                  <option value="NOT_STARTED">Not Started (0%)</option>
-                  <option value="IN_PROGRESS">In Progress (1-99%)</option>
-                  <option value="COMPLETED">Completed (100%)</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Filter Actions */}
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100 flex-wrap gap-2">
-              <span className="text-[11px] text-slate-500">
-                {isFiltering ? (
-                  <>
-                    Filtered:{' '}
-                    <strong className="text-slate-700">
-                      {filteredProjects.length}
-                    </strong>{' '}
-                    of {projects.length} {projects.length === 1 ? 'project' : 'projects'}
-                  </>
-                ) : (
-                  <>
-                    Total Assigned:{' '}
-                    <strong className="text-slate-700">{projects.length}</strong>{' '}
-                    {projects.length === 1 ? 'project' : 'projects'}
-                  </>
-                )}
-              </span>
-
-              {isFiltering && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
-                  onClick={handleResetFilters}
-                  aria-label="Clear all applied filters"
-                >
-                  Clear Filters
-                </Button>
-              )}
-            </div>
-          </div>
-        </Card>
-
-        {/* ── 3. ASSIGNED PROJECTS TABLE ───────────────────────── */}
-        <Card padding="none" className="shadow-2xs border border-slate-100 overflow-hidden">
-          <div className="overflow-x-auto w-full">
-            <table
-              className="w-full text-left text-xs border-collapse min-w-[950px]"
-              aria-label="Intern Assigned Projects Table"
-            >
-              <thead>
-                <tr className="bg-slate-50/90 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th scope="col" className="py-3 px-4">Project ID</th>
-                  <th scope="col" className="py-3 px-4">Project Name</th>
-                  <th scope="col" className="py-3 px-4">Category</th>
-                  <th scope="col" className="py-3 px-4">Intern Role / Responsibility</th>
-                  <th scope="col" className="py-3 px-4">Status</th>
-                  <th scope="col" className="py-3 px-4">Start Date</th>
-                  <th scope="col" className="py-3 px-4">Target Date</th>
-                  <th scope="col" className="py-3 px-4 min-w-[140px]">Progress</th>
-                  <th scope="col" className="py-3 px-4 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
-                {/* ── Loading Skeleton State ── */}
-                {isLoading ? (
-                  Array.from({ length: 3 }).map((_, idx) => (
-                    <tr key={`skeleton-${idx}`}>
-                      <td className="py-4 px-4">
-                        <Skeleton className="h-4 w-20" />
-                      </td>
-                      <td className="py-4 px-4 space-y-1.5">
-                        <Skeleton className="h-4 w-40" />
-                        <Skeleton className="h-3 w-24" />
-                      </td>
-                      <td className="py-4 px-4">
-                        <Skeleton className="h-5 w-20 rounded-full" />
-                      </td>
-                      <td className="py-4 px-4">
-                        <Skeleton className="h-5 w-24 rounded-full" />
-                      </td>
-                      <td className="py-4 px-4">
-                        <Skeleton className="h-5 w-16 rounded-full" />
-                      </td>
-                      <td className="py-4 px-4">
-                        <Skeleton className="h-4 w-20" />
-                      </td>
-                      <td className="py-4 px-4">
-                        <Skeleton className="h-4 w-20" />
-                      </td>
-                      <td className="py-4 px-4 space-y-1">
-                        <Skeleton className="h-3 w-28" />
-                        <Skeleton className="h-2 w-full rounded-full" />
-                      </td>
-                      <td className="py-4 px-4 text-right">
-                        <Skeleton className="h-7 w-24 ml-auto rounded-lg" />
-                      </td>
+                  <thead>
+                    <tr className="bg-slate-50/90 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                      <th scope="col" className="py-3 px-4">Project ID</th>
+                      <th scope="col" className="py-3 px-4">Project Name</th>
+                      <th scope="col" className="py-3 px-4">Category</th>
+                      <th scope="col" className="py-3 px-4">Intern Role / Responsibility</th>
+                      <th scope="col" className="py-3 px-4">Status</th>
+                      <th scope="col" className="py-3 px-4">Start Date</th>
+                      <th scope="col" className="py-3 px-4">Target Date</th>
+                      <th scope="col" className="py-3 px-4 min-w-[140px]">Progress</th>
+                      <th scope="col" className="py-3 px-4 text-right">Action</th>
                     </tr>
-                  ))
-                ) : filteredProjects.length > 0 ? (
-                  /* ── Projects List ── */
-                  filteredProjects.map((project) => {
-                    const progress = Math.min(
-                      100,
-                      Math.max(0, Number(project.projectProgress) || 0)
-                    );
-                    return (
-                      <tr
-                        key={project.id}
-                        className="hover:bg-slate-50/80 transition-colors"
-                      >
-                        {/* 1. Project ID */}
-                        <td className="py-3 px-4 font-mono font-semibold text-slate-700">
-                          {project.projectId || project.id}
-                        </td>
-
-                        {/* 2. Project Name */}
-                        <td className="py-3 px-4">
-                          <div className="font-bold text-[var(--color-brand-navy)]">
-                            {project.projectName}
-                          </div>
-                          {project.supervisorName && (
-                            <div className="text-[11px] text-[var(--color-text-secondary)] mt-0.5">
-                              Supervisor: {project.supervisorName}
-                            </div>
-                          )}
-                        </td>
-
-                        {/* 3. Category */}
-                        <td className="py-3 px-4">
-                          <Badge size="sm" variant="neutral">
-                            {project.category || 'AI & Data'}
-                          </Badge>
-                        </td>
-
-                        {/* 4. Intern Role / Responsibility */}
-                        <td className="py-3 px-4">
-                          <Badge size="sm" variant="blue">
-                            {project.assignedRole || 'Intern Contributor'}
-                          </Badge>
-                        </td>
-
-                        {/* 5. Status */}
-                        <td className="py-3 px-4">
-                          {getStatusBadge(project.projectStatus)}
-                        </td>
-
-                        {/* 6. Start Date */}
-                        <td className="py-3 px-4 font-mono text-slate-600">
-                          {project.startDate || '—'}
-                        </td>
-
-                        {/* 7. Target Date */}
-                        <td className="py-3 px-4 font-mono text-slate-600">
-                          {project.targetDate || '—'}
-                        </td>
-
-                        {/* 8. Progress (Read-only) */}
-                        <td className="py-3 px-4">
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between text-[11px]">
-                              <span className="text-slate-500 font-medium">
-                                Overall
-                              </span>
-                              <span className="font-bold font-mono text-[var(--color-brand-blue)]">
-                                {project.projectProgress !== undefined
-                                  ? `${progress}%`
-                                  : '—%'}
-                              </span>
-                            </div>
-                            <div
-                              className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden"
-                              role="progressbar"
-                              aria-valuenow={progress}
-                              aria-valuemin={0}
-                              aria-valuemax={100}
-                              aria-label={`${project.projectName} progress`}
-                            >
-                              <div
-                                className={`h-full rounded-full transition-all duration-300 ${
-                                  progress === 100
-                                    ? 'bg-[var(--color-brand-green)]'
-                                    : 'bg-[var(--color-brand-blue)]'
-                                }`}
-                                style={{ width: `${progress}%` }}
-                              />
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* 9. Action */}
-                        <td className="py-3 px-4 text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            leftIcon={<Eye className="w-3.5 h-3.5" />}
-                            onClick={() => setSelectedProject(project)}
-                            aria-label={`View details for ${project.projectName}`}
-                          >
-                            View Details
-                          </Button>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {isLoading ? (
+                      Array.from({ length: 3 }).map((_, idx) => (
+                        <tr key={`skeleton-${idx}`}>
+                          <td className="py-4 px-4"><Skeleton className="h-4 w-20" /></td>
+                          <td className="py-4 px-4 space-y-1.5"><Skeleton className="h-4 w-40" /><Skeleton className="h-3 w-24" /></td>
+                          <td className="py-4 px-4"><Skeleton className="h-5 w-20 rounded-full" /></td>
+                          <td className="py-4 px-4"><Skeleton className="h-5 w-24 rounded-full" /></td>
+                          <td className="py-4 px-4"><Skeleton className="h-5 w-16 rounded-full" /></td>
+                          <td className="py-4 px-4"><Skeleton className="h-4 w-20" /></td>
+                          <td className="py-4 px-4"><Skeleton className="h-4 w-20" /></td>
+                          <td className="py-4 px-4 space-y-1"><Skeleton className="h-3 w-28" /><Skeleton className="h-2 w-full rounded-full" /></td>
+                          <td className="py-4 px-4 text-right"><Skeleton className="h-7 w-24 ml-auto rounded-lg" /></td>
+                        </tr>
+                      ))
+                    ) : filteredProjects.length > 0 ? (
+                      filteredProjects.map((project) => {
+                        const progress = Math.min(
+                          100,
+                          Math.max(0, Number(project.projectProgress) || 0)
+                        );
+                        return (
+                          <tr key={project.id} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="py-3 px-4 font-mono font-semibold text-slate-700">
+                              {project.projectId || project.id}
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="font-bold text-[var(--color-brand-navy)]">
+                                {project.projectName}
+                              </div>
+                              {project.supervisorName && (
+                                <div className="text-[11px] text-[var(--color-text-secondary)] mt-0.5">
+                                  Supervisor: {project.supervisorName}
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-3 px-4">
+                              <Badge size="sm" variant="neutral">
+                                {project.category || 'AI & Data'}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4">
+                              <Badge size="sm" variant="blue">
+                                {project.assignedRole || 'Intern Contributor'}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4">
+                              {getStatusBadge(project.projectStatus)}
+                            </td>
+                            <td className="py-3 px-4 font-mono text-slate-600">
+                              {project.startDate || '—'}
+                            </td>
+                            <td className="py-3 px-4 font-mono text-slate-600">
+                              {project.targetDate || '—'}
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between text-[11px]">
+                                  <span className="text-slate-500 font-medium">Overall</span>
+                                  <span className="font-bold font-mono text-[var(--color-brand-blue)]">
+                                    {project.projectProgress !== undefined ? `${progress}%` : '—%'}
+                                  </span>
+                                </div>
+                                <div
+                                  className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden"
+                                  role="progressbar"
+                                  aria-valuenow={progress}
+                                  aria-valuemin={0}
+                                  aria-valuemax={100}
+                                >
+                                  <div
+                                    className={`h-full rounded-full transition-all duration-300 ${
+                                      progress === 100 ? 'bg-[var(--color-brand-green)]' : 'bg-[var(--color-brand-blue)]'
+                                    }`}
+                                    style={{ width: `${progress}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                leftIcon={<Eye className="w-3.5 h-3.5" />}
+                                onClick={() => setSelectedProject(project)}
+                              >
+                                View Details
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : isFiltering ? (
+                      <tr>
+                        <td colSpan={9} className="p-12">
+                          <EmptyState
+                            icon={<Search className="w-8 h-8 text-slate-400" />}
+                            title="No matching projects found."
+                            description="No assigned projects match your current search query. Try resetting filters."
+                            action={
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
+                                onClick={handleResetFilters}
+                              >
+                                Reset Filters
+                              </Button>
+                            }
+                          />
                         </td>
                       </tr>
-                    );
-                  })
-                ) : isFiltering ? (
-                  /* ── Filtered Empty State ── */
-                  <tr>
-                    <td colSpan={9} className="p-12">
-                      <EmptyState
-                        icon={<Search className="w-8 h-8 text-slate-400" />}
-                        title="No matching projects found."
-                        description="No assigned projects match your current search query or filter selections. Try adjusting or resetting your filters."
-                        action={
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
-                            onClick={handleResetFilters}
-                          >
-                            Reset Filters
-                          </Button>
-                        }
-                      />
-                    </td>
-                  </tr>
-                ) : (
-                  /* ── Default Empty State ── */
-                  <tr>
-                    <td colSpan={9} className="p-12">
-                      <EmptyState
-                        icon={<FolderKanban className="w-8 h-8 text-slate-400" />}
-                        title="No assigned projects available."
-                        description="Projects assigned to your internship will appear here."
-                        secondaryAction={
+                    ) : (
+                      <tr>
+                        <td colSpan={9} className="p-12">
+                          <EmptyState
+                            icon={<FolderKanban className="w-8 h-8 text-blue-500" />}
+                            title="No projects assigned yet."
+                            description="You are currently not allocated to any project. You can explore available projects and self-enroll in project tracks matching your role."
+                            action={
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                leftIcon={<Sparkles className="w-4 h-4 text-amber-300" />}
+                                onClick={() => setActiveTab('available')}
+                              >
+                                Explore Available Projects & Self-Enroll
+                              </Button>
+                            }
+                          />
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </>
+        ) : (
+          /* ── AVAILABLE PROJECTS & SELF-ENROLLMENT TAB (BRD FR-11, FR-14, FR-15) ── */
+          <div className="space-y-4">
+            {/* Header Governance Card */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50 via-sky-50 to-indigo-50 border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white border border-blue-200 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs">
+                  <Sparkles className="w-5 h-5 text-amber-500" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Self-Enrollment & Role Matching Engine (BRD FR-15)
+                  </h3>
+                  <p className="text-xs text-slate-600 mt-0.5">
+                    Your Registered Focus Track: <strong className="text-blue-700 font-bold">{user?.internRole || 'Intern Trainee'}</strong>.
+                    Projects with matching work item requirements are highlighted for 1-click enrollment.
+                  </p>
+                </div>
+              </div>
+              <Badge variant="blue" size="sm" className="self-start sm:self-auto shrink-0">
+                {availableProjectsToEnroll.length} Open Tracks
+              </Badge>
+            </div>
+
+            {/* Grid of Available Projects */}
+            {availableProjectsToEnroll.length === 0 ? (
+              <Card padding="lg">
+                <EmptyState
+                  icon={<CheckCircle2 className="w-10 h-10 text-emerald-500" />}
+                  title="You're enrolled in all available projects!"
+                  description="You are actively participating in all active pipeline projects. View your assigned projects to monitor work items and record progress."
+                  action={
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => setActiveTab('assigned')}
+                    >
+                      View Assigned Projects
+                    </Button>
+                  }
+                />
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {availableProjectsToEnroll.map((proj) => {
+                  const isRoleMatched = checkRoleMatch(proj, user?.internRole);
+                  const isEnrolling = enrollingId === proj.projectId;
+
+                  return (
+                    <Card
+                      key={proj.projectId}
+                      padding="md"
+                      className={`space-y-4 transition-all duration-300 hover:shadow-md border ${
+                        isRoleMatched
+                          ? 'border-emerald-300 bg-emerald-50/20 hover:border-emerald-400'
+                          : 'border-slate-200 hover:border-blue-300'
+                      }`}
+                    >
+                      {/* Top Badges */}
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                            {proj.projectId}
+                          </span>
                           <Badge size="sm" variant="neutral">
-                            No allocations
+                            {proj.category}
                           </Badge>
-                        }
-                      />
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                        </div>
+                        {isRoleMatched ? (
+                          <Badge variant="success" size="sm" className="inline-flex items-center gap-1">
+                            <Sparkles className="w-3 h-3 text-emerald-600" />
+                            Role Match: {user?.internRole}
+                          </Badge>
+                        ) : (
+                          <Badge variant="neutral" size="sm">
+                            Open Track
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Title & Description */}
+                      <div className="space-y-1">
+                        <h4 className="text-base font-bold text-slate-900 leading-snug">
+                          {proj.name}
+                        </h4>
+                        <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
+                          {proj.description || 'No description provided.'}
+                        </p>
+                      </div>
+
+                      {/* Tech Stack & Supervisor */}
+                      <div className="grid grid-cols-2 gap-2 text-[11px] p-2.5 rounded-xl bg-white border border-slate-100">
+                        <div>
+                          <span className="text-slate-400 block font-semibold uppercase text-[9px]">Supervisor</span>
+                          <span className="font-semibold text-slate-800 truncate block">{proj.projectLead || 'Senior AI Lead'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block font-semibold uppercase text-[9px]">Tech Stack</span>
+                          <span className="font-semibold text-slate-800 truncate block">{proj.technologyStack || 'AI/ML, Python'}</span>
+                        </div>
+                      </div>
+
+                      {/* Work Items Breakdown Preview */}
+                      <div className="space-y-1.5 pt-1">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                          Work Items & Required Roles ({(proj.workItems || []).length})
+                        </span>
+                        <div className="space-y-1 max-h-28 overflow-y-auto pr-1">
+                          {(proj.workItems || []).map((wi) => (
+                            <div
+                              key={wi.workItemId}
+                              className="flex items-center justify-between text-[11px] px-2 py-1 rounded bg-slate-50 border border-slate-100"
+                            >
+                              <span className="text-slate-700 truncate max-w-[200px]">{wi.title}</span>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <span className="font-semibold text-blue-700">{wi.role}</span>
+                                <span className="font-mono text-slate-400">({wi.percentage}%)</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Action Enroll */}
+                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                        <span className="text-[11px] text-slate-500">
+                          Target: <strong className="text-slate-700 font-mono">{proj.targetDate}</strong>
+                        </span>
+                        <Button
+                          variant={isRoleMatched ? 'primary' : 'outline'}
+                          size="sm"
+                          isLoading={isEnrolling}
+                          disabled={isEnrolling}
+                          leftIcon={<UserCheck className="w-3.5 h-3.5" />}
+                          onClick={() => handleSelfEnroll(proj)}
+                        >
+                          {isRoleMatched ? 'Self-Enroll in Track' : 'Enroll in Project'}
+                        </Button>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        </Card>
+        )}
       </div>
 
       {/* ── 4. DETAILS DRAWER ─────────────────────────────────── */}

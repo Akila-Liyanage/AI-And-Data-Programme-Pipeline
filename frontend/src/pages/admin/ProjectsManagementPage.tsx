@@ -133,9 +133,20 @@ export default function ProjectsManagementPage() {
 
   // Calculate live statistics
   const totalCount = projects.length;
-  const activeCount = projects.filter((p) => (p?.status || '').toLowerCase() === 'active').length;
-  const completedCount = projects.filter((p) => (p?.status || '').toLowerCase() === 'completed').length;
-  const plannedCount = projects.filter((p) => (p?.status || '').toLowerCase() === 'planned').length;
+  const ongoingCount = projects.filter((p) => {
+    const s = (p?.status || '').toLowerCase();
+    return s === 'ongoing' || s === 'active';
+  }).length;
+  const completedCount = projects.filter(
+    (p) => (p?.status || '').toLowerCase() === 'completed'
+  ).length;
+  const onHoldCount = projects.filter(
+    (p) => (p?.status || '').toLowerCase() === 'on hold'
+  ).length;
+  const notStartedCount = projects.filter((p) => {
+    const s = (p?.status || '').toLowerCase();
+    return s === 'not started' || s === 'planned';
+  }).length;
 
   const mapProjectToManaged = (p: any): ManagedProject => ({
     id: p._id || p.id,
@@ -178,24 +189,18 @@ export default function ProjectsManagementPage() {
   const handleProjectUpdated = (updatedProject: ManagedProject) => {
     setProjects((prev) =>
       prev.map((item) =>
-        item._id === updatedProject.id || item.projectId === updatedProject.projectId
-          ? { ...item, ...updatedProject }
-          : item
+        item.projectId === updatedProject.projectId ? { ...item, ...updatedProject } : item
       )
     );
-    fetchProjects();
     setAlertNotice({
       type: 'success',
       title: 'Project Updated',
-      message: `Project ${updatedProject.name} (${updatedProject.projectId}) has been updated successfully.`,
+      message: `Project ${updatedProject.name} updated successfully.`,
     });
   };
 
-  const handleProjectDeleted = (deletedIdentifier: string) => {
-    setProjects((prev) =>
-      prev.filter((item) => item._id !== deletedIdentifier && item.projectId !== deletedIdentifier)
-    );
-    fetchProjects();
+  const handleProjectDeleted = (deletedProjectId: string) => {
+    setProjects((prev) => prev.filter((p) => p.projectId !== deletedProjectId));
     setAlertNotice({
       type: 'success',
       title: 'Project Deleted',
@@ -222,16 +227,21 @@ export default function ProjectsManagementPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
+    const s = (status || '').toLowerCase();
+    switch (s) {
+      case 'ongoing':
       case 'active':
-        return <Badge variant="success" size="sm">Active</Badge>;
+        return <Badge variant="success" size="sm">Ongoing</Badge>;
       case 'completed':
         return <Badge variant="blue" size="sm">Completed</Badge>;
       case 'on hold':
         return <Badge variant="warning" size="sm">On Hold</Badge>;
+      case 'cancelled':
+        return <Badge variant="neutral" size="sm">Cancelled</Badge>;
+      case 'not started':
       case 'planned':
       default:
-        return <Badge variant="neutral" size="sm">Planned</Badge>;
+        return <Badge variant="neutral" size="sm">Not Started</Badge>;
     }
   };
 
@@ -314,15 +324,15 @@ export default function ProjectsManagementPage() {
             </p>
           </Card>
 
-          {/* Card 2: Active Projects */}
+          {/* Card 2: Ongoing / Active Projects */}
           <Card padding="md" className="space-y-3 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md cursor-pointer hover:border-blue-300">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 text-[var(--color-brand-green)] flex items-center justify-center shrink-0 shadow-2xs">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 text-[var(--color-status-success)] flex items-center justify-center shrink-0 shadow-2xs">
                   <Activity className="w-4 h-4" />
                 </div>
                 <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
-                  Active Projects
+                  Ongoing Projects
                 </span>
               </div>
               <Badge size="sm" variant="success">
@@ -330,7 +340,7 @@ export default function ProjectsManagementPage() {
               </Badge>
             </div>
             <p className="text-2xl font-bold text-slate-900 tracking-tight">
-              {isLoading ? '—' : activeCount}
+              {isLoading ? '—' : ongoingCount}
             </p>
             <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5 pt-1 border-t border-slate-100">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
@@ -362,7 +372,7 @@ export default function ProjectsManagementPage() {
             </p>
           </Card>
 
-          {/* Card 4: Planned Projects */}
+          {/* Card 4: Not Started / Pipeline */}
           <Card padding="md" className="space-y-3 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md cursor-pointer hover:border-blue-300">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -370,19 +380,19 @@ export default function ProjectsManagementPage() {
                   <Clock className="w-4 h-4" />
                 </div>
                 <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
-                  Planned Projects
+                  Not Started / Hold
                 </span>
               </div>
               <Badge size="sm" variant="info">
-                Pipeline
+                Pipeline ({notStartedCount + onHoldCount})
               </Badge>
             </div>
             <p className="text-2xl font-bold text-slate-900 tracking-tight">
-              {isLoading ? '—' : plannedCount}
+              {isLoading ? '—' : notStartedCount}
             </p>
             <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5 pt-1 border-t border-slate-100">
               <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" aria-hidden="true" />
-              Upcoming pipeline
+              Not started ({notStartedCount}) • On Hold ({onHoldCount})
             </p>
           </Card>
         </div>
@@ -412,10 +422,11 @@ export default function ProjectsManagementPage() {
                   className="w-full h-10 px-3 text-xs font-medium rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-white)] text-[var(--color-brand-navy)] focus:outline-hidden focus:border-[var(--color-brand-blue)] focus:ring-2 focus:ring-[var(--color-brand-blue)]/20 transition-all shadow-2xs cursor-pointer"
                 >
                   <option value="ALL">All Statuses</option>
-                  <option value="Planned">Planned</option>
-                  <option value="Active">Active</option>
+                  <option value="Not Started">Not Started</option>
+                  <option value="Ongoing">Ongoing</option>
                   <option value="On Hold">On Hold</option>
                   <option value="Completed">Completed</option>
+                  <option value="Cancelled">Cancelled</option>
                 </select>
               </div>
 

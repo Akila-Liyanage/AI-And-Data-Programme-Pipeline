@@ -14,6 +14,7 @@ export interface CreateAssignmentDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onAssignmentCreated?: () => void;
+  defaultProjectId?: string;
 }
 
 interface AssignmentFormState {
@@ -49,11 +50,22 @@ const INITIAL_ASSIGNMENT_FORM: AssignmentFormState = {
 const ASSIGNMENT_ROLES_STAFF = [
   'Project Lead',
   'Supervisor',
+  'Business Analyst',
+  'Data Analyst',
+  'Data Scientist',
+  'Software Engineer',
+  'QA',
+  'AI Engineer',
   'Contributor',
   'Reviewer',
 ];
 
 const ASSIGNMENT_ROLES_INTERN = [
+  'Business Analyst Intern',
+  'Frontend Developer Intern',
+  'Backend Developer Intern',
+  'QA Intern',
+  'AI/ML Intern',
   'Intern Contributor',
   'Project Participant',
 ];
@@ -62,6 +74,7 @@ export const CreateAssignmentDrawer: React.FC<CreateAssignmentDrawerProps> = ({
   isOpen,
   onClose,
   onAssignmentCreated,
+  defaultProjectId,
 }) => {
   const [formData, setFormData] = useState<AssignmentFormState>(INITIAL_ASSIGNMENT_FORM);
   const [errors, setErrors] = useState<AssignmentFormErrors>({});
@@ -113,6 +126,13 @@ export const CreateAssignmentDrawer: React.FC<CreateAssignmentDrawerProps> = ({
     loadDropdownData();
   }, [isOpen]);
 
+  // Sync defaultProjectId if provided
+  useEffect(() => {
+    if (isOpen && defaultProjectId) {
+      setFormData((prev) => ({ ...prev, projectId: defaultProjectId }));
+    }
+  }, [isOpen, defaultProjectId]);
+
   // Close on Escape key press
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -137,7 +157,35 @@ export const CreateAssignmentDrawer: React.FC<CreateAssignmentDrawerProps> = ({
   }, [isOpen]);
 
   const handleChange = (field: keyof AssignmentFormState, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      const next = { ...prev, [field]: value };
+      // When user is picked, auto-populate role if matching
+      if (field === 'userId') {
+        const pickedUser = availableUsers.find((u) => u.userId === value);
+        if (pickedUser) {
+          if (pickedUser.role === 'INTERN') {
+            next.userCategory = 'Intern';
+            if (pickedUser.internRole) {
+              const matchingInternRole = ASSIGNMENT_ROLES_INTERN.find((r) =>
+                r.toLowerCase().includes(pickedUser.internRole.toLowerCase())
+              );
+              if (matchingInternRole) next.assignmentRole = matchingInternRole;
+            }
+          } else {
+            if (pickedUser.employmentType) {
+              next.userCategory = `${pickedUser.employmentType} Staff`;
+            } else {
+              next.userCategory = 'Permanent Staff';
+            }
+            if (pickedUser.designation && ASSIGNMENT_ROLES_STAFF.includes(pickedUser.designation)) {
+              next.assignmentRole = pickedUser.designation;
+            }
+          }
+        }
+      }
+      return next;
+    });
+
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
@@ -178,11 +226,9 @@ export const CreateAssignmentDrawer: React.FC<CreateAssignmentDrawerProps> = ({
     e.preventDefault();
     setStatusNotice(null);
 
-    const isValid = validateForm();
-    if (!isValid) return;
+    if (!validateForm()) return;
 
     setIsSubmitting(true);
-
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/assignments`, {
@@ -235,13 +281,23 @@ export const CreateAssignmentDrawer: React.FC<CreateAssignmentDrawerProps> = ({
 
   // Filter users by selected category
   const filteredUsers = availableUsers.filter((u) => {
+    const isStaff = u.role === 'PERMANENT_STAFF' || u.role === 'STAFF';
+    const isIntern = u.role === 'INTERN';
+    const isActive = u.accountStatus === 'ACTIVE';
+
     if (formData.userCategory === 'Permanent Staff') {
-      return (u.role === 'PERMANENT_STAFF' || u.role === 'STAFF') && u.accountStatus === 'ACTIVE';
+      return isStaff && (!u.employmentType || u.employmentType === 'Permanent') && isActive;
+    }
+    if (formData.userCategory === 'Contract Based Staff') {
+      return isStaff && u.employmentType === 'Contract Based' && isActive;
+    }
+    if (formData.userCategory === 'Freelance Staff') {
+      return isStaff && u.employmentType === 'Freelance' && isActive;
     }
     if (formData.userCategory === 'Intern') {
-      return u.role === 'INTERN' && u.accountStatus === 'ACTIVE';
+      return isIntern && isActive;
     }
-    return u.accountStatus === 'ACTIVE';
+    return isActive;
   });
 
   const availableRoles = formData.userCategory === 'Intern' ? ASSIGNMENT_ROLES_INTERN : ASSIGNMENT_ROLES_STAFF;
@@ -368,7 +424,10 @@ export const CreateAssignmentDrawer: React.FC<CreateAssignmentDrawerProps> = ({
                     className="w-full h-10 px-3 text-xs sm:text-sm rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-white)] text-[var(--color-brand-navy)] focus:outline-hidden focus:border-[var(--color-brand-blue)] focus:ring-2 focus:ring-[var(--color-brand-blue)]/20 transition-all shadow-2xs cursor-pointer"
                   >
                     <option value="Permanent Staff">Permanent Staff</option>
-                    <option value="Intern">Intern</option>
+                    <option value="Contract Based Staff">Contract Based Staff</option>
+                    <option value="Freelance Staff">Freelance Staff</option>
+                    <option value="Intern">Intern Trainee</option>
+                    <option value="ALL">All Verified Members</option>
                   </select>
                 </div>
 

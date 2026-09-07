@@ -464,16 +464,16 @@ export default function InternDashboardPage() {
               ) : (
                 <EmptyState
                   icon={<FolderKanban className="w-6 h-6 text-blue-600" />}
-                  title="No Assigned Projects"
-                  description="You have not been assigned to any active project streams yet. Projects assigned by administration will appear here."
+                  title="No Assigned Projects Yet"
+                  description="You have not been assigned to any project streams yet. You can explore available projects matching your specialization track and self-enroll directly."
                   action={
                     <Button
-                      variant="outline"
+                      variant="primary"
                       size="sm"
-                      onClick={() => navigate('/intern/projects')}
+                      onClick={() => navigate('/intern/projects?tab=available')}
                       rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
                     >
-                      Explore Projects
+                      Browse Available Projects & Enroll
                     </Button>
                   }
                   minHeight="min-h-[160px]"

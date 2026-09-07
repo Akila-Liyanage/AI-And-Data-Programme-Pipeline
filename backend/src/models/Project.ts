@@ -19,7 +19,7 @@ export interface IProject extends Document {
   assignedMembersCount: number;
   startDate: string;
   targetDate: string;
-  status: 'Planned' | 'Active' | 'On Hold' | 'Completed';
+  status: 'Not Started' | 'Ongoing' | 'On Hold' | 'Completed' | 'Cancelled' | 'Planned' | 'Active' | string;
   priority: 'Low' | 'Medium' | 'High' | 'Critical';
   progress: number;
   workItems: IWorkItem[];
@@ -92,8 +92,8 @@ const ProjectSchema = new Schema<IProject>(
     },
     status: {
       type: String,
-      enum: ['Planned', 'Active', 'On Hold', 'Completed'],
-      default: 'Active',
+      enum: ['Not Started', 'Ongoing', 'On Hold', 'Completed', 'Cancelled', 'Planned', 'Active'],
+      default: 'Ongoing',
     },
     priority: {
       type: String,
