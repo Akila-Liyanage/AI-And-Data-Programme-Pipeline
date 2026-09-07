@@ -19,12 +19,28 @@ export interface AssignmentDetailsDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   assignment?: ManagedAssignment | null;
+  onEdit?: (assignment: ManagedAssignment) => void;
+  onRemove?: (assignment: ManagedAssignment) => void;
 }
+
+export const formatDisplayDate = (dateStr?: string | null): string => {
+  if (!dateStr || dateStr.trim() === '') return '—';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '—';
+    return d.toISOString().split('T')[0];
+  } catch {
+    return '—';
+  }
+};
 
 export const AssignmentDetailsDrawer: React.FC<AssignmentDetailsDrawerProps> = ({
   isOpen,
   onClose,
   assignment,
+  onEdit,
+  onRemove,
 }) => {
   const [statusNotice, setStatusNotice] = useState<{
     type: 'info' | 'error' | 'success';
@@ -81,26 +97,6 @@ export const AssignmentDetailsDrawer: React.FC<AssignmentDetailsDrawerProps> = (
     }
   };
 
-  const handleActionClick = (actionName: string) => {
-    if (actionName === 'edit') {
-      setStatusNotice({
-        type: 'info',
-        title: 'Edit Assignment',
-        message: 'Edit assignment interface will be connected in the next frontend task.',
-      });
-      return;
-    }
-
-    if (actionName === 'remove') {
-      setStatusNotice({
-        type: 'info',
-        title: 'Awaiting backend integration',
-        message: 'Awaiting backend integration. Assignment deletion will be handled by the assignment service once connected.',
-      });
-      return;
-    }
-  };
-
   if (!isOpen) return null;
 
   return (
@@ -143,7 +139,7 @@ export const AssignmentDetailsDrawer: React.FC<AssignmentDetailsDrawerProps> = (
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-brand-navy)] hover:bg-[var(--color-surface-subtle)] transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)]/40"
+              className="p-2 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-brand-navy)] hover:bg-[var(--color-surface-subtle)] transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)]/40 cursor-pointer"
               aria-label="Close drawer"
             >
               <X className="w-5 h-5" />
@@ -271,7 +267,7 @@ export const AssignmentDetailsDrawer: React.FC<AssignmentDetailsDrawerProps> = (
                     Allocation / Responsibility Notes
                   </span>
                   <p className="text-[var(--color-text-primary)] leading-relaxed">
-                    {assignment?.allocationNotes || '—'}
+                    {assignment?.allocationNotes || 'No specific notes recorded for this allocation.'}
                   </p>
                 </div>
               </div>
@@ -292,7 +288,7 @@ export const AssignmentDetailsDrawer: React.FC<AssignmentDetailsDrawerProps> = (
                     Assignment Date
                   </span>
                   <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {assignment?.assignmentDate || '—'}
+                    {formatDisplayDate(assignment?.assignmentDate || assignment?.createdAt)}
                   </p>
                 </div>
 
@@ -301,7 +297,7 @@ export const AssignmentDetailsDrawer: React.FC<AssignmentDetailsDrawerProps> = (
                     Start Date
                   </span>
                   <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {assignment?.startDate || '—'}
+                    {formatDisplayDate(assignment?.startDate)}
                   </p>
                 </div>
 
@@ -310,7 +306,7 @@ export const AssignmentDetailsDrawer: React.FC<AssignmentDetailsDrawerProps> = (
                     Expected End Date
                   </span>
                   <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {assignment?.expectedEndDate || '—'}
+                    {formatDisplayDate(assignment?.expectedEndDate)}
                   </p>
                 </div>
 
@@ -370,26 +366,34 @@ export const AssignmentDetailsDrawer: React.FC<AssignmentDetailsDrawerProps> = (
             </Button>
 
             <div className="flex items-center gap-2.5">
-              <Button
-                type="button"
-                variant="outline"
-                size="md"
-                leftIcon={<Edit3 className="w-4 h-4" />}
-                onClick={() => handleActionClick('edit')}
-              >
-                Edit Assignment
-              </Button>
+              {onRemove && assignment && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  leftIcon={<Trash2 className="w-4 h-4 text-rose-500" />}
+                  onClick={() => {
+                    onRemove(assignment);
+                  }}
+                  className="text-rose-600 border-rose-200 hover:bg-rose-50 hover:border-rose-300"
+                >
+                  Remove Assignment
+                </Button>
+              )}
 
-              <Button
-                type="button"
-                variant="outline"
-                size="md"
-                leftIcon={<Trash2 className="w-4 h-4 text-[var(--color-status-error)]" />}
-                onClick={() => handleActionClick('remove')}
-                className="text-[var(--color-status-error)] hover:bg-red-50 hover:border-red-200"
-              >
-                Remove Assignment
-              </Button>
+              {onEdit && assignment && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  leftIcon={<Edit3 className="w-4 h-4 text-slate-600" />}
+                  onClick={() => {
+                    onEdit(assignment);
+                  }}
+                >
+                  Edit Assignment
+                </Button>
+              )}
             </div>
           </div>
         </div>

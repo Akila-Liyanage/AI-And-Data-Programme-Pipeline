@@ -5,6 +5,7 @@ import {
   UserCheck,
   TrendingUp,
   History,
+  User,
 } from 'lucide-react';
 import type { NavSection } from '../components/layout/DashboardLayout';
 
@@ -53,6 +54,13 @@ export const ADMIN_NAVIGATION: NavSection[] = [
         path: '/admin/work-history',
         icon: <History className="w-4 h-4" />,
       },
+      {
+        id: 'admin-profile',
+        label: 'My Profile',
+        path: '/admin/profile',
+        icon: <User className="w-4 h-4" />,
+      },
     ],
   },
 ];
+

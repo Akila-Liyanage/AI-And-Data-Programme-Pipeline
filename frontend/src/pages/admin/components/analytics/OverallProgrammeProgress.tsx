@@ -77,7 +77,7 @@ export const OverallProgrammeProgress: React.FC<OverallProgrammeProgressProps> =
             {isPending ? '—' : `${percent}%`}
           </span>
           <span className="text-[10px] font-medium text-[var(--color-text-secondary)] mt-1 text-center px-2">
-            {isPending ? 'Awaiting progress data' : 'Programme Progress'}
+            {isPending ? 'No progress records' : 'Programme Progress'}
           </span>
         </div>
       </div>

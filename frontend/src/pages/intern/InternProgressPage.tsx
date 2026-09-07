@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   LayoutDashboard,
   FolderKanban,
@@ -9,7 +9,12 @@ import {
   Info,
   ArrowRight,
   Activity,
-  Layers,
+  RotateCcw,
+  Search,
+  Eye,
+  X,
+  CheckCircle2,
+  Calendar,
 } from 'lucide-react';
 import {
   DashboardLayout,
@@ -17,10 +22,28 @@ import {
   type NavSection,
   type UserDisplayInfo,
 } from '../../components/layout/DashboardLayout';
-import { Card, Button, Badge, EmptyState } from '../../components/common';
+import {
+  Card,
+  Button,
+  Badge,
+  Input,
+  EmptyState,
+  Alert,
+  Skeleton,
+} from '../../components/common';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { InternProgressDetailsDrawer, type InternProjectContribution } from './components/InternProgressDetailsDrawer';
+import {
+  fetchAssignments,
+  fetchProjects,
+  mapWorkItemStatusToDisplay,
+  type ApiProject,
+} from '../../utils/apiDataService';
+import {
+  InternProgressDetailsDrawer,
+  type InternProjectContribution,
+  type InternWorkItemContribution,
+} from './components/InternProgressDetailsDrawer';
 
 const INTERN_NAVIGATION: NavSection[] = [
   {
@@ -71,18 +94,29 @@ const INTERN_NAVIGATION: NavSection[] = [
   },
 ];
 
+export interface DetailedWorkItemContribution extends InternWorkItemContribution {
+  projectName: string;
+  projectId: string;
+}
+
 export default function InternProgressPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  // Selected contribution details for Drawer
-  const [selectedContribution, setSelectedContribution] = useState<InternProjectContribution | null>(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  // State Management
+  const [projects, setProjects] = useState<InternProjectContribution[]>([]);
+  const [workItems, setWorkItems] = useState<DetailedWorkItemContribution[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Empty arrays to ensure zero fake / mocked rows in the tables
-  const [contributions] = useState<InternProjectContribution[]>([]);
-  const [completedContributions] = useState<any[]>([]);
-  const [activities] = useState<any[]>([]);
+  // Filters State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [progressFilter, setProgressFilter] = useState('ALL');
+
+  // Selected contribution details for Drawer
+  const [selectedContribution, setSelectedContribution] =
+    useState<InternProjectContribution | null>(null);
 
   const userDisplay: UserDisplayInfo = {
     name: user?.fullName || '—',
@@ -95,363 +129,910 @@ export default function InternProgressPage() {
     navigate('/login');
   };
 
+  const loadProgressData = async () => {
+    if (!user?.userId) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [assignments, allProjects] = await Promise.all([
+        fetchAssignments(user.userId),
+        fetchProjects(),
+      ]);
+
+      const projectMap = new Map<string, ApiProject>();
+      allProjects.forEach((p) => projectMap.set(p.projectId, p));
+
+      const mappedProjects: InternProjectContribution[] = [];
+      const detailedItems: DetailedWorkItemContribution[] = [];
+
+      assignments.forEach((asg) => {
+        const prj = projectMap.get(asg.projectId);
+        if (prj) {
+          const projectWorkItems = prj.workItems || [];
+          const notStarted = projectWorkItems.filter((wi) => wi.status === 'TODO').length;
+          const inProgress = projectWorkItems.filter((wi) => wi.status === 'IN_PROGRESS').length;
+          const completed = projectWorkItems.filter((wi) => wi.status === 'DONE').length;
+
+          const internCompletedWeight = projectWorkItems
+            .filter((wi) => wi.status === 'DONE')
+            .reduce((sum, wi) => sum + (Number(wi.percentage) || 0), 0);
+
+          const mappedWorkItems: InternWorkItemContribution[] = projectWorkItems.map((wi) => {
+            const itemContribution: InternWorkItemContribution = {
+              id: `${prj.projectId}-${wi.workItemId}`,
+              workItemId: wi.workItemId,
+              title: wi.title,
+              percentageWeight: wi.percentage,
+              status: mapWorkItemStatusToDisplay(wi.status),
+              targetDate: prj.targetDate,
+              completionDate: wi.status === 'DONE' ? prj.targetDate : undefined,
+            };
+
+            detailedItems.push({
+              ...itemContribution,
+              projectId: prj.projectId,
+              projectName: prj.name,
+            });
+
+            return itemContribution;
+          });
+
+          mappedProjects.push({
+            id: prj._id || prj.projectId,
+            projectId: prj.projectId,
+            projectName: prj.name,
+            projectStatus: prj.status || 'Active',
+            myRole: asg.assignmentRole || asg.professionalRole || 'Intern Contributor',
+            startDate: prj.startDate,
+            targetDate: prj.targetDate,
+            overallProgress: prj.progress || 0,
+            internCompletedContribution: Math.min(100, internCompletedWeight),
+            remainingContribution: Math.max(0, 100 - internCompletedWeight),
+            assignedWorkItemsCount: projectWorkItems.length,
+            notStartedCount: notStarted,
+            inProgressCount: inProgress,
+            completedCount: completed,
+            workItems: mappedWorkItems,
+          });
+        }
+      });
+
+      setProjects(mappedProjects);
+      setWorkItems(detailedItems);
+    } catch (err: unknown) {
+      console.error('Error loading intern progress data:', err);
+      setError('Could not retrieve progress data from server.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadProgressData();
+  }, [user?.userId]);
+
+  const handleRefresh = () => {
+    loadProgressData();
+  };
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('ALL');
+    setProgressFilter('ALL');
+  };
+
+  // KPI Calculations
+  const assignedProjectsCount = projects.length;
+  const completedWorkItemsCount =
+    projects.length > 0
+      ? projects.reduce((acc, p) => acc + (p.completedCount ?? 0), 0)
+      : workItems.filter((w) => w.status === 'Completed').length;
+
+  const totalContribution =
+    projects.length > 0
+      ? Math.round(
+          projects.reduce((acc, p) => acc + (p.internCompletedContribution ?? 0), 0) /
+            projects.length
+        )
+      : 0;
+
+  const averageProjectProgress =
+    projects.length > 0
+      ? Math.round(
+          projects.reduce((acc, p) => acc + (p.overallProgress ?? 0), 0) /
+            projects.length
+        )
+      : 0;
+
+  // Filtered Project Progress Breakdown
+  const filteredProjects = useMemo(() => {
+    return projects.filter((project) => {
+      const query = searchQuery.trim().toLowerCase();
+      const matchesSearch =
+        !query ||
+        project.projectName.toLowerCase().includes(query) ||
+        project.projectId.toLowerCase().includes(query);
+
+      const matchesStatus =
+        statusFilter === 'ALL' ||
+        project.projectStatus.toLowerCase() === statusFilter.toLowerCase();
+
+      let matchesProgress = true;
+      if (progressFilter === 'NOT_STARTED') {
+        matchesProgress = project.overallProgress === 0;
+      } else if (progressFilter === 'IN_PROGRESS') {
+        matchesProgress = project.overallProgress > 0 && project.overallProgress < 100;
+      } else if (progressFilter === 'COMPLETED') {
+        matchesProgress = project.overallProgress === 100;
+      }
+
+      return matchesSearch && matchesStatus && matchesProgress;
+    });
+  }, [projects, searchQuery, statusFilter, progressFilter]);
+
+  // Filtered Work Items Contribution Breakdown
+  const filteredWorkItems = useMemo(() => {
+    return workItems.filter((item) => {
+      const query = searchQuery.trim().toLowerCase();
+      const effectiveId = (item.workItemId || item.id).toLowerCase();
+      const matchesSearch =
+        !query ||
+        item.title.toLowerCase().includes(query) ||
+        effectiveId.includes(query) ||
+        item.projectName.toLowerCase().includes(query) ||
+        item.projectId.toLowerCase().includes(query);
+
+      const matchesStatus =
+        statusFilter === 'ALL' ||
+        item.status.toLowerCase() === statusFilter.toLowerCase();
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [workItems, searchQuery, statusFilter]);
+
+  const isFiltering =
+    searchQuery.trim() !== '' ||
+    statusFilter !== 'ALL' ||
+    progressFilter !== 'ALL';
+
+  const getStatusBadge = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return (
+          <Badge variant="success" size="sm">
+            Active
+          </Badge>
+        );
+      case 'completed':
+        return (
+          <Badge variant="blue" size="sm">
+            Completed
+          </Badge>
+        );
+      case 'on hold':
+        return (
+          <Badge variant="warning" size="sm">
+            On Hold
+          </Badge>
+        );
+      case 'planned':
+      default:
+        return (
+          <Badge variant="info" size="sm">
+            Planned
+          </Badge>
+        );
+    }
+  };
+
+  const getWorkItemStatusBadge = (status: string) => {
+    switch (status) {
+      case 'Completed':
+        return (
+          <Badge variant="success" size="sm">
+            Completed
+          </Badge>
+        );
+      case 'In Progress':
+        return (
+          <Badge variant="blue" size="sm">
+            In Progress
+          </Badge>
+        );
+      case 'Not Started':
+      default:
+        return (
+          <Badge variant="info" size="sm">
+            Not Started
+          </Badge>
+        );
+    }
+  };
+
   return (
     <DashboardLayout
       navigation={INTERN_NAVIGATION}
       user={userDisplay}
       notificationsCount={0}
+      onNotificationClick={() => {}}
+      onProfileClick={() => navigate('/intern/profile')}
       onLogoutClick={handleLogout}
     >
-      {/* Page Header */}
       <PageHeader
         title="Work Progress"
-        description="Track your work-item progress, completed contributions and their impact on assigned project progress."
-        breadcrumbs={[
-          { label: 'Workspace' },
-          { label: 'Work Progress' },
-        ]}
-        badge={<Badge variant="neutral">Intern</Badge>}
+        description="Track your contribution and progress across internship projects."
+        breadcrumbs={[{ label: 'Workspace' }, { label: 'Work Progress' }]}
+        badge={<Badge variant="blue">Intern</Badge>}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5 flex-wrap">
             <Button
               variant="outline"
               size="sm"
-              leftIcon={<FolderKanban className="w-4 h-4" />}
+              leftIcon={<FolderKanban className="w-3.5 h-3.5" />}
               onClick={() => navigate('/intern/projects')}
             >
               View Assigned Projects
             </Button>
             <Button
-              variant="primary"
+              variant="outline"
               size="sm"
-              leftIcon={<CheckSquare className="w-4 h-4" />}
+              leftIcon={<CheckSquare className="w-3.5 h-3.5" />}
               onClick={() => navigate('/intern/work-items')}
             >
               View My Work Items
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={
+                <RotateCcw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+              }
+              onClick={handleRefresh}
+              disabled={isLoading}
+              aria-label="Refresh work progress"
+            >
+              Refresh
             </Button>
           </div>
         }
       />
 
       <div className="space-y-6">
+        {/* ── ERROR STATE ALERT ────────────────────────────────── */}
+        {error && (
+          <Alert
+            variant="error"
+            title="Unable to load work progress"
+            onClose={() => setError(null)}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-1">
+              <span>
+                There was a problem retrieving your internship work progress records. Please check your connection or try refreshing the page.
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                className="shrink-0 self-start sm:self-auto"
+              >
+                Retry
+              </Button>
+            </div>
+          </Alert>
+        )}
 
-        {/* ── 1. SUMMARY CARDS ─────────────────────────────────── */}
+        {/* ── 1. KPI SUMMARY CARDS ─────────────────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          <Card padding="md" className="space-y-2 border border-slate-100 shadow-2xs">
-            <span className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">
-              Assigned Work Items
-            </span>
-            <p className="text-2xl font-bold text-[var(--color-brand-navy)]">—</p>
-            <p className="text-[11px] text-[var(--color-text-secondary)]">No data available yet</p>
+          {/* Assigned Projects */}
+          <Card padding="md" className="space-y-3 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
+                Assigned Projects
+              </span>
+              <div className="w-7 h-7 rounded-lg bg-blue-50 text-[var(--color-brand-blue)] flex items-center justify-center">
+                <FolderKanban className="w-4 h-4" />
+              </div>
+            </div>
+            <p className="text-2xl sm:text-3xl font-bold text-[var(--color-brand-navy)] font-mono">
+              {assignedProjectsCount}
+            </p>
+            <p className="text-xs text-[var(--color-text-secondary)]">
+              {assignedProjectsCount > 0 ? 'Assigned to your internship' : 'No active allocations'}
+            </p>
           </Card>
 
-          <Card padding="md" className="space-y-2 border border-slate-100 shadow-2xs">
-            <span className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">
-              In Progress
-            </span>
-            <p className="text-2xl font-bold text-[var(--color-brand-navy)]">—</p>
-            <p className="text-[11px] text-[var(--color-text-secondary)]">No data available yet</p>
+          {/* Completed Work Items */}
+          <Card padding="md" className="space-y-3 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
+                Completed Work Items
+              </span>
+              <div className="w-7 h-7 rounded-lg bg-emerald-50 text-[var(--color-status-success)] flex items-center justify-center">
+                <CheckCircle2 className="w-4 h-4" />
+              </div>
+            </div>
+            <p className="text-2xl sm:text-3xl font-bold text-[var(--color-brand-navy)] font-mono">
+              {completedWorkItemsCount}
+            </p>
+            <p className="text-xs text-[var(--color-text-secondary)]">
+              {completedWorkItemsCount > 0 ? 'Successfully delivered' : 'No completed tasks'}
+            </p>
           </Card>
 
-          <Card padding="md" className="space-y-2 border border-slate-100 shadow-2xs">
-            <span className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">
-              Completed Work Items
-            </span>
-            <p className="text-2xl font-bold text-[var(--color-brand-navy)]">—</p>
-            <p className="text-[11px] text-[var(--color-text-secondary)]">No data available yet</p>
+          {/* Total Contribution */}
+          <Card padding="md" className="space-y-3 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
+                Total Contribution
+              </span>
+              <div className="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
+                <Activity className="w-4 h-4" />
+              </div>
+            </div>
+            <p className="text-2xl sm:text-3xl font-bold text-[var(--color-brand-navy)] font-mono">
+              {totalContribution}%
+            </p>
+            <p className="text-xs text-[var(--color-text-secondary)]">
+              {totalContribution > 0 ? 'Credited to projects' : 'Based on completed work'}
+            </p>
           </Card>
 
-          <Card padding="md" className="space-y-2 border border-slate-100 shadow-2xs">
-            <span className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">
-              Total Contribution
-            </span>
-            <p className="text-2xl font-bold text-[var(--color-brand-navy)]">—</p>
-            <p className="text-[11px] text-[var(--color-text-secondary)]">No data available yet</p>
+          {/* Average Project Progress */}
+          <Card padding="md" className="space-y-3 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
+                Average Project Progress
+              </span>
+              <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                <TrendingUp className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-2xl sm:text-3xl font-bold text-[var(--color-brand-navy)] font-mono">
+                {averageProjectProgress}%
+              </p>
+              <div
+                className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden"
+                role="progressbar"
+                aria-valuenow={averageProjectProgress}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="Average project progress"
+              >
+                <div
+                  className="h-full bg-[var(--color-brand-blue)] rounded-full transition-all duration-300"
+                  style={{ width: `${averageProjectProgress}%` }}
+                />
+              </div>
+            </div>
+            <p className="text-xs text-[var(--color-text-secondary)]">
+              {assignedProjectsCount > 0 ? 'Across assigned projects' : 'Calculated from completed weights'}
+            </p>
           </Card>
         </div>
 
-        {/* ── 2. PROGRESS EXPLANATION CARD ────────────────────── */}
-        <Card padding="md" className="bg-gradient-to-r from-blue-50/50 to-white border border-slate-100 shadow-2xs">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <h3 className="text-xs font-bold text-[var(--color-brand-navy)] flex items-center gap-1.5">
-                <Info className="w-4 h-4 text-[var(--color-brand-blue)] shrink-0" />
-                How Your Work Contributes
-              </h3>
+        {/* ── 2. BRD AUTOMATED PROGRESS POLICY CARD ───────────── */}
+        <Card
+          padding="md"
+          className="bg-gradient-to-r from-blue-50/50 via-slate-50/60 to-white border border-slate-200/80 shadow-2xs"
+        >
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-[var(--color-brand-blue)] text-white flex items-center justify-center shrink-0">
+                  <Info className="w-3.5 h-3.5" />
+                </div>
+                <h3 className="text-xs font-bold text-[var(--color-brand-navy)] uppercase tracking-wider">
+                  Automated Progress Policy
+                </h3>
+              </div>
               <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed max-w-2xl">
-                Completed work items contribute to project progress based on their assigned percentage weight.
+                Overall project progress is calculated automatically from completed work-item weights. Intern contributors cannot manually edit project progress percentages.
+              </p>
+              <p className="text-[11px] text-slate-500 font-mono">
+                Project Overall Progress = Sum of percentage weights of COMPLETED work items. Tasks in progress contribute 0% until marked complete.
               </p>
             </div>
-            <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-600 bg-white px-3.5 py-2 rounded-xl border border-slate-100 flex-wrap">
+
+            <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-700 bg-white px-3.5 py-2.5 rounded-xl border border-slate-200/80 shadow-2xs flex-wrap self-start lg:self-auto">
               <span>Work Item</span>
               <ArrowRight className="w-3 h-3 text-slate-400 shrink-0" />
               <span className="text-[var(--color-brand-blue)]">Completed</span>
               <ArrowRight className="w-3 h-3 text-slate-400 shrink-0" />
-              <span>Contribution Added</span>
+              <span>Predefined Weight Added</span>
               <ArrowRight className="w-3 h-3 text-slate-400 shrink-0" />
               <span className="text-emerald-600 font-bold">Project Progress Updated</span>
             </div>
           </div>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* ── 3. MY PROJECT CONTRIBUTION SECTION ───────────────── */}
-          <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <h3 className="text-xs font-bold text-[var(--color-brand-navy)] flex items-center gap-2">
-                  <FolderKanban className="w-4 h-4 text-[var(--color-brand-blue)]" />
-                  My Project Contribution
-                </h3>
-                <p className="text-[10px] text-[var(--color-text-secondary)]">
-                  Progress tracking and completed weight breakdown across assigned projects
-                </p>
+        {/* ── 3. SEARCH AND FILTERS ────────────────────────────── */}
+        <Card padding="md" className="shadow-2xs">
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {/* Search Query */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="searchQuery"
+                  className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block"
+                >
+                  Search Progress Records
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                  <Input
+                    id="searchQuery"
+                    type="text"
+                    placeholder="Search by project name or ID..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full text-xs pl-8 pr-8 py-2 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-[var(--color-brand-blue)] placeholder:text-slate-400"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                      aria-label="Clear search"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Status Filter */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="statusFilter"
+                  className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block"
+                >
+                  Project Status Filter
+                </label>
+                <select
+                  id="statusFilter"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-[var(--color-brand-blue)] text-slate-700 bg-white"
+                >
+                  <option value="ALL">All Statuses</option>
+                  <option value="Active">Active</option>
+                  <option value="Planned">Planned</option>
+                  <option value="On Hold">On Hold</option>
+                  <option value="Completed">Completed</option>
+                </select>
+              </div>
+
+              {/* Progress Range Filter */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="progressFilter"
+                  className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block"
+                >
+                  Progress Range
+                </label>
+                <select
+                  id="progressFilter"
+                  value={progressFilter}
+                  onChange={(e) => setProgressFilter(e.target.value)}
+                  className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-[var(--color-brand-blue)] text-slate-700 bg-white"
+                >
+                  <option value="ALL">All Progress Ranges</option>
+                  <option value="NOT_STARTED">Not Started (0%)</option>
+                  <option value="IN_PROGRESS">In Progress (1–99%)</option>
+                  <option value="COMPLETED">Completed (100%)</option>
+                </select>
               </div>
             </div>
 
-            <Card padding="none" className="border border-slate-100 shadow-2xs overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse" aria-label="Project Contribution Table">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                      <th scope="col" className="py-3 px-4">Project</th>
-                      <th scope="col" className="py-3 px-4">Assigned Role</th>
-                      <th scope="col" className="py-3 px-4 text-center">Assigned Items</th>
-                      <th scope="col" className="py-3 px-4 text-center">Completed Items</th>
-                      <th scope="col" className="py-3 px-4 text-center">My Contribution</th>
-                      <th scope="col" className="py-3 px-4 text-center">Project Progress</th>
-                      <th scope="col" className="py-3 px-4">Project Status</th>
-                      <th scope="col" className="py-3 px-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs">
-                    {contributions.length === 0 ? (
-                      <tr>
-                        <td colSpan={8} className="p-8">
-                          <EmptyState
-                            icon={<FolderKanban className="w-8 h-8 text-slate-400" />}
-                            title="No project contribution data yet"
-                            description="Your project contribution summary will appear here as your work items are completed."
-                          />
+            {/* Filter Actions */}
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100 flex-wrap gap-2">
+              <span className="text-[11px] text-slate-500">
+                {isFiltering ? (
+                  <>
+                    Filtered:{' '}
+                    <strong className="text-slate-700">
+                      {filteredProjects.length}
+                    </strong>{' '}
+                    of {projects.length} {projects.length === 1 ? 'project' : 'projects'}
+                  </>
+                ) : (
+                  <>
+                    Total Assigned:{' '}
+                    <strong className="text-slate-700">{projects.length}</strong>{' '}
+                    {projects.length === 1 ? 'project' : 'projects'}
+                  </>
+                )}
+              </span>
+
+              {isFiltering && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
+                  onClick={handleResetFilters}
+                  aria-label="Clear all applied filters"
+                >
+                  Clear Filters
+                </Button>
+              )}
+            </div>
+          </div>
+        </Card>
+
+        {/* ── 4. PROJECT PROGRESS BREAKDOWN TABLE ──────────────── */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <h3 className="text-xs font-bold text-[var(--color-brand-navy)] uppercase tracking-wider flex items-center gap-2">
+                <FolderKanban className="w-4 h-4 text-[var(--color-brand-blue)]" />
+                Project Progress Breakdown
+              </h3>
+              <p className="text-[11px] text-[var(--color-text-secondary)]">
+                Comprehensive progress and credited contribution breakdown by assigned project
+              </p>
+            </div>
+          </div>
+
+          <Card padding="none" className="shadow-2xs border border-slate-100 overflow-hidden">
+            <div className="overflow-x-auto w-full">
+              <table
+                className="w-full text-left text-xs border-collapse min-w-[950px]"
+                aria-label="Project Progress Breakdown Table"
+              >
+                <thead>
+                  <tr className="bg-slate-50/90 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    <th scope="col" className="py-3 px-4">Project ID</th>
+                    <th scope="col" className="py-3 px-4">Project Name</th>
+                    <th scope="col" className="py-3 px-4">Status</th>
+                    <th scope="col" className="py-3 px-4 min-w-[150px]">Overall Progress</th>
+                    <th scope="col" className="py-3 px-4 text-center">Intern Contribution</th>
+                    <th scope="col" className="py-3 px-4 text-center">Remaining</th>
+                    <th scope="col" className="py-3 px-4 text-center">Completed Work Items</th>
+                    <th scope="col" className="py-3 px-4 text-center">Total Work Items</th>
+                    <th scope="col" className="py-3 px-4 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {isLoading ? (
+                    Array.from({ length: 3 }).map((_, idx) => (
+                      <tr key={`project-skeleton-${idx}`}>
+                        <td className="py-4 px-4">
+                          <Skeleton className="h-4 w-20" />
+                        </td>
+                        <td className="py-4 px-4 space-y-1">
+                          <Skeleton className="h-4 w-40" />
+                          <Skeleton className="h-3 w-24" />
+                        </td>
+                        <td className="py-4 px-4">
+                          <Skeleton className="h-5 w-16 rounded-full" />
+                        </td>
+                        <td className="py-4 px-4 space-y-1">
+                          <Skeleton className="h-3 w-28" />
+                          <Skeleton className="h-2 w-full rounded-full" />
+                        </td>
+                        <td className="py-4 px-4 text-center">
+                          <Skeleton className="h-4 w-12 mx-auto" />
+                        </td>
+                        <td className="py-4 px-4 text-center">
+                          <Skeleton className="h-4 w-12 mx-auto" />
+                        </td>
+                        <td className="py-4 px-4 text-center">
+                          <Skeleton className="h-4 w-10 mx-auto" />
+                        </td>
+                        <td className="py-4 px-4 text-center">
+                          <Skeleton className="h-4 w-10 mx-auto" />
+                        </td>
+                        <td className="py-4 px-4 text-right">
+                          <Skeleton className="h-7 w-24 ml-auto rounded-lg" />
                         </td>
                       </tr>
-                    ) : (
-                      contributions.map((c) => (
-                        <tr key={c.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="py-3 px-4 font-bold text-[var(--color-brand-navy)]">{c.projectName}</td>
-                          <td className="py-3 px-4">{c.myRole}</td>
-                          <td className="py-3 px-4 text-center font-semibold">{c.assignedWorkItemsCount}</td>
-                          <td className="py-3 px-4 text-center font-semibold text-emerald-600">{c.completedCount}</td>
-                          <td className="py-3 px-4 text-center font-bold text-emerald-600">
-                            {c.completedWeight !== '—' ? `${c.completedWeight}%` : '—'}
+                    ))
+                  ) : filteredProjects.length > 0 ? (
+                    filteredProjects.map((p) => {
+                      const progress = Math.min(100, Math.max(0, p.overallProgress ?? 0));
+                      return (
+                        <tr
+                          key={p.id}
+                          className="hover:bg-slate-50/80 transition-colors"
+                        >
+                          {/* 1. Project ID */}
+                          <td className="py-3 px-4 font-mono font-semibold text-slate-700">
+                            {p.projectId || p.id}
                           </td>
-                          <td className="py-3 px-4 text-center font-bold text-[var(--color-brand-blue)]">
-                            {c.projectProgress !== '—' ? `${c.projectProgress}%` : '—%'}
-                          </td>
+
+                          {/* 2. Project Name */}
                           <td className="py-3 px-4">
-                            <Badge variant={c.projectStatus.toLowerCase() === 'active' ? 'success' : 'info'}>
-                              {c.projectStatus}
-                            </Badge>
+                            <div className="font-bold text-[var(--color-brand-navy)]">
+                              {p.projectName}
+                            </div>
+                            <div className="text-[11px] text-[var(--color-text-secondary)] mt-0.5">
+                              Role: {p.myRole || 'Intern Contributor'}
+                            </div>
                           </td>
+
+                          {/* 3. Status */}
+                          <td className="py-3 px-4">
+                            {getStatusBadge(p.projectStatus)}
+                          </td>
+
+                          {/* 4. Overall Progress (Read-only) */}
+                          <td className="py-3 px-4">
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between text-[11px]">
+                                <span className="text-slate-500 font-medium">Overall</span>
+                                <span className="font-bold font-mono text-[var(--color-brand-blue)]">
+                                  {progress}%
+                                </span>
+                              </div>
+                              <div
+                                className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden"
+                                role="progressbar"
+                                aria-valuenow={progress}
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                                aria-label={`${p.projectName} progress`}
+                              >
+                                <div
+                                  className={`h-full rounded-full transition-all duration-300 ${
+                                    progress === 100
+                                      ? 'bg-[var(--color-brand-green)]'
+                                      : 'bg-[var(--color-brand-blue)]'
+                                  }`}
+                                  style={{ width: `${progress}%` }}
+                                />
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* 5. Intern Completed Contribution */}
+                          <td className="py-3 px-4 text-center font-bold font-mono text-emerald-600">
+                            {p.internCompletedContribution}%
+                          </td>
+
+                          {/* 6. Remaining Contribution */}
+                          <td className="py-3 px-4 text-center font-mono text-slate-600">
+                            {p.remainingContribution}%
+                          </td>
+
+                          {/* 7. Completed Work Items */}
+                          <td className="py-3 px-4 text-center font-mono font-semibold text-emerald-600">
+                            {p.completedCount}
+                          </td>
+
+                          {/* 8. Total Work Items */}
+                          <td className="py-3 px-4 text-center font-mono font-semibold text-slate-700">
+                            {p.assignedWorkItemsCount}
+                          </td>
+
+                          {/* 9. Action */}
                           <td className="py-3 px-4 text-right">
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => {
-                                setSelectedContribution(c);
-                                setIsDetailsOpen(true);
-                              }}
+                              leftIcon={<Eye className="w-3.5 h-3.5" />}
+                              onClick={() => setSelectedContribution(p)}
+                              aria-label={`View progress details for ${p.projectName}`}
                             >
                               View Details
                             </Button>
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
-          </div>
-
-          {/* ── 4. WORK ITEM PROGRESS OVERVIEW ───────────────────── */}
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <h3 className="text-xs font-bold text-[var(--color-brand-navy)] flex items-center gap-2">
-                <CheckSquare className="w-4 h-4 text-[var(--color-brand-blue)]" />
-                Work Item Progress
-              </h3>
-              <p className="text-[10px] text-[var(--color-text-secondary)]">
-                Workflow stage overview monitoring
-              </p>
-            </div>
-
-            <Card padding="md" className="border border-slate-100 shadow-2xs space-y-4">
-              <div className="space-y-3.5">
-                <div className="flex items-center justify-between text-xs p-3 rounded-xl bg-slate-50 border border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
-                    <span className="font-semibold text-slate-700">Not Started</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-bold text-[var(--color-brand-navy)] block">—</span>
-                    <span className="text-[10px] text-slate-400">No data available yet</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-xs p-3 rounded-xl bg-slate-50 border border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
-                    <span className="font-semibold text-slate-700">In Progress</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-bold text-[var(--color-brand-navy)] block">—</span>
-                    <span className="text-[10px] text-slate-400">No data available yet</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-xs p-3 rounded-xl bg-slate-50 border border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
-                    <span className="font-semibold text-slate-700">Completed</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-bold text-[var(--color-brand-navy)] block">—</span>
-                    <span className="text-[10px] text-slate-400">No data available yet</span>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </div>
-
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
-          {/* ── 5. COMPLETED CONTRIBUTIONS ──────────────────────── */}
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <h3 className="text-xs font-bold text-[var(--color-brand-navy)] flex items-center gap-2">
-                <Activity className="w-4 h-4 text-[var(--color-brand-blue)]" />
-                Completed Contributions
-              </h3>
-              <p className="text-[10px] text-[var(--color-text-secondary)]">
-                Work items counting towards overall project progress
-              </p>
-            </div>
-
-            <Card padding="none" className="border border-slate-100 shadow-2xs overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse" aria-label="Completed Contributions Table">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                      <th scope="col" className="py-3 px-4">Work Item</th>
-                      <th scope="col" className="py-3 px-4">Project</th>
-                      <th scope="col" className="py-3 px-4">Required Role</th>
-                      <th scope="col" className="py-3 px-4 text-center">Weight</th>
-                      <th scope="col" className="py-3 px-4">Completion Date</th>
-                      <th scope="col" className="py-3 px-4 text-center">Progress Contribution</th>
+                      );
+                    })
+                  ) : isFiltering ? (
+                    <tr>
+                      <td colSpan={9} className="p-12">
+                        <EmptyState
+                          icon={<Search className="w-8 h-8 text-slate-400" />}
+                          title="No matching project progress found."
+                          description="No project progress records match your current search query or filter selections. Try adjusting or resetting your filters."
+                          action={
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
+                              onClick={handleResetFilters}
+                            >
+                              Reset Filters
+                            </Button>
+                          }
+                        />
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs">
-                    {completedContributions.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="p-8">
-                          <EmptyState
-                            icon={<Layers className="w-8 h-8 text-slate-400" />}
-                            title="No completed contributions yet"
-                            description="Completed work items and their project contributions will appear here."
-                          />
-                        </td>
-                      </tr>
-                    ) : (
-                      completedContributions.map((item, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="py-3 px-4 font-bold text-[var(--color-brand-navy)]">{item.title}</td>
-                          <td className="py-3 px-4">{item.projectName}</td>
-                          <td className="py-3 px-4">{item.role}</td>
-                          <td className="py-3 px-4 text-center">{item.weight}%</td>
-                          <td className="py-3 px-4 font-mono">{item.date}</td>
-                          <td className="py-3 px-4 text-center font-bold text-emerald-600">+{item.weight}%</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
-          </div>
-
-          {/* ── 6. RECENT WORK ACTIVITY ─────────────────────────── */}
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <h3 className="text-xs font-bold text-[var(--color-brand-navy)] flex items-center gap-2">
-                <History className="w-4 h-4 text-[var(--color-brand-blue)]" />
-                Recent Work Activity
-              </h3>
-              <p className="text-[10px] text-[var(--color-text-secondary)]">
-                Audit trail of recent work status updates
-              </p>
-            </div>
-
-            <Card padding="none" className="border border-slate-100 shadow-2xs overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse" aria-label="Recent Work Activity Table">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                      <th scope="col" className="py-3 px-4">Work Item</th>
-                      <th scope="col" className="py-3 px-4">Project</th>
-                      <th scope="col" className="py-3 px-4">Previous Status</th>
-                      <th scope="col" className="py-3 px-4">New Status</th>
-                      <th scope="col" className="py-3 px-4">Activity Date</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs">
-                    {activities.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="p-8">
-                          <EmptyState
-                            icon={<History className="w-8 h-8 text-slate-400" />}
-                            title="No recent work activity"
-                            description="Your work-item activity will appear here."
-                          />
-                        </td>
-                      </tr>
-                    ) : (
-                      activities.map((act, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="py-3 px-4 font-bold text-[var(--color-brand-navy)]">{act.title}</td>
-                          <td className="py-3 px-4">{act.projectName}</td>
-                          <td className="py-3 px-4">
-                            <Badge variant="neutral">{act.prevStatus}</Badge>
-                          </td>
-                          <td className="py-3 px-4">
-                            <Badge variant={act.newStatus === 'Completed' ? 'success' : 'blue'}>
-                              {act.newStatus}
+                  ) : (
+                    <tr>
+                      <td colSpan={9} className="p-12">
+                        <EmptyState
+                          icon={<FolderKanban className="w-8 h-8 text-slate-400" />}
+                          title="No progress data available."
+                          description="Progress will appear as you complete assigned work items."
+                          secondaryAction={
+                            <Badge size="sm" variant="neutral">
+                              No allocations
                             </Badge>
-                          </td>
-                          <td className="py-3 px-4 font-mono">{act.date}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
-          </div>
-
+                          }
+                        />
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
         </div>
 
+        {/* ── 5. WORK ITEM CONTRIBUTION BREAKDOWN TABLE ────────── */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <h3 className="text-xs font-bold text-[var(--color-brand-navy)] uppercase tracking-wider flex items-center gap-2">
+                <CheckSquare className="w-4 h-4 text-[var(--color-brand-blue)]" />
+                Work Item Contribution Breakdown
+              </h3>
+              <p className="text-[11px] text-[var(--color-text-secondary)]">
+                Granular contribution and completion status for individual work items
+              </p>
+            </div>
+          </div>
+
+          <Card padding="none" className="shadow-2xs border border-slate-100 overflow-hidden">
+            <div className="overflow-x-auto w-full">
+              <table
+                className="w-full text-left text-xs border-collapse min-w-[950px]"
+                aria-label="Work Item Contribution Breakdown Table"
+              >
+                <thead>
+                  <tr className="bg-slate-50/90 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    <th scope="col" className="py-3 px-4">Work Item ID</th>
+                    <th scope="col" className="py-3 px-4">Title</th>
+                    <th scope="col" className="py-3 px-4">Project</th>
+                    <th scope="col" className="py-3 px-4 text-center">Weight</th>
+                    <th scope="col" className="py-3 px-4">Status</th>
+                    <th scope="col" className="py-3 px-4 text-center">Contribution to Project</th>
+                    <th scope="col" className="py-3 px-4 text-right">Completion Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {isLoading ? (
+                    Array.from({ length: 3 }).map((_, idx) => (
+                      <tr key={`work-skeleton-${idx}`}>
+                        <td className="py-4 px-4">
+                          <Skeleton className="h-4 w-20" />
+                        </td>
+                        <td className="py-4 px-4 space-y-1">
+                          <Skeleton className="h-4 w-40" />
+                          <Skeleton className="h-3 w-24" />
+                        </td>
+                        <td className="py-4 px-4">
+                          <Skeleton className="h-4 w-32" />
+                        </td>
+                        <td className="py-4 px-4 text-center">
+                          <Skeleton className="h-4 w-12 mx-auto" />
+                        </td>
+                        <td className="py-4 px-4">
+                          <Skeleton className="h-5 w-20 rounded-full" />
+                        </td>
+                        <td className="py-4 px-4 text-center">
+                          <Skeleton className="h-4 w-12 mx-auto" />
+                        </td>
+                        <td className="py-4 px-4 text-right">
+                          <Skeleton className="h-4 w-20 ml-auto" />
+                        </td>
+                      </tr>
+                    ))
+                  ) : filteredWorkItems.length > 0 ? (
+                    filteredWorkItems.map((item) => {
+                      const effectiveId = item.workItemId || item.id;
+                      return (
+                        <tr
+                          key={item.id}
+                          className="hover:bg-slate-50/80 transition-colors"
+                        >
+                          {/* 1. Work Item ID */}
+                          <td className="py-3 px-4 font-mono font-semibold text-slate-700">
+                            {effectiveId}
+                          </td>
+
+                          {/* 2. Title */}
+                          <td className="py-3 px-4">
+                            <div className="font-bold text-[var(--color-brand-navy)]">
+                              {item.title}
+                            </div>
+                          </td>
+
+                          {/* 3. Project */}
+                          <td className="py-3 px-4">
+                            <div className="font-medium text-slate-800">
+                              {item.projectName}
+                            </div>
+                            <div className="text-[10px] font-mono text-slate-400 mt-0.5">
+                              {item.projectId}
+                            </div>
+                          </td>
+
+                          {/* 4. Weight */}
+                          <td className="py-3 px-4 text-center font-mono font-semibold text-slate-700">
+                            {item.percentageWeight}%
+                          </td>
+
+                          {/* 5. Status */}
+                          <td className="py-3 px-4">
+                            {getWorkItemStatusBadge(item.status)}
+                          </td>
+
+                          {/* 6. Contribution to Project */}
+                          <td className="py-3 px-4 text-center font-mono font-bold">
+                            {item.status === 'Completed' ? (
+                              <span className="text-emerald-600">
+                                +{item.percentageWeight}%
+                              </span>
+                            ) : (
+                              <span className="text-slate-400">0%</span>
+                            )}
+                          </td>
+
+                          {/* 7. Completion Date */}
+                          <td className="py-3 px-4 text-right font-mono text-slate-600">
+                            {item.completionDate ? (
+                              <span className="flex items-center justify-end gap-1">
+                                <Calendar className="w-3 h-3 text-slate-400" />
+                                {item.completionDate}
+                              </span>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : isFiltering ? (
+                    <tr>
+                      <td colSpan={7} className="p-12">
+                        <EmptyState
+                          icon={<Search className="w-8 h-8 text-slate-400" />}
+                          title="No matching work items found."
+                          description="No work items match your current search query or filter selections. Try adjusting or resetting your filters."
+                          action={
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
+                              onClick={handleResetFilters}
+                            >
+                              Reset Filters
+                            </Button>
+                          }
+                        />
+                      </td>
+                    </tr>
+                  ) : (
+                    <tr>
+                      <td colSpan={7} className="p-12">
+                        <EmptyState
+                          icon={<CheckSquare className="w-8 h-8 text-slate-400" />}
+                          title="No work item contribution data"
+                          description="Individual work-item contribution will appear here as tasks are assigned."
+                          secondaryAction={
+                            <Badge size="sm" variant="neutral">
+                              No allocations
+                            </Badge>
+                          }
+                        />
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
       </div>
 
-      {/* Details Drawer */}
+      {/* ── 6. DETAILS DRAWER ─────────────────────────────────── */}
       <InternProgressDetailsDrawer
-        isOpen={isDetailsOpen}
-        onClose={() => {
-          setIsDetailsOpen(false);
-          setSelectedContribution(null);
-        }}
+        isOpen={selectedContribution !== null}
+        onClose={() => setSelectedContribution(null)}
         contribution={selectedContribution}
       />
     </DashboardLayout>

@@ -19,6 +19,8 @@ import {
   RotateCcw,
   Plus,
   Eye,
+  Edit3,
+  Trash2,
   RefreshCw,
   Calendar,
   Building,
@@ -32,12 +34,15 @@ import {
   Card,
   Button,
   Badge,
+  Alert,
   EmptyState,
 } from '../../components/common';
 import { useAuth } from '../../hooks/useAuth';
 import { ADMIN_NAVIGATION } from '../../config/adminNavigation';
 import { CreateAssignmentDrawer } from './components/CreateAssignmentDrawer';
 import { AssignmentDetailsDrawer } from './components/AssignmentDetailsDrawer';
+import { EditAssignmentDrawer } from './components/EditAssignmentDrawer';
+import { RemoveAssignmentModal } from './components/RemoveAssignmentModal';
 import type { ManagedAssignment } from '../../types/assignmentManagement.types';
 
 const API_BASE_URL = 'http://localhost:5000/api';
@@ -51,10 +56,25 @@ export default function ProjectAssignmentsPage() {
   const [projects, setProjects] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Drawer States
+  // Drawer & Modal States
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<ManagedAssignment | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
+  // Edit Drawer State
+  const [selectedAssignmentForEdit, setSelectedAssignmentForEdit] = useState<ManagedAssignment | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+
+  // Remove Modal State
+  const [selectedAssignmentForRemove, setSelectedAssignmentForRemove] = useState<ManagedAssignment | null>(null);
+  const [isRemoveOpen, setIsRemoveOpen] = useState(false);
+
+  // Status Notification Banner
+  const [alertNotice, setAlertNotice] = useState<{
+    type: 'info' | 'error' | 'success';
+    title: string;
+    message: string;
+  } | null>(null);
 
   // Search and Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -129,25 +149,67 @@ export default function ProjectAssignmentsPage() {
   const internAssignments = assignments.filter((a) => (a?.userCategory || '').includes('Intern')).length;
   const unassignedProjectsCount = projects.filter((p) => (p.assignedMembersCount || 0) === 0).length;
 
+  const mapAssignmentToManaged = (a: any): ManagedAssignment => ({
+    id: a.assignmentId || a._id || a.id,
+    projectName: a.projectName,
+    projectId: a.projectId,
+    userName: a.userName,
+    userId: a.userId,
+    userCategory: a.userCategory,
+    professionalRole: a.professionalRole,
+    assignmentRole: a.assignmentRole,
+    startDate: a.startDate,
+    expectedEndDate: a.expectedEndDate,
+    allocationNotes: a.allocationNotes,
+    status: a.status,
+    projectLead: a.projectLead,
+    department: a.department,
+    projectStatus: a.projectStatus,
+    createdAt: a.createdAt ? new Date(a.createdAt).toLocaleDateString() : undefined,
+    updatedAt: a.updatedAt ? new Date(a.updatedAt).toLocaleDateString() : undefined,
+  });
+
   const handleOpenDetails = (a: any) => {
-    const mapped: ManagedAssignment = {
-      id: a._id || a.assignmentId,
-      projectName: a.projectName,
-      projectId: a.projectId,
-      userName: a.userName,
-      userId: a.userId,
-      userCategory: a.userCategory,
-      professionalRole: a.professionalRole,
-      assignmentRole: a.assignmentRole,
-      startDate: a.startDate,
-      expectedEndDate: a.expectedEndDate,
-      allocationNotes: a.allocationNotes,
-      status: a.status,
-      createdAt: a.createdAt ? new Date(a.createdAt).toLocaleDateString() : undefined,
-      updatedAt: a.updatedAt ? new Date(a.updatedAt).toLocaleDateString() : undefined,
-    };
-    setSelectedAssignment(mapped);
+    setSelectedAssignment(mapAssignmentToManaged(a));
     setIsDetailsOpen(true);
+  };
+
+  const handleOpenEdit = (a: any) => {
+    setSelectedAssignmentForEdit(mapAssignmentToManaged(a));
+    setIsEditOpen(true);
+  };
+
+  const handleOpenRemove = (a: any) => {
+    setSelectedAssignmentForRemove(mapAssignmentToManaged(a));
+    setIsRemoveOpen(true);
+  };
+
+  const handleAssignmentUpdated = (updated: ManagedAssignment) => {
+    setAssignments((prev) =>
+      prev.map((item) =>
+        item._id === updated.id || item.assignmentId === updated.id
+          ? { ...item, ...updated }
+          : item
+      )
+    );
+    fetchAssignmentsData();
+    setAlertNotice({
+      type: 'success',
+      title: 'Assignment Updated',
+      message: `Project allocation for ${updated.userName} on ${updated.projectName} has been updated.`,
+    });
+  };
+
+  const handleAssignmentRemoved = (removedIdentifier: string) => {
+    setAssignments((prev) =>
+      prev.filter((item) => item._id !== removedIdentifier && item.assignmentId !== removedIdentifier)
+    );
+    fetchAssignmentsData();
+    setAlertNotice({
+      type: 'success',
+      title: 'Assignment Removed',
+      message: `Project allocation has been removed successfully.`,
+    });
   };
 
   const userDisplay: UserDisplayInfo = {
@@ -173,7 +235,7 @@ export default function ProjectAssignmentsPage() {
       user={userDisplay}
       notificationsCount={1}
       onNotificationClick={() => {}}
-      onProfileClick={() => {}}
+      onProfileClick={() => navigate('/admin/profile')}
       onLogoutClick={handleLogout}
     >
       {/* ── Page Header ────────────────────────────────────────── */}
@@ -209,6 +271,17 @@ export default function ProjectAssignmentsPage() {
       />
 
       <div className="space-y-6">
+        {/* Status Notification Alert */}
+        {alertNotice && (
+          <Alert
+            variant={alertNotice.type}
+            title={alertNotice.title}
+            onClose={() => setAlertNotice(null)}
+          >
+            {alertNotice.message}
+          </Alert>
+        )}
+
         {/* ── Summary KPI Cards Area ────────────────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {/* Card 1: Total Assignments */}
@@ -494,14 +567,36 @@ export default function ProjectAssignmentsPage() {
 
                         {/* Actions */}
                         <td className="py-3.5 px-4 sm:px-6 text-right" onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            leftIcon={<Eye className="w-3.5 h-3.5 text-blue-600" />}
-                            onClick={() => handleOpenDetails(a)}
-                          >
-                            Details
-                          </Button>
+                          <div className="flex items-center justify-end gap-1.5 flex-nowrap">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              leftIcon={<Eye className="w-3.5 h-3.5 text-blue-600" />}
+                              onClick={() => handleOpenDetails(a)}
+                              title="View Assignment Details"
+                            >
+                              <span className="hidden xl:inline">Details</span>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              leftIcon={<Edit3 className="w-3.5 h-3.5 text-slate-600" />}
+                              onClick={() => handleOpenEdit(a)}
+                              title="Edit Assignment"
+                            >
+                              <span className="hidden xl:inline">Edit</span>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600 text-rose-600 border-rose-200"
+                              leftIcon={<Trash2 className="w-3.5 h-3.5 text-rose-500" />}
+                              onClick={() => handleOpenRemove(a)}
+                              title="Remove Assignment"
+                            >
+                              <span className="hidden xl:inline">Remove</span>
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -513,17 +608,42 @@ export default function ProjectAssignmentsPage() {
         </Card>
       </div>
 
-      {/* ── Slide-Over Drawers ─────────────────────────────────── */}
+      {/* ── Slide-Over Drawers & Confirmation Modals ─────────── */}
       <AssignmentDetailsDrawer
         isOpen={isDetailsOpen}
         onClose={() => setIsDetailsOpen(false)}
         assignment={selectedAssignment}
+        onEdit={(asg) => {
+          setIsDetailsOpen(false);
+          setSelectedAssignmentForEdit(asg);
+          setIsEditOpen(true);
+        }}
+        onRemove={(asg) => {
+          setIsDetailsOpen(false);
+          setSelectedAssignmentForRemove(asg);
+          setIsRemoveOpen(true);
+        }}
       />
 
       <CreateAssignmentDrawer
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         onAssignmentCreated={fetchAssignmentsData}
+      />
+
+      <EditAssignmentDrawer
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        assignment={selectedAssignmentForEdit}
+        existingAssignments={assignments}
+        onAssignmentUpdated={handleAssignmentUpdated}
+      />
+
+      <RemoveAssignmentModal
+        isOpen={isRemoveOpen}
+        onClose={() => setIsRemoveOpen(false)}
+        assignment={selectedAssignmentForRemove}
+        onAssignmentRemoved={handleAssignmentRemoved}
       />
     </DashboardLayout>
   );

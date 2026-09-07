@@ -76,7 +76,7 @@ export const TeamParticipationDistribution: React.FC<TeamParticipationDistributi
         <div className="flex items-center gap-1.5 justify-center">
           <Users className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
           <span className="text-[10px] text-[var(--color-text-muted)]">
-            Team distribution will appear once allocation data is connected.
+            Team distribution will appear when team allocation records are available.
           </span>
         </div>
       )}

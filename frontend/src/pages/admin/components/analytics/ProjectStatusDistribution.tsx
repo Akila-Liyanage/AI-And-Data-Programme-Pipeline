@@ -84,7 +84,7 @@ export const ProjectStatusDistribution: React.FC<ProjectStatusDistributionProps>
 
       {isPending && (
         <p className="text-[10px] text-[var(--color-text-secondary)] text-center">
-          Distribution will appear once project data is connected.
+          Distribution will appear when project records are available.
         </p>
       )}
     </div>

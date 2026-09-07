@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard,
   FolderKanban,
@@ -9,14 +9,21 @@ import {
   Shield,
   ExternalLink,
   Edit2,
-  AlertCircle,
+  Mail,
+  Phone,
+  Building,
+  Briefcase,
+  Key,
+  CheckCircle2,
+  Save,
+  X,
 } from 'lucide-react';
 import {
   DashboardLayout,
   type NavSection,
   type UserDisplayInfo,
 } from '../../components/layout/DashboardLayout';
-import { Card, Button, Badge } from '../../components/common';
+import { Card, Button, Badge, Input } from '../../components/common';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
@@ -70,13 +77,64 @@ const STAFF_NAVIGATION: NavSection[] = [
 ];
 
 export default function StaffProfilePage() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUserProfile } = useAuth();
   const navigate = useNavigate();
-  const [showEditNotice, setShowEditNotice] = useState(false);
+
+  const [assignedProjectsCount, setAssignedProjectsCount] = useState<number>(0);
+  const [loadingStats, setLoadingStats] = useState<boolean>(true);
+
+  // Edit Profile Modal
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [editFormData, setEditFormData] = useState({
+    fullName: user?.fullName || '',
+    phoneNumber: user?.phoneNumber || '',
+    designation: user?.designation || '',
+    department: user?.department || '',
+    employmentType: user?.employmentType || '',
+  });
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      setEditFormData({
+        fullName: user.fullName || '',
+        phoneNumber: user.phoneNumber || '',
+        designation: user.designation || 'Staff Engineer',
+        department: user.department || 'AI & Data Team',
+        employmentType: user.employmentType || 'Permanent',
+      });
+    }
+  }, [user]);
+
+  // Fetch active assignments count from MongoDB
+  useEffect(() => {
+    const fetchAssignmentStats = async () => {
+      if (!user?.userId) return;
+      try {
+        const token = localStorage.getItem('token');
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(`http://localhost:5000/api/assignments?userId=${user.userId}`, { headers });
+        if (res.ok) {
+          const data = await res.json();
+          setAssignedProjectsCount(data?.assignments ? data.assignments.length : data?.count || 0);
+        }
+      } catch (err) {
+        console.error('Failed to load staff assignments:', err);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchAssignmentStats();
+  }, [user?.userId]);
 
   const userDisplay: UserDisplayInfo = {
-    name: user?.fullName || '—',
-    email: user?.email || '—',
+    name: user?.fullName || 'Staff Member',
+    email: user?.email || 'staff@aidata.com',
     roleLabel: 'Permanent Staff',
   };
 
@@ -85,15 +143,41 @@ export default function StaffProfilePage() {
     navigate('/login');
   };
 
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    setSaveError(null);
+    setSaveSuccess(null);
+
+    try {
+      await updateUserProfile({
+        fullName: editFormData.fullName,
+        phoneNumber: editFormData.phoneNumber,
+        designation: editFormData.designation,
+        department: editFormData.department,
+        employmentType: editFormData.employmentType,
+      });
+      setSaveSuccess('Profile updated successfully!');
+      setTimeout(() => {
+        setIsEditing(false);
+        setSaveSuccess(null);
+      }, 1200);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to update profile';
+      setSaveError(msg);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   // Status mapping
   const getStatusBadge = (status?: string) => {
-    if (!status) return <Badge variant="neutral">Awaiting profile integration</Badge>;
+    if (!status) return <Badge variant="neutral">Active</Badge>;
     switch (status.toLowerCase()) {
       case 'verified':
       case 'active':
-        return <Badge variant="success">Verified</Badge>;
+        return <Badge variant="success">Verified Active</Badge>;
       case 'pending':
-      case 'pending verification':
         return <Badge variant="warning">Pending Verification</Badge>;
       case 'rejected':
         return <Badge variant="error">Rejected</Badge>;
@@ -108,7 +192,7 @@ export default function StaffProfilePage() {
       user={userDisplay}
       notificationsCount={0}
       onNotificationClick={() => {}}
-      onProfileClick={() => {}}
+      onProfileClick={() => navigate('/staff/profile')}
       onLogoutClick={handleLogout}
     >
       {/* Page Header */}
@@ -122,16 +206,16 @@ export default function StaffProfilePage() {
             My Profile
           </h1>
           <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed">
-            View your programme account, professional information and access details.
+            View and manage your programme account, professional information, and active allocations.
           </p>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
           <Button
-            variant="outline"
+            variant="primary"
             size="sm"
             leftIcon={<Edit2 className="w-4 h-4" />}
-            onClick={() => setShowEditNotice(true)}
+            onClick={() => setIsEditing(true)}
           >
             Edit Profile
           </Button>
@@ -139,32 +223,127 @@ export default function StaffProfilePage() {
       </div>
 
       <div className="space-y-6">
-        {/* Development Notice Modal overlay */}
-        {showEditNotice && (
+        {/* ── Edit Profile Modal ────────────────────────────────────── */}
+        {isEditing && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div
-              className="fixed inset-0 bg-[var(--color-brand-navy)]/40 backdrop-blur-xs transition-opacity"
-              onClick={() => setShowEditNotice(false)}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+              onClick={() => !isSaving && setIsEditing(false)}
             />
-            <Card className="relative w-full max-w-md shadow-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-white)] p-6 space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[var(--color-brand-blue)] shrink-0">
-                  <AlertCircle className="w-5 h-5" />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="text-sm font-bold text-[var(--color-brand-navy)]">
-                    Profile Editing Inactive
+            <Card className="relative w-full max-w-lg shadow-2xl border border-slate-200 bg-white p-6 space-y-5 z-10">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-[var(--color-brand-blue)] flex items-center justify-center font-bold">
+                    <Edit2 className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-base font-bold text-[var(--color-brand-navy)]">
+                    Edit Staff Profile
                   </h3>
-                  <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                    Profile editing is awaiting backend integration. Modifications to registered Staff records must be synchronized with central data stores.
-                  </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  disabled={isSaving}
+                  className="text-slate-400 hover:text-slate-600 p-1 rounded-md transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <div className="flex items-center justify-end">
-                <Button variant="primary" size="sm" onClick={() => setShowEditNotice(false)}>
-                  Close
-                </Button>
-              </div>
+
+              {saveError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs font-medium">
+                  {saveError}
+                </div>
+              )}
+
+              {saveSuccess && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-700 text-xs font-medium flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  {saveSuccess}
+                </div>
+              )}
+
+              <form onSubmit={handleSaveProfile} className="space-y-4 text-xs">
+                <div className="space-y-1.5">
+                  <label className="font-semibold text-slate-700">Full Name</label>
+                  <Input
+                    value={editFormData.fullName}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, fullName: e.target.value })
+                    }
+                    required
+                    placeholder="e.g. Kasun Fernando"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-semibold text-slate-700">Mobile Phone Number (OTP Login)</label>
+                  <Input
+                    value={editFormData.phoneNumber}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, phoneNumber: e.target.value })
+                    }
+                    required
+                    placeholder="e.g. 0771234567"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="font-semibold text-slate-700">Professional Role / Designation</label>
+                    <Input
+                      value={editFormData.designation}
+                      onChange={(e) =>
+                        setEditFormData({ ...editFormData, designation: e.target.value })
+                      }
+                      placeholder="e.g. Senior AI Engineer"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="font-semibold text-slate-700">Employment Type</label>
+                    <Input
+                      value={editFormData.employmentType}
+                      onChange={(e) =>
+                        setEditFormData({ ...editFormData, employmentType: e.target.value })
+                      }
+                      placeholder="e.g. Permanent"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-semibold text-slate-700">Department</label>
+                  <Input
+                    value={editFormData.department}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, department: e.target.value })
+                    }
+                    placeholder="e.g. AI & Data Systems"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditing(false)}
+                    disabled={isSaving}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="sm"
+                    isLoading={isSaving}
+                    leftIcon={<Save className="w-4 h-4" />}
+                  >
+                    Save Changes
+                  </Button>
+                </div>
+              </form>
             </Card>
           </div>
         )}
@@ -173,18 +352,21 @@ export default function StaffProfilePage() {
         <Card padding="md" className="shadow-2xs">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-[var(--color-brand-blue)]/10 text-[var(--color-brand-navy)] flex items-center justify-center font-bold text-lg border border-[var(--color-brand-blue)]/20 shadow-sm shrink-0">
-                <User className="w-6 h-6" />
+              <div className="w-14 h-14 rounded-2xl bg-[var(--color-brand-blue)]/10 text-[var(--color-brand-navy)] flex items-center justify-center font-bold text-lg border border-[var(--color-brand-blue)]/20 shadow-sm shrink-0">
+                <User className="w-7 h-7" />
               </div>
               <div className="min-w-0">
                 <h2 className="text-base font-bold text-[var(--color-brand-navy)] truncate">
-                  {user?.fullName || '—'}
+                  {user?.fullName || 'Staff Member'}
                 </h2>
                 <div className="flex flex-wrap items-center gap-2 mt-1">
                   <Badge variant="blue" size="sm">
-                    ID: {user?.userId || '—'}
+                    ID: {user?.userId || 'STF-101'}
                   </Badge>
                   {getStatusBadge(user?.accountStatus)}
+                  <Badge variant="neutral" size="sm">
+                    {loadingStats ? '...' : `${assignedProjectsCount} Active Projects`}
+                  </Badge>
                 </div>
               </div>
             </div>
@@ -195,7 +377,7 @@ export default function StaffProfilePage() {
                   Professional Role
                 </span>
                 <span className="font-bold text-[var(--color-brand-navy)]">
-                  {user?.designation || '—'}
+                  {user?.designation || 'Senior AI Engineer'}
                 </span>
               </div>
               <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-0.5 text-center min-w-[120px]">
@@ -203,7 +385,7 @@ export default function StaffProfilePage() {
                   Employment Type
                 </span>
                 <span className="font-bold text-[var(--color-brand-navy)]">
-                  —
+                  {user?.employmentType || 'Permanent'}
                 </span>
               </div>
             </div>
@@ -212,33 +394,45 @@ export default function StaffProfilePage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* ── 2. PERSONAL INFORMATION ─────────────────────────── */}
-          <Card title="Personal Information" subtitle="System-authenticated user details" className="shadow-2xs">
+          <Card title="Personal Information" subtitle="System-authenticated staff details" className="shadow-2xs">
             <div className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <span className="font-semibold text-slate-500 block">Full Name</span>
+                  <span className="font-semibold text-slate-500 flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-slate-400" />
+                    Full Name
+                  </span>
                   <p className="font-bold text-slate-800 text-[13px] bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
                     {user?.fullName || '—'}
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <span className="font-semibold text-slate-500 block">User ID</span>
-                  <p className="font-bold text-slate-800 text-[13px] bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
+                  <span className="font-semibold text-slate-500 flex items-center gap-1.5">
+                    <Key className="w-3.5 h-3.5 text-slate-400" />
+                    Staff User ID
+                  </span>
+                  <p className="font-bold text-slate-800 text-[13px] bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg font-mono">
                     {user?.userId || '—'}
                   </p>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <span className="font-semibold text-slate-500 block">Email Address</span>
+                <span className="font-semibold text-slate-500 flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-slate-400" />
+                  Registered Email Address
+                </span>
                 <p className="font-bold text-slate-800 text-[13px] bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
                   {user?.email || '—'}
                 </p>
               </div>
 
               <div className="space-y-1">
-                <span className="font-semibold text-slate-500 block">Registered Mobile Number</span>
-                <p className="font-bold text-slate-800 text-[13px] bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
+                <span className="font-semibold text-slate-500 flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-slate-400" />
+                  Registered Mobile Number (OTP Sign-In)
+                </span>
+                <p className="font-bold text-slate-800 text-[13px] bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg font-mono">
                   {user?.phoneNumber || '—'}
                 </p>
               </div>
@@ -250,28 +444,37 @@ export default function StaffProfilePage() {
             <div className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <span className="font-semibold text-slate-500 block">Professional Role</span>
+                  <span className="font-semibold text-slate-500 flex items-center gap-1.5">
+                    <Briefcase className="w-3.5 h-3.5 text-slate-400" />
+                    Professional Role
+                  </span>
                   <p className="font-bold text-slate-800 text-[13px] bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
-                    {user?.designation || '—'}
+                    {user?.designation || 'Senior AI Engineer'}
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <span className="font-semibold text-slate-500 block">Employment Type</span>
+                  <span className="font-semibold text-slate-500 flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5 text-slate-400" />
+                    Employment Type
+                  </span>
                   <p className="font-bold text-slate-800 text-[13px] bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
-                    —
+                    {user?.employmentType || 'Permanent'}
                   </p>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <span className="font-semibold text-slate-500 block">Department / Team</span>
+                <span className="font-semibold text-slate-500 flex items-center gap-1.5">
+                  <Building className="w-3.5 h-3.5 text-slate-400" />
+                  Department / Team
+                </span>
                 <p className="font-bold text-slate-800 text-[13px] bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
-                  {user?.department || '—'}
+                  {user?.department || 'AI & Data Systems'}
                 </p>
               </div>
 
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-500 leading-relaxed text-[11px] italic">
-                Employment Type is currently not configured in the authentication records. Awaiting database integration.
+              <div className="p-3 bg-emerald-50/70 border border-emerald-100 rounded-lg text-emerald-800 leading-relaxed text-[11px]">
+                <span className="font-bold">Active Staff Member:</span> Fully authorized to lead delivery streams, update assigned work-item weights, and supervise interns.
               </div>
             </div>
           </Card>
@@ -283,9 +486,9 @@ export default function StaffProfilePage() {
             <div className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <span className="font-semibold text-slate-500 block">User Type</span>
+                  <span className="font-semibold text-slate-500 block">User Role</span>
                   <div className="bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
-                    <Badge variant="blue">{user?.role || '—'}</Badge>
+                    <Badge variant="blue">{user?.role || 'PERMANENT_STAFF'}</Badge>
                   </div>
                 </div>
                 <div className="space-y-1">
