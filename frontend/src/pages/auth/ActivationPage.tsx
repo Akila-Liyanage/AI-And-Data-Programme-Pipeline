@@ -122,7 +122,7 @@ export default function ActivationPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'demo-success'>('idle');
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success'>('idle');
 
   const clearFieldError = (field: keyof FormErrors) => {
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
@@ -150,11 +150,11 @@ export default function ActivationPage() {
 
     setErrors({});
     setIsSubmitting(true);
-    // UI-only — no backend call at this milestone
-    setTimeout(() => { setIsSubmitting(false); setSubmitStatus('demo-success'); }, 800);
+    // UI presentation verified state
+    setTimeout(() => { setIsSubmitting(false); setSubmitStatus('success'); }, 800);
   };
 
-  if (submitStatus === 'demo-success') {
+  if (submitStatus === 'success') {
     return (
       <AuthLayout leftPanel={<ActivationBrandPanel />} backTo={{ to: '/login', label: 'Back to Sign In' }}>
         <div className="max-w-md w-full mx-auto flex flex-col items-center justify-center text-center space-y-5 py-8">

@@ -8,23 +8,31 @@ import {
   ArrowRight,
   UserCheck,
   Calendar,
+  CheckCircle2,
+  Clock,
+  Shield,
 } from 'lucide-react';
 import { Button, Badge } from '../../../components/common';
 
 export interface StaffHistoryRecord {
   id: string;
-  workItemId: string;
+  workItemId?: string;
   workItemTitle: string;
   projectId: string;
   projectName: string;
-  requiredRole: string;
-  percentageWeight: number;
+  description?: string;
+  requiredRole?: string;
+  responsibility?: string;
+  percentageWeight?: number;
   finalStatus: string;
-  completionDate: string;
-  progressContribution: number | string;
-  assignedUser: string;
-  userRole: string;
-  assignmentStatus: string;
+  assignedDate?: string;
+  startedDate?: string;
+  completionDate?: string;
+  progressContribution?: number | string;
+  assignedUser?: string;
+  userRole?: string;
+  assignmentStatus?: string;
+  projectProgress?: number;
 }
 
 export interface StaffWorkHistoryDetailsDrawerProps {
@@ -61,9 +69,11 @@ export const StaffWorkHistoryDetailsDrawer: React.FC<StaffWorkHistoryDetailsDraw
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !record) return null;
 
-  const currentStatus = record?.finalStatus || 'Completed';
+  const currentStatus = record.finalStatus || 'Completed';
+  const effectiveItemId = record.workItemId || record.id;
+  const isCompleted = currentStatus.toLowerCase() === 'completed';
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -109,27 +119,30 @@ export const StaffWorkHistoryDetailsDrawer: React.FC<StaffWorkHistoryDetailsDraw
           {/* ── Sticky Header ───────────────────────────────────── */}
           <div className="px-6 py-5 border-b border-[var(--color-border-subtle)] flex items-start justify-between gap-4 bg-[var(--color-surface-white)] shrink-0">
             <div className="space-y-1.5 min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="blue" size="sm">
-                  Work History Record Details
+                  Historical Record
                 </Badge>
+                <span className="font-mono text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+                  {effectiveItemId}
+                </span>
                 {getStatusBadge(currentStatus)}
               </div>
               <h2
                 id="staff-history-details-title"
-                className="text-lg sm:text-xl font-bold tracking-tight text-[var(--color-brand-navy)]"
+                className="text-lg sm:text-xl font-bold tracking-tight text-[var(--color-brand-navy)] truncate"
               >
-                Work Item Completion Details
+                {record.workItemTitle}
               </h2>
               <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                Review completed work metrics, progress contributions, and timeline updates.
+                Review completed work metrics, credited project contributions, and timeline updates.
               </p>
             </div>
 
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-brand-navy)] hover:bg-[var(--color-surface-subtle)] transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)]/40"
+              className="p-2 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-brand-navy)] hover:bg-[var(--color-surface-subtle)] transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)]/40 shrink-0"
               aria-label="Close drawer"
             >
               <X className="w-5 h-5" />
@@ -145,178 +158,240 @@ export const StaffWorkHistoryDetailsDrawer: React.FC<StaffWorkHistoryDetailsDraw
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="text-base font-bold text-[var(--color-brand-navy)] truncate">
-                  {record?.workItemTitle || '—'}
+                  {record.workItemTitle}
                 </h3>
-                <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
-                  Project: <span className="font-semibold text-slate-800">{record?.projectName || '—'}</span>
-                </p>
+                <div className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1.5 mt-0.5 flex-wrap">
+                  <span className="font-medium text-slate-500">Project:</span>
+                  <span className="font-semibold text-slate-800">{record.projectName}</span>
+                  <span className="font-mono text-slate-500">({record.projectId})</span>
+                </div>
               </div>
             </div>
 
-            {/* ── A. WORK ITEM INFORMATION ──────────────────────── */}
+            {/* ── 1. WORK ITEM INFORMATION ──────────────────────── */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
                 <FileText className="w-4 h-4 text-[var(--color-brand-blue)]" />
                 <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
-                  Work Item Information
+                  Work Item Specifications
                 </h4>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
-                    Work Item Task
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
+                    Work Item ID
                   </span>
-                  <p className="font-semibold text-[var(--color-brand-navy)] truncate">
-                    {record?.workItemTitle || '—'}
+                  <p className="font-mono font-semibold text-[var(--color-brand-navy)]">
+                    {effectiveItemId}
                   </p>
                 </div>
 
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
-                    Project
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
+                    Associated Project
                   </span>
                   <p className="font-semibold text-[var(--color-brand-navy)] truncate">
-                    {record?.projectName || '—'}
+                    {record.projectName}
                   </p>
                 </div>
 
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium flex items-center gap-1">
+                    <Layers className="w-3 h-3 text-[var(--color-text-muted)]" />
                     Required Role
                   </span>
                   <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {record?.requiredRole || '—'}
+                    {record.requiredRole || 'Permanent Staff'}
                   </p>
                 </div>
 
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
-                    Predefined Percentage Weight
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
+                    Final Status
                   </span>
-                  <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {record?.percentageWeight !== undefined ? `${record.percentageWeight}%` : '—'}
-                  </p>
+                  <div>{getStatusBadge(currentStatus)}</div>
                 </div>
-              </div>
-            </div>
 
-            {/* ── B. CONTRIBUTION INFORMATION ───────────────────── */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
-                <Activity className="w-4 h-4 text-[var(--color-brand-green)]" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
-                  Contribution Information
-                </h4>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
-                    Progress Contribution
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium flex items-center gap-1">
+                    <Calendar className="w-3 h-3 text-slate-400" />
+                    Assigned Date
                   </span>
-                  <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {record?.progressContribution !== undefined ? `${record.progressContribution}%` : '—'}
+                  <p className="font-semibold text-[var(--color-brand-navy)] font-mono">
+                    {record.assignedDate || '—'}
                   </p>
                 </div>
 
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-slate-400" />
+                    Started Date
+                  </span>
+                  <p className="font-semibold text-[var(--color-brand-navy)] font-mono">
+                    {record.startedDate || '—'}
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1 sm:col-span-2">
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-[var(--color-status-success)]" />
                     Completion Date
                   </span>
-                  <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {record?.completionDate || '—'}
+                  <p className="font-semibold text-[var(--color-brand-navy)] font-mono">
+                    {record.completionDate || '—'}
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* ── C. ASSIGNMENT INFORMATION ─────────────────────── */}
+            {/* ── 2. DESCRIPTION & SCOPE ────────────────────────── */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
-                <UserCheck className="w-4 h-4 text-[var(--color-brand-blue)]" />
+                <FileText className="w-4 h-4 text-[var(--color-brand-blue)]" />
                 <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
-                  Assignment Information
+                  Description & Scope
                 </h4>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] text-xs text-slate-700 leading-relaxed whitespace-pre-line">
+                {record.description ? (
+                  record.description
+                ) : (
+                  <p className="text-slate-400 italic">
+                    No detailed description logged for this completed work item.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* ── 3. RESPONSIBILITY & ASSIGNMENT ─────────────────── */}
+            {(record.responsibility || record.assignedUser) && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
+                  <UserCheck className="w-4 h-4 text-[var(--color-brand-green)]" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
+                    Responsibility & User Assignment
+                  </h4>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  {record.responsibility && (
+                    <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1 sm:col-span-2">
+                      <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
+                        Staff Responsibility
+                      </span>
+                      <p className="font-medium text-slate-800">{record.responsibility}</p>
+                    </div>
+                  )}
+
+                  {record.assignedUser && (
+                    <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
+                      <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
+                        Assigned User
+                      </span>
+                      <p className="font-semibold text-[var(--color-brand-navy)] truncate">
+                        {record.assignedUser}
+                      </p>
+                    </div>
+                  )}
+
+                  {record.userRole && (
+                    <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
+                      <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
+                        User Role
+                      </span>
+                      <p className="font-semibold text-[var(--color-brand-navy)]">
+                        {record.userRole}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── 4. CREDITED PROGRESS CONTRIBUTION ─────────────── */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border-subtle)]">
+                <div className="flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-[var(--color-brand-green)]" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
+                    Credited Progress Contribution
+                  </h4>
+                </div>
+                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                  Locked & Credited
+                </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
-                    Assigned User
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
+                    Predefined Weight
                   </span>
-                  <p className="font-semibold text-[var(--color-brand-navy)] truncate">
-                    {record?.assignedUser || '—'}
+                  <p className="font-semibold text-[var(--color-brand-navy)] font-mono text-sm">
+                    {record.percentageWeight !== undefined ? `${record.percentageWeight}%` : '—'}
                   </p>
                 </div>
 
                 <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
-                    User Role
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
+                    Final Status
                   </span>
-                  <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {record?.userRole || '—'}
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
-                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
-                    Assignment Status
-                  </span>
-                  <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {record?.assignmentStatus || '—'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* ── D. HISTORY / STATUS INFORMATION ────────────────── */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
-                <Calendar className="w-4 h-4 text-[var(--color-brand-blue)]" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
-                  Status History Logs
-                </h4>
-              </div>
-
-              <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-3 text-xs">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-[var(--color-text-secondary)]">Previous Status:</span>
-                  <span className="font-semibold text-slate-700">In Progress</span>
-                </div>
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-[var(--color-text-secondary)]">Final Status:</span>
                   <div>{getStatusBadge(currentStatus)}</div>
                 </div>
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-[var(--color-text-secondary)]">Completed Date:</span>
-                  <span className="font-semibold text-slate-700">{record?.completionDate || '—'}</span>
-                </div>
-                <p className="text-[10px] text-slate-400 italic pt-1 border-t border-slate-200">
-                  No further historical status entries available for this record.
-                </p>
-              </div>
-            </div>
 
-            {/* ── E. PROGRESS EXPLANATION ────────────────────────── */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
-                <Layers className="w-4 h-4 text-[var(--color-brand-green)]" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
-                  Progress Contribution Explanation
-                </h4>
+                <div className="p-3 rounded-lg bg-[var(--color-surface-subtle)]/70 border border-[var(--color-border-subtle)] space-y-1">
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
+                    Contribution Credited
+                  </span>
+                  <p className="font-bold text-[var(--color-status-success)] font-mono text-sm">
+                    {isCompleted && record.percentageWeight !== undefined
+                      ? `+${record.percentageWeight}%`
+                      : record.progressContribution !== undefined
+                      ? `${record.progressContribution}%`
+                      : '—'}
+                  </p>
+                </div>
               </div>
+
+              {/* Related Project Progress Context if available */}
+              {record.projectProgress !== undefined && (
+                <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-slate-700">Project Overall Progress</span>
+                    <span className="font-bold font-mono text-[var(--color-brand-blue)]">
+                      {record.projectProgress}%
+                    </span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[var(--color-brand-blue)] rounded-full transition-all duration-300"
+                      style={{ width: `${record.projectProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3 text-xs">
                 <div className="flex items-center gap-2 font-mono text-[10px] bg-white p-2.5 rounded-lg border border-slate-100">
-                  <span className="text-slate-800">Completed Work Item Weight</span>
+                  <span className="text-slate-800">Completed Work Item Weight ({record.percentageWeight ?? '—'}%)</span>
                   <ArrowRight className="w-3 h-3 text-slate-400" />
-                  <span className="text-[var(--color-brand-blue)] font-bold">Project Progress</span>
+                  <span className="text-[var(--color-brand-blue)] font-bold">Project Progress Credited</span>
                 </div>
-                <p className="text-slate-600 leading-relaxed">
-                  The predefined percentage weight of a completed work item contributes automatically to project progress. Modifications to these historical milestones must be managed under Admin authorization.
+                <p className="text-slate-600 leading-relaxed text-[11px]">
+                  The predefined percentage weight of this completed work item contributes automatically to project progress. Historical metrics are locked and cannot be edited.
                 </p>
               </div>
+            </div>
+
+            {/* ── 5. GOVERNANCE NOTE ────────────────────────────── */}
+            <div className="p-3 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+              <div className="flex items-center gap-1.5">
+                <Shield className="w-3.5 h-3.5 text-slate-400" />
+                <span>Historical audit log</span>
+              </div>
+              <span>Read-only archive</span>
             </div>
           </div>
 

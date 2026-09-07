@@ -104,29 +104,18 @@ export const MilestoneCompletionTrend: React.FC<MilestoneCompletionTrendProps> =
           </text>
 
           {isPending ? (
-            /* Flat dashed baseline = no data */
+            /* Flat subtle baseline grid + professional empty/information state */
             <>
               <line
                 x1={PADDING.left}
                 x2={PADDING.left + innerW}
                 y1={PADDING.top + innerH}
                 y2={PADDING.top + innerH}
-                stroke="var(--color-brand-blue, #0ea5e9)"
-                strokeWidth="2"
-                strokeDasharray="8 6"
-                opacity="0.4"
+                stroke="var(--color-border-subtle, #cbd5e1)"
+                strokeWidth="1.5"
+                strokeDasharray="6 4"
+                opacity="0.6"
               />
-              {/* Centre "no data" label */}
-              <text
-                x={W / 2}
-                y={PADDING.top + innerH / 2}
-                textAnchor="middle"
-                fontSize="10"
-                fill="var(--color-text-muted, #94a3b8)"
-                fontFamily="inherit"
-              >
-                Milestone trend will appear once historical progress data is connected.
-              </text>
             </>
           ) : (
             /* Real line path */
@@ -143,9 +132,14 @@ export const MilestoneCompletionTrend: React.FC<MilestoneCompletionTrendProps> =
       </div>
 
       {isPending && (
-        <div className="flex items-center gap-1.5 justify-center">
-          <TrendingUp className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
-          <span className="text-[10px] text-[var(--color-text-muted)]">Awaiting programme data</span>
+        <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 text-center space-y-1">
+          <div className="flex items-center justify-center gap-2 text-slate-800 font-semibold text-xs">
+            <TrendingUp className="w-4 h-4 text-blue-600 shrink-0" />
+            <span>Historical programme trend data is not available yet.</span>
+          </div>
+          <p className="text-[11px] text-slate-600 max-w-md mx-auto leading-relaxed">
+            Current project progress is available above. Historical trend analysis will appear when programme milestone data becomes available.
+          </p>
         </div>
       )}
     </div>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   X,
   FolderKanban,
@@ -11,6 +12,7 @@ import {
   Activity,
   Edit3,
   UserCheck,
+  Trash2,
 } from 'lucide-react';
 import { Button, Badge, Alert, EmptyState } from '../../../components/common';
 import type { ManagedProject } from '../../../types/projectManagement.types';
@@ -19,13 +21,30 @@ export interface ProjectDetailsDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   project?: ManagedProject | null;
+  onEdit?: (project: ManagedProject) => void;
+  onDelete?: (project: ManagedProject) => void;
 }
+
+export const formatDisplayDate = (dateStr?: string | null): string => {
+  if (!dateStr || dateStr.trim() === '') return '—';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '—';
+    return d.toISOString().split('T')[0];
+  } catch {
+    return '—';
+  }
+};
 
 export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
   isOpen,
   onClose,
   project,
+  onEdit,
+  onDelete,
 }) => {
+  const navigate = useNavigate();
   const [statusNotice, setStatusNotice] = useState<{
     type: 'info' | 'error' | 'success';
     title: string;
@@ -57,6 +76,12 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
 
   const currentStatus = project?.status || 'Planned';
   const currentPriority = project?.priority || 'Medium';
+  const currentProgress = project?.progress !== undefined ? project.progress : 0;
+  const workItemsList = project?.workItems && Array.isArray(project.workItems) ? project.workItems : [];
+
+  const completedCount = workItemsList.filter(
+    (w: any) => w.status === 'DONE' || w.status === 'Completed'
+  ).length;
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -118,24 +143,9 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
     }
   };
 
-  const handleActionClick = (actionName: string) => {
-    if (actionName === 'edit') {
-      setStatusNotice({
-        type: 'info',
-        title: 'Edit Project Interface',
-        message: 'Edit project interface will be connected in the next frontend task.',
-      });
-      return;
-    }
-
-    if (actionName === 'assignments') {
-      setStatusNotice({
-        type: 'info',
-        title: 'Project Assignments',
-        message: 'Project assignment allocation will be available in the Project Assignments module.',
-      });
-      return;
-    }
+  const handleNavigateAssignments = () => {
+    onClose();
+    navigate('/admin/assignments');
   };
 
   if (!isOpen) return null;
@@ -174,14 +184,14 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
                 Project Overview & Governance
               </h2>
               <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                Review AI & Data programme project milestones, timeline, and team assignments.
+                Review AI & Data programme project specifications, timeline, and work items.
               </p>
             </div>
 
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-brand-navy)] hover:bg-[var(--color-surface-subtle)] transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)]/40"
+              className="p-2 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-brand-navy)] hover:bg-[var(--color-surface-subtle)] transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)]/40 cursor-pointer"
               aria-label="Close drawer"
             >
               <X className="w-5 h-5" />
@@ -338,7 +348,7 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
                     Start Date
                   </span>
                   <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {project?.startDate || '—'}
+                    {formatDisplayDate(project?.startDate)}
                   </p>
                 </div>
 
@@ -347,7 +357,7 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
                     Target Completion Date
                   </span>
                   <p className="font-semibold text-[var(--color-brand-navy)]">
-                    {project?.targetDate || '—'}
+                    {formatDisplayDate(project?.targetDate)}
                   </p>
                 </div>
 
@@ -381,29 +391,31 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
                   <span className="font-semibold text-[var(--color-brand-navy)]">
                     Overall Project Progress
                   </span>
-                  <span className="font-bold text-[var(--color-brand-blue)]">
-                    —%
+                  <span className="font-bold text-[var(--color-brand-blue)] font-mono text-sm">
+                    {currentProgress}%
                   </span>
                 </div>
 
                 <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-slate-300 rounded-full"
-                    style={{ width: '0%' }}
+                    className="h-full rounded-full bg-gradient-to-r from-blue-500 to-sky-500 transition-all duration-300"
+                    style={{ width: `${Math.min(Math.max(currentProgress, 0), 100)}%` }}
                   />
                 </div>
 
                 <div className="p-3 bg-white rounded-lg border border-slate-100 space-y-1.5 text-[11px] text-slate-600">
-                  <p className="font-semibold text-[var(--color-brand-navy)]">
-                    Calculated automatically from completed work items:
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold text-[var(--color-brand-navy)]">
+                      Work Item Completion:
+                    </p>
+                    <span className="font-medium text-slate-700">
+                      {completedCount} of {workItemsList.length} items completed
+                    </span>
+                  </div>
                   <p className="flex items-center gap-2 text-slate-500 font-medium">
                     <span>Completed Work Item Weights</span>
                     <span>→</span>
-                    <span className="text-[var(--color-brand-blue)] font-bold">Project Progress</span>
-                  </p>
-                  <p className="text-[10px] text-slate-400 italic">
-                    Work breakdown tasks will be calculated when assigned.
+                    <span className="text-[var(--color-brand-blue)] font-bold">Project Progress ({currentProgress}%)</span>
                   </p>
                 </div>
               </div>
@@ -411,40 +423,90 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
 
             {/* ── 5. PROJECT WORK BREAKDOWN ──────────────────────── */}
             <div className="space-y-3">
-              <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-border-subtle)]">
-                <Code2 className="w-4 h-4 text-[var(--color-brand-blue)]" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
-                  Work Breakdown
-                </h4>
+              <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border-subtle)]">
+                <div className="flex items-center gap-2">
+                  <Code2 className="w-4 h-4 text-[var(--color-brand-blue)]" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-navy)]">
+                    Work Breakdown ({workItemsList.length} {workItemsList.length === 1 ? 'Item' : 'Items'})
+                  </h4>
+                </div>
+                {workItemsList.length > 0 && (
+                  <Badge variant="blue" size="sm">
+                    Total Weight: {workItemsList.reduce((sum: number, item: any) => sum + (Number(item.percentage) || 0), 0)}%
+                  </Badge>
+                )}
               </div>
 
               {/* Table/List for Work Items Preview */}
-              <div className="border border-slate-100 rounded-xl overflow-hidden">
+              <div className="border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
                 <table className="w-full text-left border-collapse text-xs" aria-label="Project Work Items Table">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                      <th scope="col" className="py-2 px-3">Work Item</th>
-                      <th scope="col" className="py-2 px-3">Required Role</th>
-                      <th scope="col" className="py-2 px-3">Weight</th>
-                      <th scope="col" className="py-2 px-3">Status</th>
-                      <th scope="col" className="py-2 px-3 text-right">Contribution</th>
+                      <th scope="col" className="py-2.5 px-3">Work Item</th>
+                      <th scope="col" className="py-2.5 px-3">Required Role</th>
+                      <th scope="col" className="py-2.5 px-3">Weight</th>
+                      <th scope="col" className="py-2.5 px-3">Status</th>
+                      <th scope="col" className="py-2.5 px-3 text-right">Contribution</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    <tr>
-                      <td colSpan={5} className="p-6">
-                        <EmptyState
-                          icon={<Code2 className="w-6 h-6 text-[var(--color-brand-blue)]" />}
-                          title="No work items available"
-                          description="Project work items will appear here once allocated."
-                          secondaryAction={
-                            <Badge size="sm" variant="neutral">
-                              No work items registered yet
-                            </Badge>
-                          }
-                        />
-                      </td>
-                    </tr>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {workItemsList.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="p-6">
+                          <EmptyState
+                            icon={<Code2 className="w-6 h-6 text-[var(--color-brand-blue)]" />}
+                            title="No work items available"
+                            description="Project work items can be added by editing this project."
+                            secondaryAction={
+                              <Badge size="sm" variant="neutral">
+                                No work items registered yet
+                              </Badge>
+                            }
+                          />
+                        </td>
+                      </tr>
+                    ) : (
+                      workItemsList.map((item: any, idx: number) => {
+                        const isCompleted = item.status === 'DONE' || item.status === 'Completed';
+                        const isInProgress = item.status === 'IN_PROGRESS' || item.status === 'In Progress';
+                        const weight = Number(item.percentage) || 0;
+
+                        return (
+                          <tr key={item.workItemId || item.id || idx} className="hover:bg-blue-50/20 transition-colors">
+                            <td className="py-2.5 px-3">
+                              <p className="font-semibold text-slate-900">{item.title || item.task}</p>
+                              <span className="font-mono text-[10px] text-slate-400">
+                                {item.workItemId || `WI-${idx + 1}`}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-600">
+                              <Badge variant="neutral" size="sm">
+                                {item.role || item.requiredRole || 'Unassigned'}
+                              </Badge>
+                            </td>
+                            <td className="py-2.5 px-3 font-semibold text-slate-800">
+                              {weight}%
+                            </td>
+                            <td className="py-2.5 px-3">
+                              {isCompleted ? (
+                                <Badge variant="success" size="sm">Completed</Badge>
+                              ) : isInProgress ? (
+                                <Badge variant="warning" size="sm">In Progress</Badge>
+                              ) : (
+                                <Badge variant="neutral" size="sm">Not Started</Badge>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono font-bold">
+                              {isCompleted ? (
+                                <span className="text-emerald-600">+{weight}%</span>
+                              ) : (
+                                <span className="text-slate-400">0%</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -457,23 +519,42 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
               Close
             </Button>
 
-            <div className="flex items-center gap-2.5">
-              <Button
-                type="button"
-                variant="outline"
-                size="md"
-                leftIcon={<Edit3 className="w-4 h-4" />}
-                onClick={() => handleActionClick('edit')}
-              >
-                Edit Project
-              </Button>
+            <div className="flex items-center gap-2.5 flex-wrap justify-end">
+              {onDelete && project && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  className="hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600 text-rose-600 border-rose-200"
+                  leftIcon={<Trash2 className="w-4 h-4 text-rose-500" />}
+                  onClick={() => {
+                    onDelete(project);
+                  }}
+                >
+                  Delete
+                </Button>
+              )}
+
+              {onEdit && project && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  leftIcon={<Edit3 className="w-4 h-4 text-slate-600" />}
+                  onClick={() => {
+                    onEdit(project);
+                  }}
+                >
+                  Edit Project
+                </Button>
+              )}
 
               <Button
                 type="button"
                 variant="primary"
                 size="md"
                 leftIcon={<UserCheck className="w-4 h-4" />}
-                onClick={() => handleActionClick('assignments')}
+                onClick={handleNavigateAssignments}
               >
                 Manage Assignments
               </Button>

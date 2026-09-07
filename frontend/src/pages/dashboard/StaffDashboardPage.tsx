@@ -24,7 +24,7 @@ import {
   type NavSection,
   type UserDisplayInfo,
 } from '../../components/layout/DashboardLayout';
-import { Button, Badge } from '../../components/common';
+import { Button, Badge, EmptyState } from '../../components/common';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
@@ -82,8 +82,8 @@ export default function StaffDashboardPage() {
   const navigate = useNavigate();
 
   const userDisplay: UserDisplayInfo = {
-    name: user?.fullName || 'Dr. Kasun Perera',
-    email: user?.email || 'kasun@aidata.com',
+    name: user?.fullName || 'Permanent Staff Member',
+    email: user?.email || 'staff@aidata.com',
     roleLabel: 'Permanent Staff',
   };
 
@@ -92,48 +92,9 @@ export default function StaffDashboardPage() {
     navigate('/login');
   };
 
-  // Staff assigned projects & work items
-  const assignedProjects = [
-    {
-      id: 'PRJ-101',
-      title: 'Customer Churn AI Prediction Model',
-      role: 'Project Supervisor / Lead AI Engineer',
-      progress: 75,
-      status: 'ACTIVE',
-      workItemsTotal: 4,
-      workItemsCompleted: 3,
-      dueDate: 'Oct 30, 2026',
-    },
-    {
-      id: 'PRJ-103',
-      title: 'Automated Programme Progress Analytics Hub',
-      role: 'Technical Architect',
-      progress: 90,
-      status: 'ACTIVE',
-      workItemsTotal: 10,
-      workItemsCompleted: 9,
-      dueDate: 'Nov 15, 2026',
-    },
-  ];
-
-  const pendingWorkItems = [
-    {
-      id: 'WI-301',
-      project: 'Customer Churn AI Prediction Model',
-      task: 'Finalize Feature Store Pipeline & ML Model Weights',
-      weight: '25%',
-      priority: 'HIGH',
-      status: 'IN_PROGRESS',
-    },
-    {
-      id: 'WI-302',
-      project: 'Automated Programme Progress Analytics Hub',
-      task: 'Review Intern Code PRs & Validate RBAC Endpoints',
-      weight: '10%',
-      priority: 'MEDIUM',
-      status: 'IN_REVIEW',
-    },
-  ];
+  // Staff assigned projects & work items (safe production state — no fake records)
+  const assignedProjects: any[] = [];
+  const pendingWorkItems: any[] = [];
 
   return (
     <DashboardLayout
@@ -198,7 +159,7 @@ export default function StaffDashboardPage() {
                 Welcome back, {userDisplay.name}
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 max-w-xl leading-relaxed">
-                You have <strong className="text-blue-700 font-bold">{pendingWorkItems.length} active work items</strong> across 2 assigned programme projects. Completed percentages automatically contribute to overall programme progress.
+                You have <strong className="text-blue-700 font-bold">{pendingWorkItems.length} active work items</strong> across {assignedProjects.length} assigned programme projects. Completed work-item weights automatically contribute to overall project progress once assigned.
               </p>
             </div>
 
@@ -232,7 +193,7 @@ export default function StaffDashboardPage() {
             <div className="mt-4">
               <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Assigned Projects</p>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-3xl font-extrabold tracking-tight text-slate-900">2</span>
+                <span className="text-3xl font-extrabold tracking-tight text-slate-900">{assignedProjects.length}</span>
                 <span className="text-[11px] text-slate-500 font-medium">project tracks</span>
               </div>
             </div>
@@ -256,7 +217,7 @@ export default function StaffDashboardPage() {
             <div className="mt-4">
               <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Pending Work Items</p>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-3xl font-extrabold tracking-tight text-slate-900">2</span>
+                <span className="text-3xl font-extrabold tracking-tight text-slate-900">{pendingWorkItems.length}</span>
                 <span className="text-[11px] text-slate-500 font-medium">in queue</span>
               </div>
             </div>
@@ -280,7 +241,7 @@ export default function StaffDashboardPage() {
             <div className="mt-4">
               <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Completed Tasks</p>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-3xl font-extrabold tracking-tight text-slate-900">12</span>
+                <span className="text-3xl font-extrabold tracking-tight text-slate-900">0</span>
                 <span className="text-[11px] text-slate-500 font-medium">milestones</span>
               </div>
             </div>
@@ -304,13 +265,13 @@ export default function StaffDashboardPage() {
             <div className="mt-4">
               <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Average Progress</p>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-3xl font-extrabold tracking-tight text-slate-900">82.5%</span>
-                <span className="text-[11px] text-emerald-600 font-bold">On Track</span>
+                <span className="text-3xl font-extrabold tracking-tight text-slate-900">0%</span>
+                <span className="text-[11px] text-slate-500 font-medium">clamped 0–100</span>
               </div>
             </div>
             <div className="mt-3 pt-2 border-t border-slate-100">
               <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-blue-500 to-sky-500 rounded-full" style={{ width: '82.5%' }} />
+                <div className="h-full bg-slate-200 rounded-full" style={{ width: '0%' }} />
               </div>
             </div>
           </div>
@@ -350,42 +311,61 @@ export default function StaffDashboardPage() {
                 </Button>
               </div>
 
-              <div className="grid grid-cols-1 gap-3">
-                {assignedProjects.map((p) => (
-                  <div
-                    key={p.id}
-                    className="p-4 rounded-xl border border-slate-200/90 bg-white hover:border-blue-300 hover:shadow-2xs transition-all space-y-3"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-[10px] font-bold text-slate-500">{p.id}</span>
-                          <span className="text-slate-300">•</span>
-                          <span className="text-xs font-bold text-slate-900">{p.title}</span>
+              {assignedProjects.length > 0 ? (
+                <div className="grid grid-cols-1 gap-3">
+                  {assignedProjects.map((p) => (
+                    <div
+                      key={p.id}
+                      className="p-4 rounded-xl border border-slate-200/90 bg-white hover:border-blue-300 hover:shadow-2xs transition-all space-y-3"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-[10px] font-bold text-slate-500">{p.id}</span>
+                            <span className="text-slate-300">•</span>
+                            <span className="text-xs font-bold text-slate-900">{p.title}</span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 mt-0.5">
+                            My Role: <span className="font-medium text-blue-700">{p.role}</span> • Due: {p.dueDate}
+                          </p>
                         </div>
-                        <p className="text-[11px] text-slate-500 mt-0.5">
-                          My Role: <span className="font-medium text-blue-700">{p.role}</span> • Due: {p.dueDate}
-                        </p>
+
+                        <Badge size="sm" variant="success">Active</Badge>
                       </div>
 
-                      <Badge size="sm" variant="success">Active</Badge>
-                    </div>
-
-                    <div className="space-y-1.5 pt-1">
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-slate-500 font-medium">Work Items: {p.workItemsCompleted} of {p.workItemsTotal} Completed</span>
-                        <span className="font-bold text-blue-700 font-mono">{p.progress}%</span>
-                      </div>
-                      <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-sky-500 transition-all duration-500"
-                          style={{ width: `${p.progress}%` }}
-                        />
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-slate-500 font-medium">Work Items: {p.workItemsCompleted} of {p.workItemsTotal} Completed</span>
+                          <span className="font-bold text-blue-700 font-mono">{p.progress}%</span>
+                        </div>
+                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-blue-500 to-sky-500 transition-all duration-500"
+                            style={{ width: `${p.progress}%` }}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  icon={<FolderKanban className="w-6 h-6 text-blue-600" />}
+                  title="No Assigned Projects"
+                  description="You have not been assigned to any active project streams yet. Projects assigned by administration will appear here."
+                  action={
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate('/staff/projects')}
+                      rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                    >
+                      Explore Projects
+                    </Button>
+                  }
+                  minHeight="min-h-[160px]"
+                />
+              )}
             </div>
 
             {/* 2. Pending Work Items Queue */}
@@ -415,39 +395,58 @@ export default function StaffDashboardPage() {
                 </Button>
               </div>
 
-              <div className="space-y-3">
-                {pendingWorkItems.map((wi) => (
-                  <div
-                    key={wi.id}
-                    className="p-4 rounded-xl border border-slate-200/90 bg-white hover:border-emerald-300 hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
-                          {wi.id}
-                        </span>
-                        <span className="text-xs font-bold text-slate-900">{wi.task}</span>
+              {pendingWorkItems.length > 0 ? (
+                <div className="space-y-3">
+                  {pendingWorkItems.map((wi) => (
+                    <div
+                      key={wi.id}
+                      className="p-4 rounded-xl border border-slate-200/90 bg-white hover:border-emerald-300 hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+                            {wi.id}
+                          </span>
+                          <span className="text-xs font-bold text-slate-900">{wi.task}</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500">
+                          Project: <span className="font-medium text-slate-700">{wi.project}</span> • Weight: <span className="font-bold text-blue-700">{wi.weight}</span>
+                        </p>
                       </div>
-                      <p className="text-[11px] text-slate-500">
-                        Project: <span className="font-medium text-slate-700">{wi.project}</span> • Weight: <span className="font-bold text-blue-700">{wi.weight}</span>
-                      </p>
-                    </div>
 
-                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                      <Badge size="sm" variant={wi.priority === 'HIGH' ? 'warning' : 'neutral'}>
-                        {wi.priority}
-                      </Badge>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate('/staff/work-items')}
-                      >
-                        Update
-                      </Button>
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                        <Badge size="sm" variant={wi.priority === 'HIGH' ? 'warning' : 'neutral'}>
+                          {wi.priority}
+                        </Badge>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate('/staff/work-items')}
+                        >
+                          Update
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  icon={<CheckSquare className="w-6 h-6 text-emerald-600" />}
+                  title="No Pending Work Items"
+                  description="There are currently no active work items in your queue. When tasks are assigned to you, they will appear here."
+                  action={
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate('/staff/work-items')}
+                      rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                    >
+                      Go to My Work Items
+                    </Button>
+                  }
+                  minHeight="min-h-[160px]"
+                />
+              )}
             </div>
 
           </div>
@@ -474,15 +473,15 @@ export default function StaffDashboardPage() {
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-100">
                   <span className="text-slate-500">User ID:</span>
-                  <span className="font-mono font-semibold text-slate-800">{user?.userId || 'STF-101'}</span>
+                  <span className="font-mono font-semibold text-slate-800">{user?.userId || '—'}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-100">
                   <span className="text-slate-500">Employment Type:</span>
-                  <span className="font-semibold text-blue-700">{user?.employmentType || 'Permanent'}</span>
+                  <span className="font-semibold text-blue-700">{user?.employmentType || 'Permanent Staff'}</span>
                 </div>
                 <div className="flex justify-between py-1">
                   <span className="text-slate-500">Specialization:</span>
-                  <span className="font-semibold text-slate-800">{user?.designation || 'Senior AI Engineer'}</span>
+                  <span className="font-semibold text-slate-800">{user?.designation || 'Staff Contributor'}</span>
                 </div>
               </div>
             </div>

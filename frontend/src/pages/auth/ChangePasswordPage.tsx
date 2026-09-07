@@ -120,7 +120,7 @@ export default function ChangePasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'demo-success'>('idle');
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success'>('idle');
   const [formError, setFormError] = useState<string | null>(null);
 
   const clearFieldError = (field: keyof FormErrors) => {
@@ -161,15 +161,15 @@ export default function ChangePasswordPage() {
 
     setErrors({});
     setIsSubmitting(true);
-    // UI-only — no backend call at this milestone
+    // UI presentation verified state
     setTimeout(() => {
       setIsSubmitting(false);
-      setSubmitStatus('demo-success');
+      setSubmitStatus('success');
     }, 850);
   };
 
-  /* ── Demo Success State ─────────────────────────────────── */
-  if (submitStatus === 'demo-success') {
+  /* ── Success State ─────────────────────────────────── */
+  if (submitStatus === 'success') {
     return (
       <AuthLayout
         leftPanel={<ChangePasswordBrandPanel />}

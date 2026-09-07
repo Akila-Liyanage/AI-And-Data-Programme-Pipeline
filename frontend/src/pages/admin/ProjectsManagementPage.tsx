@@ -20,6 +20,8 @@ import {
   RotateCcw,
   Plus,
   Eye,
+  Edit3,
+  Trash2,
   RefreshCw,
   User,
   Users,
@@ -33,12 +35,15 @@ import {
   Card,
   Button,
   Badge,
+  Alert,
   EmptyState,
 } from '../../components/common';
 import { useAuth } from '../../hooks/useAuth';
 import { ADMIN_NAVIGATION } from '../../config/adminNavigation';
 import { AddProjectDrawer } from './components/AddProjectDrawer';
 import { ProjectDetailsDrawer } from './components/ProjectDetailsDrawer';
+import { EditProjectDrawer } from './components/EditProjectDrawer';
+import { DeleteProjectModal } from './components/DeleteProjectModal';
 import type { ManagedProject } from '../../types/projectManagement.types';
 
 const API_BASE_URL = 'http://localhost:5000/api';
@@ -51,10 +56,25 @@ export default function ProjectsManagementPage() {
   const [projects, setProjects] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Drawer States
+  // Drawer & Modal States
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<ManagedProject | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
+  // Edit Drawer State
+  const [selectedProjectForEdit, setSelectedProjectForEdit] = useState<ManagedProject | null>(null);
+  const [isEditProjectOpen, setIsEditProjectOpen] = useState(false);
+
+  // Delete Modal State
+  const [selectedProjectForDelete, setSelectedProjectForDelete] = useState<ManagedProject | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  // Status Notification Banner
+  const [alertNotice, setAlertNotice] = useState<{
+    type: 'info' | 'error' | 'success';
+    title: string;
+    message: string;
+  } | null>(null);
 
   // Filter & Search States
   const [searchQuery, setSearchQuery] = useState('');
@@ -117,28 +137,70 @@ export default function ProjectsManagementPage() {
   const completedCount = projects.filter((p) => (p?.status || '').toLowerCase() === 'completed').length;
   const plannedCount = projects.filter((p) => (p?.status || '').toLowerCase() === 'planned').length;
 
+  const mapProjectToManaged = (p: any): ManagedProject => ({
+    id: p._id || p.id,
+    projectId: p.projectId,
+    name: p.name,
+    category: p.category,
+    description: p.description || '',
+    technologyStack: p.technologyStack || '',
+    department: p.department,
+    projectLead: p.projectLead || 'Unassigned',
+    assignedMembersCount: p.assignedMembersCount || 0,
+    startDate: p.startDate,
+    targetDate: p.targetDate,
+    status: p.status,
+    priority: p.priority || 'Medium',
+    progress: p.progress || 0,
+    workItems: p.workItems || [],
+    milestoneInfo: p.workItems
+      ? `${p.workItems.filter((w: any) => w.status === 'DONE' || w.status === 'Completed').length} of ${p.workItems.length} work-items completed`
+      : undefined,
+    createdAt: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : undefined,
+    updatedAt: p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : undefined,
+  });
+
   const handleOpenDetails = (p: any) => {
-    const mapped: ManagedProject = {
-      id: p._id || p.id,
-      projectId: p.projectId,
-      name: p.name,
-      category: p.category,
-      description: p.description || '',
-      technologyStack: p.technologyStack || '',
-      department: p.department,
-      projectLead: p.projectLead || 'Unassigned',
-      assignedMembersCount: p.assignedMembersCount || 0,
-      startDate: p.startDate,
-      targetDate: p.targetDate,
-      status: p.status,
-      priority: p.priority || 'Medium',
-      progress: p.progress || 0,
-      milestoneInfo: p.workItems ? `${p.workItems.filter((w: any) => w.status === 'DONE').length} of ${p.workItems.length} work-items completed` : undefined,
-      createdAt: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : undefined,
-      updatedAt: p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : undefined,
-    };
-    setSelectedProject(mapped);
+    setSelectedProject(mapProjectToManaged(p));
     setIsDetailsOpen(true);
+  };
+
+  const handleOpenEdit = (p: any) => {
+    setSelectedProjectForEdit(mapProjectToManaged(p));
+    setIsEditProjectOpen(true);
+  };
+
+  const handleOpenDelete = (p: any) => {
+    setSelectedProjectForDelete(mapProjectToManaged(p));
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleProjectUpdated = (updatedProject: ManagedProject) => {
+    setProjects((prev) =>
+      prev.map((item) =>
+        item._id === updatedProject.id || item.projectId === updatedProject.projectId
+          ? { ...item, ...updatedProject }
+          : item
+      )
+    );
+    fetchProjects();
+    setAlertNotice({
+      type: 'success',
+      title: 'Project Updated',
+      message: `Project ${updatedProject.name} (${updatedProject.projectId}) has been updated successfully.`,
+    });
+  };
+
+  const handleProjectDeleted = (deletedIdentifier: string) => {
+    setProjects((prev) =>
+      prev.filter((item) => item._id !== deletedIdentifier && item.projectId !== deletedIdentifier)
+    );
+    fetchProjects();
+    setAlertNotice({
+      type: 'success',
+      title: 'Project Deleted',
+      message: `Project record has been permanently removed.`,
+    });
   };
 
   const userDisplay: UserDisplayInfo = {
@@ -215,6 +277,17 @@ export default function ProjectsManagementPage() {
       />
 
       <div className="space-y-6">
+        {/* Status Notification Alert */}
+        {alertNotice && (
+          <Alert
+            variant={alertNotice.type}
+            title={alertNotice.title}
+            onClose={() => setAlertNotice(null)}
+          >
+            {alertNotice.message}
+          </Alert>
+        )}
+
         {/* ── Summary KPI Cards Area ────────────────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {/* Card 1: Total Projects */}
@@ -540,14 +613,36 @@ export default function ProjectsManagementPage() {
 
                         {/* Actions */}
                         <td className="py-3.5 px-4 sm:px-6 text-right" onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            leftIcon={<Eye className="w-3.5 h-3.5 text-blue-600" />}
-                            onClick={() => handleOpenDetails(p)}
-                          >
-                            Details
-                          </Button>
+                          <div className="flex items-center justify-end gap-1.5 flex-nowrap">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              leftIcon={<Eye className="w-3.5 h-3.5 text-blue-600" />}
+                              onClick={() => handleOpenDetails(p)}
+                              title="View Project Details"
+                            >
+                              <span className="hidden xl:inline">Details</span>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              leftIcon={<Edit3 className="w-3.5 h-3.5 text-slate-600" />}
+                              onClick={() => handleOpenEdit(p)}
+                              title="Edit Project Specifications"
+                            >
+                              <span className="hidden xl:inline">Edit</span>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600 text-rose-600 border-rose-200"
+                              leftIcon={<Trash2 className="w-3.5 h-3.5 text-rose-500" />}
+                              onClick={() => handleOpenDelete(p)}
+                              title="Delete Project"
+                            >
+                              <span className="hidden xl:inline">Delete</span>
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -559,17 +654,41 @@ export default function ProjectsManagementPage() {
         </Card>
       </div>
 
-      {/* ── Slide-Over Drawers ─────────────────────────────────── */}
+      {/* ── Slide-Over Drawers & Confirmation Modals ─────────── */}
       <ProjectDetailsDrawer
         isOpen={isDetailsOpen}
         onClose={() => setIsDetailsOpen(false)}
         project={selectedProject}
+        onEdit={(proj) => {
+          setIsDetailsOpen(false);
+          setSelectedProjectForEdit(proj);
+          setIsEditProjectOpen(true);
+        }}
+        onDelete={(proj) => {
+          setIsDetailsOpen(false);
+          setSelectedProjectForDelete(proj);
+          setIsDeleteModalOpen(true);
+        }}
       />
 
       <AddProjectDrawer
         isOpen={isAddProjectOpen}
         onClose={() => setIsAddProjectOpen(false)}
         onProjectCreated={fetchProjects}
+      />
+
+      <EditProjectDrawer
+        isOpen={isEditProjectOpen}
+        onClose={() => setIsEditProjectOpen(false)}
+        project={selectedProjectForEdit}
+        onProjectUpdated={handleProjectUpdated}
+      />
+
+      <DeleteProjectModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        project={selectedProjectForDelete}
+        onProjectDeleted={handleProjectDeleted}
       />
     </DashboardLayout>
   );

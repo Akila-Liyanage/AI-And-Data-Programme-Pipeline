@@ -34,7 +34,7 @@ import {
   PageHeader,
   type UserDisplayInfo,
 } from '../../components/layout/DashboardLayout';
-import { Button, Badge, Alert } from '../../components/common';
+import { Button, Badge, Alert, EmptyState } from '../../components/common';
 import { useAuth } from '../../hooks/useAuth';
 import { ADMIN_NAVIGATION } from '../../config/adminNavigation';
 import { UserDetailsDrawer } from '../admin/components/UserDetailsDrawer';
@@ -145,40 +145,6 @@ export default function AdminDashboardPage() {
     await logout();
     navigate('/login');
   };
-
-  // Featured programme projects
-  const featuredProjects = [
-    {
-      id: 'PRJ-101',
-      title: 'Customer Churn AI Prediction Model',
-      category: 'AI & Data Science',
-      supervisor: 'Dr. Kasun Perera',
-      progress: 75,
-      status: 'ACTIVE',
-      workItems: '3 / 4 Done',
-      badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    },
-    {
-      id: 'PRJ-102',
-      title: 'Telecom Network Anomaly Detection Pipeline',
-      category: 'Machine Learning Ops',
-      supervisor: 'Akila Liyanage',
-      progress: 45,
-      status: 'IN_PROGRESS',
-      workItems: '2 / 5 Done',
-      badgeColor: 'bg-blue-50 text-blue-700 border-blue-200',
-    },
-    {
-      id: 'PRJ-103',
-      title: 'Automated Programme Progress Analytics Hub',
-      category: 'Full-Stack & BI',
-      supervisor: 'Dr. Kasun Perera',
-      progress: 90,
-      status: 'NEAR_COMPLETION',
-      workItems: '9 / 10 Done',
-      badgeColor: 'bg-purple-50 text-purple-700 border-purple-200',
-    },
-  ];
 
   return (
     <DashboardLayout
@@ -369,17 +335,17 @@ export default function AdminDashboardPage() {
               <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center shadow-2xs">
                 <FolderKanban className="w-5 h-5" />
               </div>
-              <Badge variant="blue" size="sm">Active Pipelines</Badge>
+              <Badge variant="blue" size="sm">Projects Portal</Badge>
             </div>
             <div className="mt-4">
               <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Monitored Projects</p>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-3xl font-extrabold tracking-tight text-slate-900">3</span>
-                <span className="text-[11px] text-slate-500 font-medium">in progress</span>
+                <span className="text-3xl font-extrabold tracking-tight text-slate-900">—</span>
+                <span className="text-[11px] text-slate-500 font-medium">pipeline tracks</span>
               </div>
             </div>
             <p className="text-[11px] text-slate-500 mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
-              <span>Work breakdown models</span>
+              <span>View projects directory</span>
               <ArrowRight className="w-3.5 h-3.5 text-blue-600" />
             </p>
           </div>
@@ -393,18 +359,18 @@ export default function AdminDashboardPage() {
               <div className="w-10 h-10 rounded-xl bg-sky-50 border border-sky-200 text-sky-700 flex items-center justify-center shadow-2xs">
                 <TrendingUp className="w-5 h-5" />
               </div>
-              <Badge variant="neutral" size="sm">Velocity</Badge>
+              <Badge variant="neutral" size="sm">Programme Velocity</Badge>
             </div>
             <div className="mt-4">
               <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Completed Progress</p>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-3xl font-extrabold tracking-tight text-slate-900">70%</span>
-                <span className="text-[11px] text-emerald-600 font-bold">+12% this week</span>
+                <span className="text-3xl font-extrabold tracking-tight text-slate-900">—%</span>
+                <span className="text-[11px] text-slate-500 font-medium">weighted milestone avg</span>
               </div>
             </div>
             <div className="mt-3 pt-2 border-t border-slate-100">
               <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-blue-500 to-sky-500 rounded-full" style={{ width: '70%' }} />
+                <div className="h-full bg-slate-200 rounded-full" style={{ width: '0%' }} />
               </div>
             </div>
           </div>
@@ -554,46 +520,23 @@ export default function AdminDashboardPage() {
                 </Button>
               </div>
 
-              {/* Project Cards */}
-              <div className="grid grid-cols-1 gap-3">
-                {featuredProjects.map((p) => (
-                  <div
-                    key={p.id}
-                    className="p-4 rounded-xl border border-slate-200/90 bg-white hover:border-blue-300 hover:shadow-2xs transition-all space-y-3"
+              {/* Project Directory Safe State */}
+              <EmptyState
+                icon={<FolderKanban className="w-6 h-6 text-blue-600" />}
+                title="Projects Monitored in Dedicated Management Portal"
+                description="Active programme projects, assignments, and work-item breakdown weights are managed in the dedicated Projects Management portal."
+                action={
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => navigate('/admin/projects')}
+                    rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-[10px] font-bold text-slate-500">{p.id}</span>
-                          <span className="text-slate-300">•</span>
-                          <span className="text-xs font-bold text-slate-900">{p.title}</span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 mt-0.5">
-                          Lead: <span className="font-medium text-slate-700">{p.supervisor}</span> • Track: <span className="text-slate-700">{p.category}</span>
-                        </p>
-                      </div>
-
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${p.badgeColor}`}>
-                        {p.status.replace('_', ' ')}
-                      </span>
-                    </div>
-
-                    {/* Progress bar */}
-                    <div className="space-y-1.5 pt-1">
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-slate-500 font-medium">Work Items: {p.workItems}</span>
-                        <span className="font-bold text-blue-700 font-mono">{p.progress}%</span>
-                      </div>
-                      <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-sky-500 transition-all duration-500"
-                          style={{ width: `${p.progress}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                    Open Projects Management
+                  </Button>
+                }
+                minHeight="min-h-[180px]"
+              />
             </div>
 
           </div>

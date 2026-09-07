@@ -26,7 +26,7 @@ import {
   type NavSection,
   type UserDisplayInfo,
 } from '../../components/layout/DashboardLayout';
-import { Button, Badge } from '../../components/common';
+import { Button, Badge, EmptyState } from '../../components/common';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
@@ -84,8 +84,8 @@ export default function InternDashboardPage() {
   const navigate = useNavigate();
 
   const userDisplay: UserDisplayInfo = {
-    name: user?.fullName || 'Ayuni Sliit',
-    email: user?.email || 'ayuni@aidata.com',
+    name: user?.fullName || 'Intern Trainee Member',
+    email: user?.email || 'intern@aidata.com',
     roleLabel: 'Intern Trainee',
   };
 
@@ -94,39 +94,9 @@ export default function InternDashboardPage() {
     navigate('/login');
   };
 
-  // Intern assigned projects & work items
-  const assignedProjects = [
-    {
-      id: 'PRJ-101',
-      title: 'Customer Churn AI Prediction Model',
-      role: 'AI/ML Intern Contributor',
-      supervisor: 'Dr. Kasun Perera',
-      progress: 75,
-      status: 'ACTIVE',
-      workItemsTotal: 4,
-      workItemsCompleted: 3,
-      dueDate: 'Oct 30, 2026',
-    },
-  ];
-
-  const pendingWorkItems = [
-    {
-      id: 'WI-401',
-      project: 'Customer Churn AI Prediction Model',
-      task: 'Train XGBoost Model & Generate Confusion Matrix Metrics',
-      weight: '20%',
-      priority: 'HIGH',
-      status: 'IN_PROGRESS',
-    },
-    {
-      id: 'WI-402',
-      project: 'Customer Churn AI Prediction Model',
-      task: 'Prepare Model Inference Documentation & API Specs',
-      weight: '10%',
-      priority: 'MEDIUM',
-      status: 'UPCOMING',
-    },
-  ];
+  // Intern assigned projects & work items (safe production state — no fake records)
+  const assignedProjects: any[] = [];
+  const pendingWorkItems: any[] = [];
 
   return (
     <DashboardLayout
@@ -191,7 +161,7 @@ export default function InternDashboardPage() {
                 Welcome back, {userDisplay.name}
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 max-w-xl leading-relaxed">
-                You are currently assigned to <strong className="text-blue-700 font-bold">1 active programme project</strong> with 2 upcoming work items. Track your task completion to advance your evaluation score.
+                You currently have <strong className="text-blue-700 font-bold">{pendingWorkItems.length} active work items</strong> across {assignedProjects.length} assigned programme projects. Completed work-item weights automatically contribute to overall project progress once assigned.
               </p>
             </div>
 
@@ -225,7 +195,7 @@ export default function InternDashboardPage() {
             <div className="mt-4">
               <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Assigned Project</p>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-3xl font-extrabold tracking-tight text-slate-900">1</span>
+                <span className="text-3xl font-extrabold tracking-tight text-slate-900">{assignedProjects.length}</span>
                 <span className="text-[11px] text-slate-500 font-medium">stream</span>
               </div>
             </div>
@@ -249,7 +219,7 @@ export default function InternDashboardPage() {
             <div className="mt-4">
               <p className="text-xs font-semibold text-[var(--color-text-secondary)]">My Work Items</p>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-3xl font-extrabold tracking-tight text-slate-900">2</span>
+                <span className="text-3xl font-extrabold tracking-tight text-slate-900">{pendingWorkItems.length}</span>
                 <span className="text-[11px] text-slate-500 font-medium">tasks</span>
               </div>
             </div>
@@ -273,7 +243,7 @@ export default function InternDashboardPage() {
             <div className="mt-4">
               <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Completed Milestones</p>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-3xl font-extrabold tracking-tight text-slate-900">6</span>
+                <span className="text-3xl font-extrabold tracking-tight text-slate-900">0</span>
                 <span className="text-[11px] text-slate-500 font-medium">items</span>
               </div>
             </div>
@@ -297,13 +267,13 @@ export default function InternDashboardPage() {
             <div className="mt-4">
               <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Overall Progress</p>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-3xl font-extrabold tracking-tight text-slate-900">75%</span>
-                <span className="text-[11px] text-emerald-600 font-bold">Good Standing</span>
+                <span className="text-3xl font-extrabold tracking-tight text-slate-900">0%</span>
+                <span className="text-[11px] text-slate-500 font-medium">clamped 0–100</span>
               </div>
             </div>
             <div className="mt-3 pt-2 border-t border-slate-100">
               <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-blue-500 to-sky-500 rounded-full" style={{ width: '75%' }} />
+                <div className="h-full bg-slate-200 rounded-full" style={{ width: '0%' }} />
               </div>
             </div>
           </div>
@@ -343,42 +313,61 @@ export default function InternDashboardPage() {
                 </Button>
               </div>
 
-              <div className="grid grid-cols-1 gap-3">
-                {assignedProjects.map((p) => (
-                  <div
-                    key={p.id}
-                    className="p-4 rounded-xl border border-slate-200/90 bg-white hover:border-blue-300 hover:shadow-2xs transition-all space-y-3"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-[10px] font-bold text-slate-500">{p.id}</span>
-                          <span className="text-slate-300">•</span>
-                          <span className="text-xs font-bold text-slate-900">{p.title}</span>
+              {assignedProjects.length > 0 ? (
+                <div className="grid grid-cols-1 gap-3">
+                  {assignedProjects.map((p) => (
+                    <div
+                      key={p.id}
+                      className="p-4 rounded-xl border border-slate-200/90 bg-white hover:border-blue-300 hover:shadow-2xs transition-all space-y-3"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-[10px] font-bold text-slate-500">{p.id}</span>
+                            <span className="text-slate-300">•</span>
+                            <span className="text-xs font-bold text-slate-900">{p.title}</span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 mt-0.5">
+                            Supervisor: <span className="font-medium text-blue-700">{p.supervisor}</span> • Due: {p.dueDate}
+                          </p>
                         </div>
-                        <p className="text-[11px] text-slate-500 mt-0.5">
-                          Supervisor: <span className="font-medium text-blue-700">{p.supervisor}</span> • Due: {p.dueDate}
-                        </p>
+
+                        <Badge size="sm" variant="success">Active</Badge>
                       </div>
 
-                      <Badge size="sm" variant="success">Active</Badge>
-                    </div>
-
-                    <div className="space-y-1.5 pt-1">
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-slate-500 font-medium">Work Items: {p.workItemsCompleted} of {p.workItemsTotal} Completed</span>
-                        <span className="font-bold text-blue-700 font-mono">{p.progress}%</span>
-                      </div>
-                      <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-sky-500 transition-all duration-500"
-                          style={{ width: `${p.progress}%` }}
-                        />
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-slate-500 font-medium">Work Items: {p.workItemsCompleted} of {p.workItemsTotal} Completed</span>
+                          <span className="font-bold text-blue-700 font-mono">{p.progress}%</span>
+                        </div>
+                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-blue-500 to-sky-500 transition-all duration-500"
+                            style={{ width: `${p.progress}%` }}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  icon={<FolderKanban className="w-6 h-6 text-blue-600" />}
+                  title="No Active Project Assigned"
+                  description="You have not been assigned to a project stream yet. Project assignments configured by leadership will appear here."
+                  action={
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate('/intern/projects')}
+                      rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                    >
+                      Explore Projects
+                    </Button>
+                  }
+                  minHeight="min-h-[160px]"
+                />
+              )}
             </div>
 
             {/* 2. Pending Work Items Queue */}
@@ -408,39 +397,58 @@ export default function InternDashboardPage() {
                 </Button>
               </div>
 
-              <div className="space-y-3">
-                {pendingWorkItems.map((wi) => (
-                  <div
-                    key={wi.id}
-                    className="p-4 rounded-xl border border-slate-200/90 bg-white hover:border-purple-300 hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
-                          {wi.id}
-                        </span>
-                        <span className="text-xs font-bold text-slate-900">{wi.task}</span>
+              {pendingWorkItems.length > 0 ? (
+                <div className="space-y-3">
+                  {pendingWorkItems.map((wi) => (
+                    <div
+                      key={wi.id}
+                      className="p-4 rounded-xl border border-slate-200/90 bg-white hover:border-purple-300 hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+                            {wi.id}
+                          </span>
+                          <span className="text-xs font-bold text-slate-900">{wi.task}</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500">
+                          Project: <span className="font-medium text-slate-700">{wi.project}</span> • Weight Contribution: <span className="font-bold text-blue-700">{wi.weight}</span>
+                        </p>
                       </div>
-                      <p className="text-[11px] text-slate-500">
-                        Project: <span className="font-medium text-slate-700">{wi.project}</span> • Weight Contribution: <span className="font-bold text-blue-700">{wi.weight}</span>
-                      </p>
-                    </div>
 
-                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                      <Badge size="sm" variant={wi.priority === 'HIGH' ? 'warning' : 'neutral'}>
-                        {wi.priority}
-                      </Badge>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate('/intern/work-items')}
-                      >
-                        Submit
-                      </Button>
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                        <Badge size="sm" variant={wi.priority === 'HIGH' ? 'warning' : 'neutral'}>
+                          {wi.priority}
+                        </Badge>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate('/intern/work-items')}
+                        >
+                          Submit
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  icon={<CheckSquare className="w-6 h-6 text-purple-600" />}
+                  title="No Active Work Items"
+                  description="No pending work items assigned to your queue. When tasks are delegated by supervisors, they will appear here."
+                  action={
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate('/intern/work-items')}
+                      rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                    >
+                      Go to My Work Items
+                    </Button>
+                  }
+                  minHeight="min-h-[160px]"
+                />
+              )}
             </div>
 
           </div>
@@ -467,15 +475,15 @@ export default function InternDashboardPage() {
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-100">
                   <span className="text-slate-500">Intern ID:</span>
-                  <span className="font-mono font-semibold text-slate-800">{user?.userId || 'INT-201'}</span>
+                  <span className="font-mono font-semibold text-slate-800">{user?.userId || '—'}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-100">
                   <span className="text-slate-500">Track:</span>
-                  <span className="font-semibold text-purple-700">{user?.internRole || 'AI/ML'}</span>
+                  <span className="font-semibold text-purple-700">{user?.internRole || user?.designation || 'Intern Trainee'}</span>
                 </div>
                 <div className="flex justify-between py-1">
                   <span className="text-slate-500">Supervisor:</span>
-                  <span className="font-semibold text-slate-800">Dr. Kasun Perera</span>
+                  <span className="font-semibold text-slate-800">{(user as any)?.supervisor || 'Assigned on project onboarding'}</span>
                 </div>
               </div>
             </div>
