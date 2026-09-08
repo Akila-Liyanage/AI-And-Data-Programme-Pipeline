@@ -63,7 +63,7 @@ const seedDatabase = async (): Promise<void> => {
         employmentType: 'Contract Based',
         designation: 'Data Engineer',
         department: 'AI & Data Team',
-        accountStatus: 'PENDING' as const,
+        accountStatus: 'ACTIVE' as const,
       },
       {
         userId: 'INT-201',
@@ -89,7 +89,7 @@ const seedDatabase = async (): Promise<void> => {
         internRole: 'Frontend Developer',
         designation: 'Frontend Developer Intern',
         department: 'AI & Data Team',
-        accountStatus: 'PENDING' as const,
+        accountStatus: 'ACTIVE' as const,
       },
       {
         userId: 'INT-203',
@@ -102,7 +102,7 @@ const seedDatabase = async (): Promise<void> => {
         internRole: 'QA',
         designation: 'QA Intern',
         department: 'AI & Data Team',
-        accountStatus: 'REJECTED' as const,
+        accountStatus: 'ACTIVE' as const,
       },
     ];
 
@@ -172,29 +172,29 @@ const seedDatabase = async (): Promise<void> => {
         targetDate: '2026-11-30',
         status: 'Active',
         priority: 'Critical',
-        progress: 45,
-        assignedMembersCount: 1,
+        progress: 0,
+        assignedMembersCount: 0, // Unassigned: available for self-enrollment
         workItems: [
           {
             workItemId: 'WI-201',
             title: 'Telemetry Kafka Stream Producer Configuration',
             role: 'Backend Developer',
             percentage: 25,
-            status: 'DONE',
+            status: 'TODO',
           },
           {
             workItemId: 'WI-202',
             title: 'Unsupervised Isolation Forest Baseline Model',
             role: 'Data Scientist',
-            percentage: 20,
-            status: 'DONE',
+            percentage: 25,
+            status: 'TODO',
           },
           {
             workItemId: 'WI-203',
             title: 'Real-time Anomaly Threshold Alerts Engine',
             role: 'Software Engineer',
-            percentage: 30,
-            status: 'IN_PROGRESS',
+            percentage: 25,
+            status: 'TODO',
           },
           {
             workItemId: 'WI-204',
@@ -250,13 +250,134 @@ const seedDatabase = async (): Promise<void> => {
           },
         ],
       },
+      {
+        projectId: 'PRJ-104',
+        name: 'Conversational AI Customer Support Assistant',
+        category: 'AI',
+        description: 'Context-aware multilingual support chatbot leveraging RAG pipeline, LLM agents, and knowledge base embeddings.',
+        technologyStack: 'Python, LangChain, FastAPI, ChromaDB, React',
+        department: 'AI & Data Systems',
+        projectLead: 'Dr. Kasun Perera',
+        startDate: '2026-08-01',
+        targetDate: '2026-12-15',
+        status: 'Active',
+        priority: 'High',
+        progress: 0,
+        assignedMembersCount: 0, // Unassigned: available for self-enrollment
+        workItems: [
+          {
+            workItemId: 'WI-401',
+            title: 'LLM RAG Pipeline & Vector Database Embeddings',
+            role: 'AI/ML',
+            percentage: 30,
+            status: 'TODO',
+          },
+          {
+            workItemId: 'WI-402',
+            title: 'FastAPI Backend Endpoints & Rate Limiting',
+            role: 'Backend Developer',
+            percentage: 25,
+            status: 'TODO',
+          },
+          {
+            workItemId: 'WI-403',
+            title: 'Interactive Support Chat Widget & Streaming UI',
+            role: 'Frontend Developer',
+            percentage: 25,
+            status: 'TODO',
+          },
+          {
+            workItemId: 'WI-404',
+            title: 'Automated Accuracy Evaluation & Hallucination QA',
+            role: 'QA',
+            percentage: 20,
+            status: 'TODO',
+          },
+        ],
+      },
+      {
+        projectId: 'PRJ-105',
+        name: 'Real-Time BI Analytics & Visualization Suite',
+        category: 'Data Science',
+        description: 'Enterprise data visualization suite for streaming telemetry, KPI aggregation, and automated scheduled reporting.',
+        technologyStack: 'Node.js, PostgreSQL, Apache ECharts, React, TypeScript',
+        department: 'Enterprise Network',
+        projectLead: 'Akila Liyanage',
+        startDate: '2026-08-15',
+        targetDate: '2026-12-30',
+        status: 'Active',
+        priority: 'Medium',
+        progress: 0,
+        assignedMembersCount: 0, // Unassigned: available for self-enrollment
+        workItems: [
+          {
+            workItemId: 'WI-501',
+            title: 'Data Extraction & Aggregation SQL Pipeline',
+            role: 'Data Engineer',
+            percentage: 35,
+            status: 'TODO',
+          },
+          {
+            workItemId: 'WI-502',
+            title: 'Interactive Dashboard Charts & Filter Controls',
+            role: 'Frontend Developer',
+            percentage: 35,
+            status: 'TODO',
+          },
+          {
+            workItemId: 'WI-503',
+            title: 'Data Accuracy & Stress Load Validation Test Suite',
+            role: 'QA',
+            percentage: 30,
+            status: 'TODO',
+          },
+        ],
+      },
+      {
+        projectId: 'PRJ-106',
+        name: 'Enterprise Design System & Accessible Component Kit',
+        category: 'Software Development',
+        description: 'Centralized UI design system adhering to WCAG 2.1 AA standards, dynamic theming, and shared React component library.',
+        technologyStack: 'React, TypeScript, TailwindCSS, Storybook, Jest',
+        department: 'Software Architecture',
+        projectLead: 'Akila Liyanage',
+        startDate: '2026-09-01',
+        targetDate: '2026-12-31',
+        status: 'Active',
+        priority: 'Medium',
+        progress: 0,
+        assignedMembersCount: 0, // Unassigned: available for self-enrollment
+        workItems: [
+          {
+            workItemId: 'WI-601',
+            title: 'Accessible Atomic Component Primitives & Tokens',
+            role: 'Frontend Developer',
+            percentage: 40,
+            status: 'TODO',
+          },
+          {
+            workItemId: 'WI-602',
+            title: 'Theme Provider & CSS Custom Properties Engine',
+            role: 'Frontend Developer',
+            percentage: 30,
+            status: 'TODO',
+          },
+          {
+            workItemId: 'WI-603',
+            title: 'Visual Regression & Accessibility Audit Tests',
+            role: 'QA',
+            percentage: 30,
+            status: 'TODO',
+          },
+        ],
+      },
     ];
 
     for (const projectData of demoProjects) {
       const project = new Project(projectData);
       await project.save();
     }
-    console.log('✅ Seeded 3 Programme Projects with Work Items');
+    console.log('✅ Seeded 6 Programme Projects (including 4 unassigned for self-enrollment)');
 
     // 3. Seed Assignments
     await Assignment.deleteMany({});
