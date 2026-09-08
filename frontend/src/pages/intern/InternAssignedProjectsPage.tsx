@@ -227,9 +227,13 @@ export default function InternAssignedProjectsPage() {
     });
   };
 
-  // Available projects not yet enrolled (BRD FR-15)
+  // Available unassigned projects with no members assigned yet (BRD FR-15)
   const availableProjectsToEnroll = useMemo(() => {
-    return allRawProjects.filter((p) => !assignedProjectIds.has(p.projectId));
+    return allRawProjects.filter(
+      (p) =>
+        !assignedProjectIds.has(p.projectId) &&
+        (!p.assignedMembersCount || p.assignedMembersCount === 0)
+    );
   }, [allRawProjects, assignedProjectIds]);
 
   // Handle Self Enrollment Action (BRD FR-15)
@@ -837,8 +841,8 @@ export default function InternAssignedProjectsPage() {
               <Card padding="lg">
                 <EmptyState
                   icon={<CheckCircle2 className="w-10 h-10 text-emerald-500" />}
-                  title="You're enrolled in all available projects!"
-                  description="You are actively participating in all active pipeline projects. View your assigned projects to monitor work items and record progress."
+                  title="No Unassigned Projects Available"
+                  description="All projects currently have team members assigned, or you are already enrolled in all applicable tracks."
                   action={
                     <Button
                       variant="primary"
