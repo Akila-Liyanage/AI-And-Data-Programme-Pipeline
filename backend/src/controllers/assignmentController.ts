@@ -112,8 +112,14 @@ export const createAssignment = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    const count = await Assignment.countDocuments();
-    const assignmentId = `ASG-${String(count + 101).padStart(3, '0')}`;
+    let count = await Assignment.countDocuments();
+    let assignmentId = `ASG-${String(count + 101).padStart(3, '0')}`;
+    let attempts = 0;
+    while ((await Assignment.exists({ assignmentId })) && attempts < 100) {
+      count++;
+      assignmentId = `ASG-${String(count + 101).padStart(3, '0')}`;
+      attempts++;
+    }
 
     const isStaff = user.role === 'PERMANENT_STAFF';
     const userCategory = isStaff ? 'Permanent Staff' : 'Intern';
@@ -279,8 +285,18 @@ export const selfEnrollProject = async (req: Request, res: Response): Promise<vo
       );
     });
 
-    const count = await Assignment.countDocuments();
-    const assignmentId = `ASG-${String(count + 101).padStart(3, '0')}`;
+    let count = await Assignment.countDocuments();
+    let assignmentId = `ASG-${String(count + 101).padStart(3, '0')}`;
+    let attempts = 0;
+    while ((await Assignment.exists({ assignmentId })) && attempts < 100) {
+      count++;
+      assignmentId = `ASG-${String(count + 101).padStart(3, '0')}`;
+      attempts++;
+    }
+
+    // Map to valid enum: ['Project Lead', 'Supervisor', 'Contributor', 'Intern Contributor', 'Reviewer']
+    const validAssignmentRole = isStaff ? 'Contributor' : 'Intern Contributor';
+    const professionalRole = userRole || (isStaff ? 'Staff Engineer' : 'Intern Contributor');
 
     const newAssignment = new Assignment({
       assignmentId,
@@ -289,12 +305,12 @@ export const selfEnrollProject = async (req: Request, res: Response): Promise<vo
       userId: user.userId,
       userName: user.fullName,
       userCategory: isStaff ? 'Permanent Staff' : 'Intern',
-      professionalRole: userRole || (isStaff ? 'Staff Engineer' : 'Intern Contributor'),
-      assignmentRole: userRole || (isStaff ? 'Project Contributor' : 'Intern Contributor'),
+      professionalRole,
+      assignmentRole: validAssignmentRole,
       startDate: new Date().toISOString().split('T')[0],
       expectedEndDate:
         project.targetDate || new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      allocationNotes: `Self-enrolled by ${user.fullName} (${userRole || userCategory}) with verified role match.`,
+      allocationNotes: `Self-enrolled by ${user.fullName} (${professionalRole}) with verified role match.`,
       status: 'Assigned',
     });
 
