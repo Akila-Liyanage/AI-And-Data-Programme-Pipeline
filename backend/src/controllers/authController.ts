@@ -538,3 +538,173 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     });
   }
 };
+
+/**
+ * @desc    Request Password Reset Code via Email
+ * @route   POST /api/auth/forgot-password
+ * @access  Public
+ */
+export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+
+    if (!email || !email.toString().trim()) {
+      res.status(400).json({
+        success: false,
+        message: 'Please provide a valid registered email address',
+      });
+      return;
+    }
+
+    const cleanEmail = email.toString().trim().toLowerCase();
+
+    // Find user by email
+    const user = await User.findOne({ email: cleanEmail });
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: `No account found with email "${cleanEmail}". Please verify your email or contact an Administrator.`,
+      });
+      return;
+    }
+
+    if (user.accountStatus === 'INACTIVE') {
+      res.status(403).json({
+        success: false,
+        message: 'Your account is deactivated. Please contact your Administrator.',
+      });
+      return;
+    }
+
+    if (user.accountStatus === 'PENDING') {
+      res.status(403).json({
+        success: false,
+        message: 'Your account registration is pending administrator approval. Password reset is not available yet.',
+      });
+      return;
+    }
+
+    // Generate 6-digit numeric reset code
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const resetExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes valid
+
+    user.resetPasswordOtp = resetCode;
+    user.resetPasswordExpiresAt = resetExpiry;
+    await user.save();
+
+    // Log simulated Email sending to console
+    console.log(`\n==================================================`);
+    console.log(`📧 [EMAIL DISPATCH SIMULATION]`);
+    console.log(`To: ${user.fullName} <${user.email}>`);
+    console.log(`Subject: Password Reset Verification Code - SLT-Mobitel AI & Data Programme`);
+    console.log(`Security Reset Code: [ ${resetCode} ]`);
+    console.log(`Expires At: ${resetExpiry.toLocaleTimeString()}`);
+    console.log(`==================================================\n`);
+
+    res.status(200).json({
+      success: true,
+      message: `Password reset code sent to ${user.email}`,
+      email: user.email,
+      debugCode: resetCode,
+      fullName: user.fullName,
+    });
+  } catch (error) {
+    console.error('Error sending password reset code:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send password reset code. Please try again.',
+    });
+  }
+};
+
+/**
+ * @desc    Verify Code and Reset Password
+ * @route   POST /api/auth/reset-password
+ * @access  Public
+ */
+export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, resetCode, newPassword } = req.body;
+
+    if (!email || !resetCode || !newPassword) {
+      res.status(400).json({
+        success: false,
+        message: 'Email, reset verification code, and new password are required',
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters long',
+      });
+      return;
+    }
+
+    const cleanEmail = email.toString().trim().toLowerCase();
+    const cleanCode = resetCode.toString().trim();
+
+    const user = await User.findOne({ email: cleanEmail });
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: 'No account found with this email address',
+      });
+      return;
+    }
+
+    if (user.accountStatus !== 'ACTIVE') {
+      res.status(403).json({
+        success: false,
+        message: `Account is ${user.accountStatus.toLowerCase()}. Password reset cannot be completed.`,
+      });
+      return;
+    }
+
+    // Verify reset code
+    if (!user.resetPasswordOtp || user.resetPasswordOtp !== cleanCode) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid verification code. Please check your email and try again.',
+      });
+      return;
+    }
+
+    // Check expiration
+    if (user.resetPasswordExpiresAt && new Date() > user.resetPasswordExpiresAt) {
+      res.status(400).json({
+        success: false,
+        message: 'Password reset code has expired. Please request a new code.',
+      });
+      return;
+    }
+
+    // Update password (Mongoose pre-save hook will hash it)
+    user.password = newPassword.trim();
+    user.resetPasswordOtp = undefined;
+    user.resetPasswordExpiresAt = undefined;
+    await user.save();
+
+    console.log(`🔐 [PASSWORD RESET SUCCESS] Updated password for ${user.fullName} (${user.email})`);
+
+    // Generate JWT token so user can be logged in directly
+    const token = generateToken(user._id.toString(), user.role, user.userId, user.phoneNumber);
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successfully! You are now logged in.',
+      token,
+      user: formatUserResponse(user),
+    });
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reset password. Please try again.',
+    });
+  }
+};
+

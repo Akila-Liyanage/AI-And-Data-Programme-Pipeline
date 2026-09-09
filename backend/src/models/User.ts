@@ -17,6 +17,8 @@ export interface IUser extends Document {
   accountStatus: AccountStatus;
   otpCode?: string;
   otpExpiresAt?: Date;
+  resetPasswordOtp?: string;
+  resetPasswordExpiresAt?: Date;
   employmentType?: string;
   internRole?: string;
   createdAt: Date;
@@ -103,6 +105,13 @@ const UserSchema = new Schema<IUser>(
       trim: true,
     },
     otpExpiresAt: {
+      type: Date,
+    },
+    resetPasswordOtp: {
+      type: String,
+      trim: true,
+    },
+    resetPasswordExpiresAt: {
       type: Date,
     },
   },

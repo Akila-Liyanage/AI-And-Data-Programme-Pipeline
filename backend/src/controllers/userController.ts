@@ -67,7 +67,7 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
 
     const [users, allUsersForStats] = await Promise.all([
       User.find(query)
-        .select('-password -otpCode -otpExpiresAt')
+        .select('-password -otpCode -otpExpiresAt -resetPasswordOtp -resetPasswordExpiresAt')
         .sort({ createdAt: -1 })
         .lean(),
       User.find({}, 'role').lean(),
