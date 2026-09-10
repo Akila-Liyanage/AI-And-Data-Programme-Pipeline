@@ -478,9 +478,6 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    // Auto-generate User ID and Username
-    const generatedUserId = await generateNextUserId(role as UserRole);
-
     let baseUsername = cleanEmail.split('@')[0] ||
       fullName.toLowerCase().replace(/[^a-z0-9]/g, '');
 
@@ -504,23 +501,40 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       }
     }
 
-    // Save with status PENDING
-    const newUser = new User({
-      userId: generatedUserId,
-      username: generatedUsername,
-      fullName: fullName.trim(),
-      phoneNumber: phoneNumber.trim(),
-      email: cleanEmail,
-      password: password.trim(),
-      role: role as UserRole,
-      designation: designation ? designation.trim() : (internRole ? internRole.trim() : (role === 'PERMANENT_STAFF' ? 'Staff Member' : 'Intern Trainee')),
-      employmentType: employmentType ? employmentType.trim() : undefined,
-      internRole: internRole ? internRole.trim() : undefined,
-      department: department ? department.trim() : 'AI & Data Team',
-      accountStatus: 'PENDING',
-    });
+    // Save with status PENDING (with retry loop in case of concurrent userId assignment)
+    let newUser: any;
+    let saveAttempts = 0;
+    const maxSaveAttempts = 3;
 
-    await newUser.save();
+    while (saveAttempts < maxSaveAttempts) {
+      try {
+        const generatedUserId = await generateNextUserId(role as UserRole);
+        newUser = new User({
+          userId: generatedUserId,
+          username: generatedUsername,
+          fullName: fullName.trim(),
+          phoneNumber: phoneNumber.trim(),
+          email: cleanEmail,
+          password: password.trim(),
+          role: role as UserRole,
+          designation: designation ? designation.trim() : (internRole ? internRole.trim() : (role === 'PERMANENT_STAFF' ? 'Staff Member' : 'Intern Trainee')),
+          employmentType: employmentType ? employmentType.trim() : undefined,
+          internRole: internRole ? internRole.trim() : undefined,
+          department: department ? department.trim() : 'AI & Data Team',
+          accountStatus: 'PENDING',
+        });
+
+        await newUser.save();
+        break;
+      } catch (saveErr: any) {
+        if (saveErr?.code === 11000 && (saveErr?.keyPattern?.userId || (saveErr?.message && saveErr.message.includes('userId')))) {
+          saveAttempts++;
+          if (saveAttempts >= maxSaveAttempts) throw saveErr;
+        } else {
+          throw saveErr;
+        }
+      }
+    }
 
     console.log(`👤 [USER SELF-REGISTERED] Added ${newUser.fullName} (${newUser.role}) - Phone: ${newUser.phoneNumber}, ID: ${newUser.userId} - status: PENDING`);
 
@@ -529,8 +543,16 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       message: 'Registration successful! Your account is pending administrator verification.',
       user: formatUserResponse(newUser),
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('Error during self-registration:', error);
+    if (error?.code === 11000) {
+      const field = Object.keys(error.keyPattern || error.keyValue || {})[0] || 'field';
+      res.status(409).json({
+        success: false,
+        message: `An account with this ${field} already exists.`,
+      });
+      return;
+    }
     const errorMsg = error instanceof Error ? error.message : 'Registration failed';
     res.status(500).json({
       success: false,
