@@ -19,13 +19,36 @@ export const generateNextUserId = async (role: UserRole): Promise<string> => {
     startNum = 100;
   }
 
-  // Count users with this prefix to get next number
-  const count = await User.countDocuments({
+  // Find all existing users with this prefix to find the highest number
+  const existingUsers = await User.find({
     userId: { $regex: new RegExp(`^${prefix}-`, 'i') },
-  });
+  })
+    .select('userId')
+    .lean();
 
-  const nextNum = startNum + count + 1;
-  return `${prefix}-${String(nextNum).padStart(3, '0')}`;
+  let maxNum = startNum;
+  for (const user of existingUsers) {
+    if (user.userId) {
+      const parts = user.userId.split('-');
+      if (parts.length >= 2) {
+        const num = parseInt(parts[1], 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+        }
+      }
+    }
+  }
+
+  let nextNum = maxNum + 1;
+  let candidateId = `${prefix}-${String(nextNum).padStart(3, '0')}`;
+
+  // Safety check: ensure the candidate ID doesn't already exist in the database
+  while (await User.exists({ userId: candidateId })) {
+    nextNum++;
+    candidateId = `${prefix}-${String(nextNum).padStart(3, '0')}`;
+  }
+
+  return candidateId;
 };
 
 /**
@@ -67,7 +90,7 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
 
     const [users, allUsersForStats] = await Promise.all([
       User.find(query)
-        .select('-password -otpCode -otpExpiresAt')
+        .select('-password -otpCode -otpExpiresAt -resetPasswordOtp -resetPasswordExpiresAt')
         .sort({ createdAt: -1 })
         .lean(),
       User.find({}, 'role').lean(),
@@ -153,25 +176,42 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
     }
 
     // Auto-generate User ID and Username
-    const generatedUserId = await generateNextUserId(role as UserRole);
     const generatedUsername =
       cleanEmail.split('@')[0] ||
       fullName.toLowerCase().replace(/[^a-z0-9]/g, '') + Math.floor(100 + Math.random() * 900);
 
-    const newUser = new User({
-      userId: generatedUserId,
-      username: generatedUsername,
-      fullName: fullName.trim(),
-      phoneNumber: phoneNumber.trim(),
-      email: cleanEmail,
-      password: password && password.trim().length >= 6 ? password.trim() : 'User@123',
-      role: role as UserRole,
-      designation: designation ? designation.trim() : (role === 'PERMANENT_STAFF' ? 'Staff Member' : role === 'INTERN' ? 'Intern Trainee' : 'Administrator'),
-      department: department ? department.trim() : 'AI & Data Team',
-      accountStatus: (accountStatus as AccountStatus) || 'ACTIVE',
-    });
+    let newUser: any;
+    let saveAttempts = 0;
+    const maxSaveAttempts = 3;
 
-    await newUser.save();
+    while (saveAttempts < maxSaveAttempts) {
+      try {
+        const generatedUserId = await generateNextUserId(role as UserRole);
+        newUser = new User({
+          userId: generatedUserId,
+          username: generatedUsername,
+          fullName: fullName.trim(),
+          phoneNumber: phoneNumber.trim(),
+          email: cleanEmail,
+          password: password && password.trim().length >= 6 ? password.trim() : 'User@123',
+          role: role as UserRole,
+          designation: designation ? designation.trim() : (role === 'PERMANENT_STAFF' ? 'Staff Member' : role === 'INTERN' ? 'Intern Trainee' : 'Administrator'),
+          department: department ? department.trim() : 'AI & Data Team',
+          accountStatus: (accountStatus as AccountStatus) || 'ACTIVE',
+        });
+
+        await newUser.save();
+        break;
+      } catch (saveErr: any) {
+        if (saveErr?.code === 11000 && (saveErr?.keyPattern?.userId || (saveErr?.message && saveErr.message.includes('userId')))) {
+          saveAttempts++;
+          if (saveAttempts >= maxSaveAttempts) throw saveErr;
+        } else {
+          throw saveErr;
+        }
+      }
+    }
+
     appCache.invalidate('users');
 
     console.log(`👤 [USER CREATED] Added ${newUser.fullName} (${newUser.role}) - Phone: ${newUser.phoneNumber}, ID: ${newUser.userId}`);
@@ -193,8 +233,16 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
         createdAt: newUser.createdAt,
       },
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('Error creating user:', error);
+    if (error?.code === 11000) {
+      const field = Object.keys(error.keyPattern || error.keyValue || {})[0] || 'credential';
+      res.status(409).json({
+        success: false,
+        message: `A user with this ${field} already exists.`,
+      });
+      return;
+    }
     const errorMsg = error instanceof Error ? error.message : 'Failed to create user';
     res.status(500).json({
       success: false,

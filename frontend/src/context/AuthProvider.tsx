@@ -6,6 +6,8 @@ import type {
   AuthUser,
   LoginCredentials,
   SendOtpResponse,
+  ForgotPasswordResponse,
+  ResetPasswordPayload,
   ChangePasswordPayload,
   ActivateAccountPayload,
   UpdateUserProfilePayload,
@@ -303,11 +305,91 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     []
   );
 
+  /**
+   * Request Password Reset Code via Email
+   */
+  const forgotPassword = useCallback(async (email: string): Promise<ForgotPasswordResponse> => {
+    setState((prev) => ({ ...prev, error: null }));
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to send password reset code.');
+      }
+
+      return data;
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'An error occurred while sending reset code';
+      setState((prev) => ({
+        ...prev,
+        error: errorMessage,
+      }));
+      throw new Error(errorMessage);
+    }
+  }, []);
+
+  /**
+   * Reset Password with Email Code
+   */
+  const resetPassword = useCallback(async (payload: ResetPasswordPayload): Promise<AuthUser> => {
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to reset password.');
+      }
+
+      // Save token and user details to localStorage
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      setState({
+        user: data.user,
+        role: data.user.role,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+        mustChangePassword: false,
+      });
+
+      return data.user;
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'An error occurred while resetting password';
+      setState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: errorMessage,
+      }));
+      throw new Error(errorMessage);
+    }
+  }, []);
+
   const value: AuthContextValue = useMemo(
     () => ({
       ...state,
       sendOtp,
       verifyOtp,
+      forgotPassword,
+      resetPassword,
       login,
       logout,
       refreshCurrentUser,
@@ -316,7 +398,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       activateAccount,
       clearError,
     }),
-    [state, sendOtp, verifyOtp, login, logout, refreshCurrentUser, updateUserProfile, changePassword, activateAccount, clearError]
+    [state, sendOtp, verifyOtp, forgotPassword, resetPassword, login, logout, refreshCurrentUser, updateUserProfile, changePassword, activateAccount, clearError]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
