@@ -237,7 +237,18 @@ export default function RegistrationPage() {
         },
       });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Registration request failed.';
+      let message = err instanceof Error ? err.message : 'Registration request failed.';
+      if (message.includes('E11000') || message.includes('duplicate key')) {
+        if (message.includes('userId')) {
+          message = 'A temporary ID conflict occurred. Please click Submit Registration again to get an assigned ID.';
+        } else if (message.includes('email')) {
+          message = 'An account with this email address already exists in the system.';
+        } else if (message.includes('phone') || message.includes('phoneNumber')) {
+          message = 'An account with this mobile phone number already exists in the system.';
+        } else {
+          message = 'An account with these details already exists. Please check your credentials or log in.';
+        }
+      }
       setApiError(message);
     } finally {
       setIsSubmitting(false);
@@ -267,9 +278,33 @@ export default function RegistrationPage() {
 
         {/* Global API Error Alert */}
         {apiError && (
-          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-semibold flex items-start gap-2.5 shadow-2xs animate-in fade-in duration-200">
-            <AlertCircle className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" />
-            <span>{apiError}</span>
+          <div
+            className={`p-4 rounded-2xl border text-xs font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs animate-in fade-in duration-200 ${
+              apiError.toLowerCase().includes('already registered')
+                ? 'bg-amber-50 border-amber-200 text-amber-900'
+                : 'bg-rose-50 border-rose-200 text-rose-700'
+            }`}
+          >
+            <div className="flex items-start gap-2.5">
+              <AlertCircle
+                className={`w-4 h-4 mt-0.5 shrink-0 ${
+                  apiError.toLowerCase().includes('already registered')
+                    ? 'text-amber-600'
+                    : 'text-rose-600'
+                }`}
+              />
+              <span className="leading-relaxed">{apiError}</span>
+            </div>
+            {apiError.toLowerCase().includes('already registered') && (
+              <button
+                type="button"
+                onClick={() => navigate('/login')}
+                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition-colors shadow-xs cursor-pointer self-start sm:self-center"
+              >
+                Sign In to Account
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         )}
 
