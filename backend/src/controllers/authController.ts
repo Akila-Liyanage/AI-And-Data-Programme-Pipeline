@@ -459,21 +459,51 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     const cleanPhone = normalizePhoneNumber(phoneNumber);
     const cleanEmail = email.toLowerCase().trim();
 
-    // Check if phone or email already exists
+    // Check if phone or email already exists (support SL phone formats)
+    const phoneRegex = new RegExp(cleanPhone.replace(/^0/, '(0|94|\\+94)?') + '$', 'i');
+
     const existingUser = await User.findOne({
       $or: [
         { phoneNumber: phoneNumber.trim() },
         { phoneNumber: cleanPhone },
+        { phoneNumber: { $regex: phoneRegex } },
         { email: cleanEmail },
       ],
     });
 
     if (existingUser) {
-      const conflictField =
-        existingUser.email.toLowerCase() === cleanEmail ? 'Email' : 'Phone Number';
+      const isEmailMatch = existingUser.email.toLowerCase() === cleanEmail;
+      const isPhoneMatch =
+        existingUser.phoneNumber === phoneNumber.trim() ||
+        normalizePhoneNumber(existingUser.phoneNumber) === cleanPhone ||
+        phoneRegex.test(existingUser.phoneNumber);
+
+      let matchedFields = '';
+      if (isEmailMatch && isPhoneMatch) {
+        matchedFields = 'this Email Address and Mobile Number';
+      } else if (isEmailMatch) {
+        matchedFields = 'this Email Address';
+      } else {
+        matchedFields = 'this Mobile Number';
+      }
+
+      let extraHelp = '';
+      if (existingUser.accountStatus === 'PENDING') {
+        extraHelp = `Your account registration (ID: ${existingUser.userId}) is currently pending administrator verification. Please wait for approval before logging in.`;
+      } else if (existingUser.accountStatus === 'ACTIVE') {
+        extraHelp = 'Please sign in with your registered credentials or mobile number.';
+      } else if (existingUser.accountStatus === 'REJECTED') {
+        extraHelp = 'Your previous registration was not approved. Please contact the administrator for assistance.';
+      } else if (existingUser.accountStatus === 'INACTIVE') {
+        extraHelp = 'Your account is currently deactivated. Please contact your administrator.';
+      } else {
+        extraHelp = 'Please sign in to access your workspace.';
+      }
+
       res.status(409).json({
         success: false,
-        message: `A user with this ${conflictField} already exists in the system.`,
+        alreadyRegistered: true,
+        message: `You are already registered with ${matchedFields}. ${extraHelp}`,
       });
       return;
     }
@@ -501,10 +531,10 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       }
     }
 
-    // Save with status PENDING (with retry loop in case of concurrent userId assignment)
+    // Save with status PENDING (with retry loop in case of concurrent userId or username collisions)
     let newUser: any;
     let saveAttempts = 0;
-    const maxSaveAttempts = 3;
+    const maxSaveAttempts = 5;
 
     while (saveAttempts < maxSaveAttempts) {
       try {
@@ -527,9 +557,25 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
         await newUser.save();
         break;
       } catch (saveErr: any) {
-        if (saveErr?.code === 11000 && (saveErr?.keyPattern?.userId || (saveErr?.message && saveErr.message.includes('userId')))) {
+        const isUserIdDup =
+          saveErr?.code === 11000 &&
+          (saveErr?.keyPattern?.userId ||
+            (saveErr?.message && saveErr.message.includes('userId')) ||
+            (saveErr?.keyValue && saveErr.keyValue.userId));
+
+        const isUsernameDup =
+          saveErr?.code === 11000 &&
+          (saveErr?.keyPattern?.username ||
+            (saveErr?.message && saveErr.message.includes('username')) ||
+            (saveErr?.keyValue && saveErr.keyValue.username));
+
+        if (isUserIdDup || isUsernameDup) {
           saveAttempts++;
+          if (isUsernameDup) {
+            generatedUsername = `${baseUsername}${Math.floor(1000 + Math.random() * 9000)}`;
+          }
           if (saveAttempts >= maxSaveAttempts) throw saveErr;
+          await new Promise((resolve) => setTimeout(resolve, 50 * saveAttempts));
         } else {
           throw saveErr;
         }
@@ -545,15 +591,51 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     });
   } catch (error: any) {
     console.error('Error during self-registration:', error);
-    if (error?.code === 11000) {
-      const field = Object.keys(error.keyPattern || error.keyValue || {})[0] || 'field';
+    const rawMsg = error instanceof Error ? error.message : String(error || '');
+
+    if (error?.code === 11000 || rawMsg.includes('E11000') || rawMsg.includes('duplicate key')) {
+      const field = Object.keys(error.keyPattern || error.keyValue || {})[0] || '';
+
+      if (field === 'userId' || rawMsg.includes('userId')) {
+        res.status(409).json({
+          success: false,
+          message: 'An ID collision occurred during registration. Please try submitting again.',
+        });
+        return;
+      }
+      if (field === 'phoneNumber' || rawMsg.includes('phoneNumber')) {
+        res.status(409).json({
+          success: false,
+          alreadyRegistered: true,
+          message: 'You are already registered with this Mobile Number. Please sign in to your account.',
+        });
+        return;
+      }
+      if (field === 'email' || rawMsg.includes('email')) {
+        res.status(409).json({
+          success: false,
+          alreadyRegistered: true,
+          message: 'You are already registered with this Email Address. Please sign in to your account.',
+        });
+        return;
+      }
+      if (field === 'username' || rawMsg.includes('username')) {
+        res.status(409).json({
+          success: false,
+          message: 'A username conflict occurred. Please try submitting again.',
+        });
+        return;
+      }
+
       res.status(409).json({
         success: false,
-        message: `An account with this ${field} already exists.`,
+        alreadyRegistered: true,
+        message: 'You are already registered with these credentials. Please sign in to your account.',
       });
       return;
     }
-    const errorMsg = error instanceof Error ? error.message : 'Registration failed';
+
+    const errorMsg = error instanceof Error ? error.message : 'Registration failed. Please try again.';
     res.status(500).json({
       success: false,
       message: errorMsg,
