@@ -81,11 +81,33 @@ export interface UpdateUserProfilePayload {
   password?: string;
 }
 
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  success: boolean;
+  message: string;
+  email: string;
+  debugCode?: string;
+  fullName?: string;
+}
+
+export interface ResetPasswordPayload {
+  email: string;
+  resetCode: string;
+  newPassword: string;
+}
+
 export interface AuthContextValue extends AuthState {
   /** Send OTP to phone number */
   sendOtp: (phoneNumber: string) => Promise<SendOtpResponse>;
   /** Verify OTP code and authenticate */
   verifyOtp: (phoneNumber: string, otp: string) => Promise<AuthUser>;
+  /** Request password reset code via email */
+  forgotPassword: (email: string) => Promise<ForgotPasswordResponse>;
+  /** Reset password using email verification code */
+  resetPassword: (payload: ResetPasswordPayload) => Promise<AuthUser>;
   /** Legacy/Fallback login */
   login: (credentials: LoginCredentials) => Promise<AuthUser>;
   /** Logout */
