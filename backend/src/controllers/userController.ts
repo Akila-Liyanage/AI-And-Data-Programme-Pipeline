@@ -42,8 +42,8 @@ export const generateNextUserId = async (role: UserRole): Promise<string> => {
   let nextNum = maxNum + 1;
   let candidateId = `${prefix}-${String(nextNum).padStart(3, '0')}`;
 
-  // Safety check: ensure the candidate ID doesn't already exist in the database
-  while (await User.exists({ userId: candidateId })) {
+  // Safety check: ensure candidate ID doesn't already exist in the database (case-insensitive)
+  while (await User.exists({ userId: { $regex: new RegExp(`^${candidateId}$`, 'i') } })) {
     nextNum++;
     candidateId = `${prefix}-${String(nextNum).padStart(3, '0')}`;
   }
@@ -176,13 +176,13 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
     }
 
     // Auto-generate User ID and Username
-    const generatedUsername =
+    let generatedUsername =
       cleanEmail.split('@')[0] ||
       fullName.toLowerCase().replace(/[^a-z0-9]/g, '') + Math.floor(100 + Math.random() * 900);
 
     let newUser: any;
     let saveAttempts = 0;
-    const maxSaveAttempts = 3;
+    const maxSaveAttempts = 5;
 
     while (saveAttempts < maxSaveAttempts) {
       try {
@@ -203,9 +203,25 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
         await newUser.save();
         break;
       } catch (saveErr: any) {
-        if (saveErr?.code === 11000 && (saveErr?.keyPattern?.userId || (saveErr?.message && saveErr.message.includes('userId')))) {
+        const isUserIdDup =
+          saveErr?.code === 11000 &&
+          (saveErr?.keyPattern?.userId ||
+            (saveErr?.message && saveErr.message.includes('userId')) ||
+            (saveErr?.keyValue && saveErr.keyValue.userId));
+
+        const isUsernameDup =
+          saveErr?.code === 11000 &&
+          (saveErr?.keyPattern?.username ||
+            (saveErr?.message && saveErr.message.includes('username')) ||
+            (saveErr?.keyValue && saveErr.keyValue.username));
+
+        if (isUserIdDup || isUsernameDup) {
           saveAttempts++;
+          if (isUsernameDup) {
+            generatedUsername = `${cleanEmail.split('@')[0] || 'user'}${Math.floor(1000 + Math.random() * 9000)}`;
+          }
           if (saveAttempts >= maxSaveAttempts) throw saveErr;
+          await new Promise((resolve) => setTimeout(resolve, 50 * saveAttempts));
         } else {
           throw saveErr;
         }
@@ -235,11 +251,34 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
     });
   } catch (error: any) {
     console.error('Error creating user:', error);
-    if (error?.code === 11000) {
-      const field = Object.keys(error.keyPattern || error.keyValue || {})[0] || 'credential';
+    const rawMsg = error instanceof Error ? error.message : String(error || '');
+
+    if (error?.code === 11000 || rawMsg.includes('E11000') || rawMsg.includes('duplicate key')) {
+      const field = Object.keys(error.keyPattern || error.keyValue || {})[0] || '';
+      if (field === 'userId' || rawMsg.includes('userId')) {
+        res.status(409).json({
+          success: false,
+          message: 'An ID collision occurred. Please try creating the user again.',
+        });
+        return;
+      }
+      if (field === 'phoneNumber' || rawMsg.includes('phoneNumber')) {
+        res.status(409).json({
+          success: false,
+          message: 'A user with this Phone Number already exists.',
+        });
+        return;
+      }
+      if (field === 'email' || rawMsg.includes('email')) {
+        res.status(409).json({
+          success: false,
+          message: 'A user with this Email Address already exists.',
+        });
+        return;
+      }
       res.status(409).json({
         success: false,
-        message: `A user with this ${field} already exists.`,
+        message: 'A user with these credentials already exists in the system.',
       });
       return;
     }
