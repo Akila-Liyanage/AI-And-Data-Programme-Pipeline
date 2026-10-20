@@ -76,7 +76,7 @@ export default function UserManagementPage() {
         category: u.role || '—',
         professionalRole: u.role === 'PERMANENT_STAFF' ? (u.designation || '—') : (u.internRole || u.designation || '—'),
         department: u.role === 'PERMANENT_STAFF' ? (u.employmentType || 'Permanent') : (u.department || '—'),
-        accountStatus: u.accountStatus || '—',
+        accountStatus: (u.accountStatus || 'PENDING').toUpperCase(),
         createdAt: u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—',
         updatedAt: u.updatedAt ? new Date(u.updatedAt).toLocaleDateString() : '—',
       }));
@@ -111,11 +111,17 @@ export default function UserManagementPage() {
           </Badge>
         );
       case 'REJECTED':
+        return (
+          <Badge variant="error" size="sm" className="inline-flex items-center gap-1">
+            <Ban className="w-3.5 h-3.5 text-rose-500" />
+            Rejected
+          </Badge>
+        );
       case 'INACTIVE':
         return (
           <Badge variant="neutral" size="sm" className="inline-flex items-center gap-1">
             <Ban className="w-3.5 h-3.5 text-slate-500" />
-            Rejected
+            Inactive
           </Badge>
         );
       case 'PENDING_VERIFICATION':
@@ -131,9 +137,9 @@ export default function UserManagementPage() {
   };
 
   const totalCount = users.length;
-  const pendingCount = users.filter((u) => u.accountStatus === 'PENDING').length;
-  const verifiedCount = users.filter((u) => u.accountStatus === 'ACTIVE').length;
-  const rejectedCount = users.filter((u) => u.accountStatus === 'REJECTED').length;
+  const pendingCount = users.filter((u) => u.accountStatus === 'PENDING' || u.accountStatus === 'PENDING_VERIFICATION').length;
+  const verifiedCount = users.filter((u) => u.accountStatus === 'ACTIVE' || u.accountStatus === 'VERIFIED').length;
+  const rejectedCount = users.filter((u) => u.accountStatus === 'REJECTED' || u.accountStatus === 'INACTIVE').length;
 
   const filteredUsers = users.filter((u) => {
     if (searchQuery.trim()) {
@@ -147,11 +153,11 @@ export default function UserManagementPage() {
     }
 
     if (activeTab === 'PENDING_VERIFICATION') {
-      if (u.accountStatus !== 'PENDING') return false;
+      if (u.accountStatus !== 'PENDING' && u.accountStatus !== 'PENDING_VERIFICATION') return false;
     } else if (activeTab === 'VERIFIED') {
-      if (u.accountStatus !== 'ACTIVE') return false;
+      if (u.accountStatus !== 'ACTIVE' && u.accountStatus !== 'VERIFIED') return false;
     } else if (activeTab === 'REJECTED') {
-      if (u.accountStatus !== 'REJECTED') return false;
+      if (u.accountStatus !== 'REJECTED' && u.accountStatus !== 'INACTIVE') return false;
     }
 
     if (categoryFilter !== 'ALL') {
@@ -159,11 +165,11 @@ export default function UserManagementPage() {
     }
 
     if (statusFilter !== 'ALL') {
-      if (statusFilter === 'PENDING_VERIFICATION' && u.accountStatus !== 'PENDING') return false;
-      if (statusFilter === 'VERIFIED' && u.accountStatus !== 'ACTIVE') return false;
+      if (statusFilter === 'PENDING_VERIFICATION' && u.accountStatus !== 'PENDING' && u.accountStatus !== 'PENDING_VERIFICATION') return false;
+      if (statusFilter === 'VERIFIED' && u.accountStatus !== 'ACTIVE' && u.accountStatus !== 'VERIFIED') return false;
       if (statusFilter === 'ACTIVE' && u.accountStatus !== 'ACTIVE') return false;
       if (statusFilter === 'INACTIVE' && u.accountStatus !== 'INACTIVE') return false;
-      if (statusFilter === 'REJECTED' && u.accountStatus !== 'REJECTED') return false;
+      if (statusFilter === 'REJECTED' && u.accountStatus !== 'REJECTED' && u.accountStatus !== 'INACTIVE') return false;
     }
 
     if (employmentFilter !== 'ALL') {
@@ -232,7 +238,18 @@ export default function UserManagementPage() {
         {/* ── Summary Cards Area ──────────────────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {/* Card 1: Total Users */}
-          <Card padding="md" className="space-y-3 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md cursor-pointer hover:border-blue-300">
+          <Card
+            padding="md"
+            onClick={() => {
+              setActiveTab('ALL');
+              setStatusFilter('ALL');
+            }}
+            className={`space-y-3 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md cursor-pointer ${
+              activeTab === 'ALL'
+                ? 'ring-2 ring-blue-500/30 border-blue-400 bg-blue-50/20'
+                : 'hover:border-blue-300'
+            }`}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-200 text-[var(--color-brand-blue)] flex items-center justify-center shrink-0 shadow-2xs">
@@ -256,7 +273,18 @@ export default function UserManagementPage() {
           </Card>
 
           {/* Card 2: Pending Verification */}
-          <Card padding="md" className="space-y-3 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md cursor-pointer border-amber-200 bg-amber-50/20">
+          <Card
+            padding="md"
+            onClick={() => {
+              setActiveTab('PENDING_VERIFICATION');
+              setStatusFilter('ALL');
+            }}
+            className={`space-y-3 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md cursor-pointer ${
+              activeTab === 'PENDING_VERIFICATION'
+                ? 'ring-2 ring-amber-500/40 border-amber-400 bg-amber-50/40'
+                : 'border-amber-200 bg-amber-50/20 hover:border-amber-300'
+            }`}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center shrink-0 shadow-2xs">
@@ -280,7 +308,18 @@ export default function UserManagementPage() {
           </Card>
 
           {/* Card 3: Verified Users */}
-          <Card padding="md" className="space-y-3 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md cursor-pointer hover:border-blue-300">
+          <Card
+            padding="md"
+            onClick={() => {
+              setActiveTab('VERIFIED');
+              setStatusFilter('ALL');
+            }}
+            className={`space-y-3 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md cursor-pointer ${
+              activeTab === 'VERIFIED'
+                ? 'ring-2 ring-emerald-500/30 border-emerald-400 bg-emerald-50/20'
+                : 'hover:border-emerald-300'
+            }`}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 text-[var(--color-brand-green)] flex items-center justify-center shrink-0 shadow-2xs">
@@ -304,7 +343,18 @@ export default function UserManagementPage() {
           </Card>
 
           {/* Card 4: Rejected Registrations */}
-          <Card padding="md" className="space-y-3 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md cursor-pointer hover:border-rose-300">
+          <Card
+            padding="md"
+            onClick={() => {
+              setActiveTab('REJECTED');
+              setStatusFilter('ALL');
+            }}
+            className={`space-y-3 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md cursor-pointer ${
+              activeTab === 'REJECTED'
+                ? 'ring-2 ring-rose-500/40 border-rose-400 bg-rose-50/30'
+                : 'border-rose-100 hover:border-rose-300'
+            }`}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center shrink-0 shadow-2xs">
@@ -314,7 +364,7 @@ export default function UserManagementPage() {
                   Rejected Registrations
                 </span>
               </div>
-              <Badge size="sm" variant="neutral">
+              <Badge size="sm" variant="error">
                 Declined
               </Badge>
             </div>
@@ -330,27 +380,51 @@ export default function UserManagementPage() {
 
         {/* ── Verification Tabs ──────────────────────────────── */}
         <div className="border-b border-[var(--color-border-subtle)] bg-white px-4 py-1.5 rounded-xl shadow-2xs">
-          <nav className="flex flex-wrap gap-4" aria-label="Registration status views">
+          <nav className="flex flex-wrap gap-2 sm:gap-4" aria-label="Registration status views">
             {[
-              { id: 'ALL', label: 'All Users' },
-              { id: 'PENDING_VERIFICATION', label: 'Pending Verification' },
-              { id: 'VERIFIED', label: 'Verified Users' },
-              { id: 'REJECTED', label: 'Rejected Registrations' },
+              { id: 'ALL', label: 'All Users', count: totalCount },
+              { id: 'PENDING_VERIFICATION', label: 'Pending Verification', count: pendingCount },
+              { id: 'VERIFIED', label: 'Verified Users', count: verifiedCount },
+              { id: 'REJECTED', label: 'Rejected Registrations', count: rejectedCount },
             ].map((tab) => {
               const active = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
                   type="button"
-                  onClick={() => setActiveTab(tab.id as 'ALL' | 'PENDING_VERIFICATION' | 'VERIFIED' | 'REJECTED')}
+                  onClick={() => {
+                    setActiveTab(tab.id as 'ALL' | 'PENDING_VERIFICATION' | 'VERIFIED' | 'REJECTED');
+                    setStatusFilter('ALL');
+                  }}
                   aria-current={active ? 'page' : undefined}
-                  className={`py-2 px-1 text-xs font-bold border-b-2 transition-all focus:outline-none cursor-pointer ${
+                  className={`py-2 px-2 text-xs font-bold border-b-2 transition-all focus:outline-none cursor-pointer flex items-center gap-2 ${
                     active
-                      ? 'border-[var(--color-brand-blue)] text-[var(--color-brand-blue)]'
+                      ? tab.id === 'REJECTED'
+                        ? 'border-rose-500 text-rose-600'
+                        : tab.id === 'PENDING_VERIFICATION'
+                        ? 'border-amber-500 text-amber-600'
+                        : tab.id === 'VERIFIED'
+                        ? 'border-emerald-500 text-emerald-600'
+                        : 'border-[var(--color-brand-blue)] text-[var(--color-brand-blue)]'
                       : 'border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-brand-navy)] hover:border-slate-300'
                   }`}
                 >
-                  {tab.label}
+                  <span>{tab.label}</span>
+                  <span
+                    className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold transition-colors ${
+                      active
+                        ? tab.id === 'REJECTED'
+                          ? 'bg-rose-100 text-rose-700'
+                          : tab.id === 'PENDING_VERIFICATION'
+                          ? 'bg-amber-100 text-amber-800'
+                          : tab.id === 'VERIFIED'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-blue-100 text-blue-800'
+                        : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    {isLoading ? '...' : tab.count}
+                  </span>
                 </button>
               );
             })}

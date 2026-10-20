@@ -6,6 +6,10 @@ export interface IWorkItem {
   role: string;
   percentage: number;
   status: 'TODO' | 'IN_PROGRESS' | 'DONE';
+  assignedUserId?: string;
+  assignedUserName?: string;
+  handoverNotes?: string;
+  completedAt?: string;
 }
 
 export interface IProject extends Document {
@@ -38,6 +42,10 @@ const WorkItemSchema = new Schema<IWorkItem>(
       enum: ['TODO', 'IN_PROGRESS', 'DONE'],
       default: 'TODO',
     },
+    assignedUserId: { type: String, trim: true, default: '' },
+    assignedUserName: { type: String, trim: true, default: '' },
+    handoverNotes: { type: String, trim: true, default: '' },
+    completedAt: { type: String, default: '' },
   },
   { _id: false }
 );

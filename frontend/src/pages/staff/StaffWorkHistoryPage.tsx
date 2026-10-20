@@ -212,11 +212,17 @@ export default function StaffWorkHistoryPage() {
     historyRecords.map((r) => r.projectId).filter(Boolean)
   ).size;
 
-  const totalCompletedContribution =
+  const rawCompletedContribution =
     historyRecords.length > 0
       ? historyRecords
           .filter((r) => r.finalStatus.toLowerCase() === 'completed')
           .reduce((acc, r) => acc + (r.percentageWeight ?? 0), 0)
+      : 0;
+
+  // Normalized to a maximum of 100% based on the number of projects and completed work
+  const totalCompletedContribution =
+    projectsContributed > 0
+      ? Math.min(100, Math.round(rawCompletedContribution / projectsContributed))
       : 0;
 
   // Filtered History Records
@@ -424,7 +430,9 @@ export default function StaffWorkHistoryPage() {
               {totalCompletedContribution}%
             </p>
             <p className="text-xs text-[var(--color-text-secondary)]">
-              {totalCompletedContribution > 0 ? 'Cumulative percentage weight' : '0%'}
+              {projectsContributed > 0
+                ? `Avg. across ${projectsContributed} project${projectsContributed > 1 ? 's' : ''}`
+                : '0% completed'}
             </p>
           </Card>
         </div>

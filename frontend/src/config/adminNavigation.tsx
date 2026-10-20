@@ -6,6 +6,7 @@ import {
   TrendingUp,
   History,
   User,
+  ArrowRightLeft,
 } from 'lucide-react';
 import type { NavSection } from '../components/layout/DashboardLayout';
 
@@ -36,6 +37,14 @@ export const ADMIN_NAVIGATION: NavSection[] = [
         label: 'Project Assignments',
         path: '/admin/assignments',
         icon: <UserCheck className="w-4 h-4" />,
+      },
+      {
+        id: 'admin-offboarding',
+        label: 'Offboarding & Handover',
+        path: '/admin/offboarding',
+        icon: <ArrowRightLeft className="w-4 h-4" />,
+        badge: 'New',
+        badgeVariant: 'blue',
       },
     ],
   },
