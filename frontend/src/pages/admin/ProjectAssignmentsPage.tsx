@@ -45,7 +45,7 @@ import { EditAssignmentDrawer } from './components/EditAssignmentDrawer';
 import { RemoveAssignmentModal } from './components/RemoveAssignmentModal';
 import type { ManagedAssignment } from '../../types/assignmentManagement.types';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+import { API_BASE_URL } from '../../config/api';
 
 export default function ProjectAssignmentsPage() {
   const { user, logout } = useAuth();

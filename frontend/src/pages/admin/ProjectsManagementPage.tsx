@@ -46,7 +46,7 @@ import { EditProjectDrawer } from './components/EditProjectDrawer';
 import { DeleteProjectModal } from './components/DeleteProjectModal';
 import type { ManagedProject } from '../../types/projectManagement.types';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+import { API_BASE_URL } from '../../config/api';
 
 export default function ProjectsManagementPage() {
   const { user, logout } = useAuth();

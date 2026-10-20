@@ -12,6 +12,7 @@ import userRoutes from './routes/userRoutes';
 import projectRoutes from './routes/projectRoutes';
 import assignmentRoutes from './routes/assignmentRoutes';
 import handoverRoutes from './routes/handoverRoutes';
+import { handleSignupRoute } from './controllers/authController';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -21,6 +22,7 @@ app.use(cors());
 app.use(express.json());
 
 // API Routes
+app.post('/signup', handleSignupRoute);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);

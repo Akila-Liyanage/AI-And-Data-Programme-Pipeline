@@ -33,10 +33,52 @@ export const protect = async (
 
       // Verify token
       const secret = process.env.JWT_SECRET || 'super_secret_ai_data_pipeline_jwt_key_2026';
-      const decoded = jwt.verify(token, secret) as JwtPayload;
+      let user: IUser | null = null;
 
-      // Find user from database and attach to req.user (exclude password)
-      const user = await User.findById(decoded.id).select('-password');
+      try {
+        // First try local JWT verification
+        const decoded = jwt.verify(token, secret) as JwtPayload;
+        if (decoded && decoded.id) {
+          user = await User.findById(decoded.id).select('-password');
+        }
+      } catch (localJwtError) {
+        // If local verification fails, check if this is a Keycloak OpenID token
+        const keycloakDecoded = jwt.decode(token) as any;
+        if (keycloakDecoded && (keycloakDecoded.iss || keycloakDecoded.sub)) {
+          // Check token expiration
+          if (keycloakDecoded.exp && keycloakDecoded.exp * 1000 < Date.now()) {
+            res.status(401).json({ message: 'Keycloak session expired. Please sign in again.' });
+            return;
+          }
+
+          const email = (keycloakDecoded.email || '').toLowerCase().trim();
+          const username = (keycloakDecoded.preferred_username || '').toLowerCase().trim();
+
+          user = await User.findOne({
+            $or: [
+              ...(email ? [{ email }] : []),
+              ...(username ? [{ username }, { email: username }] : []),
+            ],
+          }).select('-password');
+
+          // If user exists in Keycloak but not yet in MongoDB, create baseline user
+          if (!user && (email || username)) {
+            const userEmail = email || `${username}@aidata.com`;
+            const nameParts = (keycloakDecoded.name || username).split(' ');
+            user = new User({
+              userId: `STF-${Math.floor(100 + Math.random() * 900)}`,
+              username: username || userEmail.split('@')[0],
+              fullName: keycloakDecoded.name || `${keycloakDecoded.given_name || 'Keycloak'} ${keycloakDecoded.family_name || 'User'}`,
+              phoneNumber: `077${Math.floor(1000000 + Math.random() * 9000000)}`,
+              email: userEmail,
+              role: userEmail.includes('admin') ? 'ADMIN' : 'PERMANENT_STAFF',
+              department: 'AI & Data Systems',
+              accountStatus: 'ACTIVE',
+            });
+            await user.save();
+          }
+        }
+      }
 
       if (!user) {
         res.status(401).json({ message: 'User belonging to this token no longer exists' });

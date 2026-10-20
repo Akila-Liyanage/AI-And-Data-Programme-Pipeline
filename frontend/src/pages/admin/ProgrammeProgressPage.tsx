@@ -58,7 +58,7 @@ import { MilestoneCompletionTrend } from './components/analytics/MilestoneComple
 import { TeamParticipationDistribution } from './components/analytics/TeamParticipationDistribution';
 import { ProjectHealthSummary } from './components/analytics/ProjectHealthSummary';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+import { API_BASE_URL } from '../../config/api';
 
 export default function ProgrammeProgressPage() {
   const { user, logout } = useAuth();

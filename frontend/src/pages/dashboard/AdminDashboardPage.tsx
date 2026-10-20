@@ -41,7 +41,7 @@ import { UserDetailsDrawer } from '../admin/components/UserDetailsDrawer';
 import { AddUserDrawer } from '../admin/components/AddUserDrawer';
 import type { ManagedUser } from '../../types/userManagement.types';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+import { API_BASE_URL } from '../../config/api';
 
 export default function AdminDashboardPage() {
   const { user, logout } = useAuth();
