@@ -11,6 +11,7 @@ import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import projectRoutes from './routes/projectRoutes';
 import assignmentRoutes from './routes/assignmentRoutes';
+import handoverRoutes from './routes/handoverRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -24,6 +25,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/assignments', assignmentRoutes);
+app.use('/api/handover', handoverRoutes);
 
 // Basic health-check endpoint
 app.get('/', (_req: Request, res: Response) => {

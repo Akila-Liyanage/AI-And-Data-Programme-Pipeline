@@ -11,8 +11,11 @@ export interface IAssignment extends Document {
   assignmentRole: 'Project Lead' | 'Supervisor' | 'Contributor' | 'Intern Contributor' | 'Reviewer' | string;
   startDate: string;
   expectedEndDate?: string;
-  status: 'Assigned' | 'Pending' | 'Completed';
+  status: 'Assigned' | 'Pending' | 'Completed' | 'Handed Over' | string;
   allocationNotes?: string;
+  previousUserId?: string;
+  previousUserName?: string;
+  handoverDate?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -71,10 +74,24 @@ const AssignmentSchema = new Schema<IAssignment>(
     },
     status: {
       type: String,
-      enum: ['Assigned', 'Pending', 'Completed'],
+      enum: ['Assigned', 'Pending', 'Completed', 'Handed Over'],
       default: 'Assigned',
     },
     allocationNotes: {
+      type: String,
+      default: '',
+    },
+    previousUserId: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    previousUserName: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    handoverDate: {
       type: String,
       default: '',
     },

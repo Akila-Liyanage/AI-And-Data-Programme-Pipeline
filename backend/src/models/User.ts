@@ -21,6 +21,9 @@ export interface IUser extends Document {
   resetPasswordExpiresAt?: Date;
   employmentType?: string;
   internRole?: string;
+  offboardedAt?: Date;
+  offboardReason?: string;
+  offboardNotes?: string;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -113,6 +116,17 @@ const UserSchema = new Schema<IUser>(
     },
     resetPasswordExpiresAt: {
       type: Date,
+    },
+    offboardedAt: {
+      type: Date,
+    },
+    offboardReason: {
+      type: String,
+      trim: true,
+    },
+    offboardNotes: {
+      type: String,
+      trim: true,
     },
   },
   {

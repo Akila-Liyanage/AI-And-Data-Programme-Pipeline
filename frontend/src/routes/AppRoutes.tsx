@@ -14,6 +14,7 @@ import ProjectsManagementPage from '../pages/admin/ProjectsManagementPage';
 import ProjectAssignmentsPage from '../pages/admin/ProjectAssignmentsPage';
 import ProgrammeProgressPage from '../pages/admin/ProgrammeProgressPage';
 import TeamWorkHistoryPage from '../pages/admin/TeamWorkHistoryPage';
+import OffboardingHandoverPage from '../pages/admin/OffboardingHandoverPage';
 import StaffDashboardPage from '../pages/dashboard/StaffDashboardPage';
 import StaffAssignedProjectsPage from '../pages/staff/StaffAssignedProjectsPage';
 import StaffWorkItemsPage from '../pages/staff/StaffWorkItemsPage';
@@ -81,6 +82,14 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['ADMIN']}>
             <ProjectAssignmentsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/offboarding"
+        element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <OffboardingHandoverPage />
           </ProtectedRoute>
         }
       />

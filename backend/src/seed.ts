@@ -23,7 +23,17 @@ const seedDatabase = async (): Promise<void> => {
     console.log('✅ Connected to MongoDB');
 
     // 1. Seed Users
-    const userIds = ['ADM-001', 'STF-101', 'STF-102', 'INT-201', 'INT-202', 'INT-203'];
+    const userIds = [
+      'ADM-001',
+      'STF-101',
+      'STF-102',
+      'INT-201',
+      'INT-202',
+      'INT-203',
+      'INT-204',
+      'STF-103',
+      'INT-205',
+    ];
     await User.deleteMany({ userId: { $in: userIds } });
 
     const demoUsers = [
@@ -104,13 +114,62 @@ const seedDatabase = async (): Promise<void> => {
         department: 'AI & Data Team',
         accountStatus: 'ACTIVE' as const,
       },
+      // Offboarded / Departed Staff & Interns (Demonstrating Tenure Completion & Handover Needs)
+      {
+        userId: 'INT-204',
+        username: 'intern_kavindu',
+        fullName: 'Kavindu Wickramasinghe',
+        phoneNumber: '0773344556',
+        email: 'kavindu@aidata.com',
+        password: 'Intern@123',
+        role: 'INTERN' as const,
+        internRole: 'AI/ML',
+        designation: 'AI/ML Intern',
+        department: 'AI & Data Team',
+        accountStatus: 'INACTIVE' as const,
+        offboardedAt: new Date('2026-09-30'),
+        offboardReason: 'INTERNSHIP_COMPLETED',
+        offboardNotes: '6-month AI & Data internship cycle completed with excellence. Model training finished; deployment deliverables require handover.',
+      },
+      {
+        userId: 'STF-103',
+        username: 'staff_dilshan',
+        fullName: 'Dilshan Senanayake',
+        phoneNumber: '0778899001',
+        email: 'dilshan@aidata.com',
+        password: 'Staff@123',
+        role: 'PERMANENT_STAFF' as const,
+        employmentType: 'Contract Based',
+        designation: 'Senior Backend Engineer',
+        department: 'Enterprise Network',
+        accountStatus: 'INACTIVE' as const,
+        offboardedAt: new Date('2026-08-31'),
+        offboardReason: 'CONTRACT_ENDED',
+        offboardNotes: '1-year fixed engineering contract concluded. Telemetry streaming pipeline delivered; alerting engine ready for handover.',
+      },
+      {
+        userId: 'INT-205',
+        username: 'intern_tharushi',
+        fullName: 'Tharushi Fernando',
+        phoneNumber: '0774433221',
+        email: 'tharushi@aidata.com',
+        password: 'Intern@123',
+        role: 'INTERN' as const,
+        internRole: 'Frontend Developer',
+        designation: 'Frontend Developer Intern',
+        department: 'Software Architecture',
+        accountStatus: 'INACTIVE' as const,
+        offboardedAt: new Date('2026-09-15'),
+        offboardReason: 'INTERNSHIP_COMPLETED',
+        offboardNotes: 'Internship concluded. 100% of assigned atomic tokens and accessibility components finished (handover completed).',
+      },
     ];
 
     for (const userData of demoUsers) {
       const user = new User(userData);
       await user.save();
     }
-    console.log('✅ Seeded 6 demo accounts (Admin, Staff, Intern)');
+    console.log('✅ Seeded 9 demo accounts (including 3 offboarded members for Handover testing)');
 
     // 2. Seed Projects
     await Project.deleteMany({});
@@ -128,7 +187,7 @@ const seedDatabase = async (): Promise<void> => {
         status: 'Active',
         priority: 'High',
         progress: 75,
-        assignedMembersCount: 2,
+        assignedMembersCount: 3,
         workItems: [
           {
             workItemId: 'WI-101',
@@ -136,6 +195,9 @@ const seedDatabase = async (): Promise<void> => {
             role: 'Data Engineer',
             percentage: 25,
             status: 'DONE',
+            assignedUserId: 'STF-102',
+            assignedUserName: 'Nimal Jayawardena',
+            completedAt: '2026-07-20',
           },
           {
             workItemId: 'WI-102',
@@ -143,6 +205,9 @@ const seedDatabase = async (): Promise<void> => {
             role: 'AI Engineer',
             percentage: 25,
             status: 'DONE',
+            assignedUserId: 'INT-204',
+            assignedUserName: 'Kavindu Wickramasinghe',
+            completedAt: '2026-08-15',
           },
           {
             workItemId: 'WI-103',
@@ -150,6 +215,9 @@ const seedDatabase = async (): Promise<void> => {
             role: 'AI/ML Intern',
             percentage: 25,
             status: 'DONE',
+            assignedUserId: 'INT-204',
+            assignedUserName: 'Kavindu Wickramasinghe',
+            completedAt: '2026-09-20',
           },
           {
             workItemId: 'WI-104',
@@ -157,6 +225,9 @@ const seedDatabase = async (): Promise<void> => {
             role: 'Software Engineer',
             percentage: 25,
             status: 'IN_PROGRESS',
+            assignedUserId: 'INT-204',
+            assignedUserName: 'Kavindu Wickramasinghe',
+            handoverNotes: 'Internship concluded on 2026-09-30. Model trained, API endpoint scaffolded; requires container deployment & validation.',
           },
         ],
       },
@@ -172,15 +243,18 @@ const seedDatabase = async (): Promise<void> => {
         targetDate: '2026-11-30',
         status: 'Active',
         priority: 'Critical',
-        progress: 0,
-        assignedMembersCount: 0, // Unassigned: available for self-enrollment
+        progress: 25,
+        assignedMembersCount: 3,
         workItems: [
           {
             workItemId: 'WI-201',
             title: 'Telemetry Kafka Stream Producer Configuration',
             role: 'Backend Developer',
             percentage: 25,
-            status: 'TODO',
+            status: 'DONE',
+            assignedUserId: 'STF-103',
+            assignedUserName: 'Dilshan Senanayake',
+            completedAt: '2026-08-10',
           },
           {
             workItemId: 'WI-202',
@@ -188,6 +262,8 @@ const seedDatabase = async (): Promise<void> => {
             role: 'Data Scientist',
             percentage: 25,
             status: 'TODO',
+            assignedUserId: 'STF-101',
+            assignedUserName: 'Dr. Kasun Perera',
           },
           {
             workItemId: 'WI-203',
@@ -195,6 +271,9 @@ const seedDatabase = async (): Promise<void> => {
             role: 'Software Engineer',
             percentage: 25,
             status: 'TODO',
+            assignedUserId: 'STF-103',
+            assignedUserName: 'Dilshan Senanayake',
+            handoverNotes: 'Contract concluded 2026-08-31. Telemetry ingestion complete; alert rules engine is mapped and awaiting handover reassignment.',
           },
           {
             workItemId: 'WI-204',
@@ -202,6 +281,8 @@ const seedDatabase = async (): Promise<void> => {
             role: 'Frontend Developer',
             percentage: 25,
             status: 'TODO',
+            assignedUserId: 'INT-202',
+            assignedUserName: 'Chamath Fernando',
           },
         ],
       },
@@ -345,15 +426,18 @@ const seedDatabase = async (): Promise<void> => {
         targetDate: '2026-12-31',
         status: 'Active',
         priority: 'Medium',
-        progress: 0,
-        assignedMembersCount: 0, // Unassigned: available for self-enrollment
+        progress: 40,
+        assignedMembersCount: 3,
         workItems: [
           {
             workItemId: 'WI-601',
             title: 'Accessible Atomic Component Primitives & Tokens',
             role: 'Frontend Developer',
             percentage: 40,
-            status: 'TODO',
+            status: 'DONE',
+            assignedUserId: 'INT-205',
+            assignedUserName: 'Tharushi Fernando',
+            completedAt: '2026-09-10',
           },
           {
             workItemId: 'WI-602',
@@ -361,6 +445,8 @@ const seedDatabase = async (): Promise<void> => {
             role: 'Frontend Developer',
             percentage: 30,
             status: 'TODO',
+            assignedUserId: 'INT-202',
+            assignedUserName: 'Chamath Fernando',
           },
           {
             workItemId: 'WI-603',
@@ -368,6 +454,8 @@ const seedDatabase = async (): Promise<void> => {
             role: 'QA',
             percentage: 30,
             status: 'TODO',
+            assignedUserId: 'INT-203',
+            assignedUserName: 'Ruwini Alwis',
           },
         ],
       },
@@ -377,7 +465,7 @@ const seedDatabase = async (): Promise<void> => {
       const project = new Project(projectData);
       await project.save();
     }
-    console.log('✅ Seeded 6 Programme Projects (including 4 unassigned for self-enrollment)');
+    console.log('✅ Seeded 6 Programme Projects (including unassigned and active streams)');
 
     // 3. Seed Assignments
     await Assignment.deleteMany({});
@@ -424,13 +512,56 @@ const seedDatabase = async (): Promise<void> => {
         status: 'Assigned',
         allocationNotes: 'System architecture review and sprint coordination.',
       },
+      // Assignments for Offboarded Interns & Staff (Completed vs Pending Handover)
+      {
+        assignmentId: 'ASG-104',
+        projectId: 'PRJ-101',
+        projectName: 'Customer Churn AI Prediction Model',
+        userId: 'INT-204',
+        userName: 'Kavindu Wickramasinghe',
+        userCategory: 'Intern',
+        professionalRole: 'AI/ML Intern',
+        assignmentRole: 'Intern Contributor',
+        startDate: '2026-04-01',
+        expectedEndDate: '2026-09-30',
+        status: 'Assigned',
+        allocationNotes: 'Internship ended 2026-09-30. Completed model tuning (WI-102, WI-103); remaining deployment (WI-104) is pending handover.',
+      },
+      {
+        assignmentId: 'ASG-105',
+        projectId: 'PRJ-102',
+        projectName: 'Telecom Network Anomaly Detection Pipeline',
+        userId: 'STF-103',
+        userName: 'Dilshan Senanayake',
+        userCategory: 'Permanent Staff',
+        professionalRole: 'Senior Backend Engineer',
+        assignmentRole: 'Contributor',
+        startDate: '2026-01-15',
+        expectedEndDate: '2026-08-31',
+        status: 'Assigned',
+        allocationNotes: 'Contract tenure concluded 2026-08-31. Kafka telemetry stream (WI-201) completed; alerts engine (WI-203) awaiting reassignment.',
+      },
+      {
+        assignmentId: 'ASG-106',
+        projectId: 'PRJ-106',
+        projectName: 'Enterprise Design System & Accessible Component Kit',
+        userId: 'INT-205',
+        userName: 'Tharushi Fernando',
+        userCategory: 'Intern',
+        professionalRole: 'Frontend Developer Intern',
+        assignmentRole: 'Intern Contributor',
+        startDate: '2026-03-15',
+        expectedEndDate: '2026-09-15',
+        status: 'Completed',
+        allocationNotes: 'Internship successfully concluded on 2026-09-15. 100% of assigned atomic tokens and accessibility items delivered.',
+      },
     ];
 
     for (const assignmentData of demoAssignments) {
       const assignment = new Assignment(assignmentData);
       await assignment.save();
     }
-    console.log('✅ Seeded 3 Project Assignments');
+    console.log('✅ Seeded 6 Project Assignments (including active & offboarded handover assignments)');
 
     console.log('🎉 Database seeding completed successfully!');
     process.exit(0);
