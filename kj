@@ -1,0 +1,13 @@
+[1mdiff --git a/docker-compose.yml b/docker-compose.yml[m
+[1mindex 55aa084..2c08d66 100644[m
+[1m--- a/docker-compose.yml[m
+[1m+++ b/docker-compose.yml[m
+[36m@@ -29,7 +29,7 @@[m [mservices:[m
+     container_name: slt_aidata_frontend[m
+     restart: always[m
+     ports:[m
+[31m-      - "80:80"[m
+[32m+[m[32m      - "${FRONTEND_PORT:-8080}:80"[m
+     depends_on:[m
+       - backend[m
+     environment:[m
