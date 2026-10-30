@@ -8,7 +8,7 @@
  * - Curated SLT Blue & Mobitel Green light-mode color palette
  * - Interactive Role-based Workspace Portals (Admin / Staff / Intern)
  * - 4-stage Pipeline Architecture & WBS weight calculation showcase
- * - Direct Phone OTP Login & Self-Registration gateways
+ * - Direct Keycloak SSO Login & Self-Registration gateways
  */
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -20,7 +20,7 @@ import {
   TrendingUp,
   Sparkles,
   Cpu,
-  Smartphone,
+  LogIn,
   Bot,
   Zap,
   Building,
@@ -53,7 +53,7 @@ export default function LandingPage() {
         <span className="flex h-2 w-2 rounded-full bg-emerald-300 animate-ping" />
         <span className="font-medium">SLT-MOBITEL AI & Data Programme Pipeline • Next-Gen Telecommunication Intelligence</span>
         <Link to="/login" className="underline font-bold hover:text-emerald-200 ml-1 inline-flex items-center gap-0.5">
-          <span>Sign In (OTP)</span>
+          <span>Login</span>
           <ArrowRight className="w-3 h-3" />
         </Link>
       </div>
@@ -100,11 +100,11 @@ export default function LandingPage() {
             <Button
               variant="primary"
               size="md"
-              leftIcon={<Smartphone className="w-4 h-4" />}
+              leftIcon={<LogIn className="w-4 h-4" />}
               onClick={() => navigate('/login')}
               className="shadow-md hover:shadow-lg shadow-blue-600/20 font-bold bg-[#0057A8] hover:bg-[#00488B] text-white transform hover:-translate-y-0.5 transition-all duration-200"
             >
-              Phone OTP Login
+              Login
             </Button>
           </div>
 
@@ -156,9 +156,9 @@ export default function LandingPage() {
                 fullWidth
                 size="md"
                 onClick={() => navigate('/login')}
-                leftIcon={<Smartphone className="w-4 h-4" />}
+                leftIcon={<LogIn className="w-4 h-4" />}
               >
-                Phone OTP Login
+                Login
               </Button>
               <Button
                 variant="outline"
@@ -203,12 +203,12 @@ export default function LandingPage() {
                 <Button
                   variant="primary"
                   size="md"
-                  leftIcon={<Smartphone className="w-4 h-4" />}
+                  leftIcon={<LogIn className="w-4 h-4" />}
                   rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
                   onClick={() => navigate('/login')}
                   className="w-full sm:w-auto h-11 px-6 text-xs sm:text-sm font-bold bg-[#0057A8] hover:bg-[#00488B] text-white shadow-md hover:shadow-lg shadow-blue-700/15 transform hover:-translate-y-0.5 transition-all duration-150 rounded-xl"
                 >
-                  Launch Platform (Phone OTP)
+                  Login
                 </Button>
                 <Button
                   variant="outline"
@@ -231,8 +231,8 @@ export default function LandingPage() {
                   <p className="text-[11px] font-bold text-slate-600">Admin, Staff & Intern</p>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs text-center lg:text-left">
-                  <p className="text-xl sm:text-2xl font-extrabold text-sky-600 font-mono">SMS OTP</p>
-                  <p className="text-[11px] font-bold text-slate-600">Instant Access</p>
+                  <p className="text-xl sm:text-2xl font-extrabold text-sky-600 font-mono">Keycloak</p>
+                  <p className="text-[11px] font-bold text-slate-600">Enterprise SSO</p>
                 </div>
               </div>
             </div>
@@ -403,7 +403,7 @@ export default function LandingPage() {
                     onClick={() => navigate('/login')}
                     className="bg-[#0057A8] hover:bg-[#00488B] text-white font-bold"
                   >
-                    Admin Access (0774943291)
+                    Admin Access
                   </Button>
                 </div>
 
@@ -442,7 +442,7 @@ export default function LandingPage() {
                     onClick={() => navigate('/login')}
                     className="bg-[#00A651] hover:bg-[#008D44] text-white font-bold"
                   >
-                    Staff Access (0771234567)
+                    Staff Access
                   </Button>
                 </div>
 
@@ -481,7 +481,7 @@ export default function LandingPage() {
                     onClick={() => navigate('/login')}
                     className="bg-purple-600 hover:bg-purple-700 text-white font-bold"
                   >
-                    Intern Access (0777654321)
+                    Intern Access
                   </Button>
                 </div>
 
@@ -643,7 +643,7 @@ export default function LandingPage() {
             Ready to Access the AI & Data Workspace?
           </h2>
           <p className="text-xs sm:text-sm text-blue-100 max-w-2xl mx-auto leading-relaxed font-normal">
-            Sign in with your authorized mobile phone number to receive a secure SMS one-time passcode or register for a new account.
+            Sign in with your authorized Keycloak credentials to access your designated workspace or register for a new account.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
@@ -651,11 +651,11 @@ export default function LandingPage() {
               variant="primary"
               size="md"
               onClick={() => navigate('/login')}
-              leftIcon={<Smartphone className="w-4 h-4" />}
+              leftIcon={<LogIn className="w-4 h-4" />}
               rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
               className="w-full sm:w-auto h-11 px-6 text-xs sm:text-sm font-bold bg-[#00A651] hover:bg-[#008D44] text-white shadow-lg transform hover:-translate-y-0.5 transition-all rounded-xl"
             >
-              Sign In with Mobile OTP
+              Login
             </Button>
             <Button
               variant="outline"
