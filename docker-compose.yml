@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: slt_aidata_backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - MONGO_URI=${MONGO_URI:-mongodb+srv://AIPM:AIPM1234@cluster0.weerj4s.mongodb.net/}
+      - JWT_SECRET=${JWT_SECRET:-super_secret_ai_data_pipeline_jwt_key_2026}
+      - JWT_EXPIRES_IN=7d
+      - BACKEND_KEYCLOAK_URL=https://idp.sltdigitallab.lk
+      - BACKEND_KEYCLOAK_REALM=ai-data-pipeline
+      - KEYCLOAK_SERVICE_ACCOUNT_CLIENT=backend-client
+      - KEYCLOAK_SERVICE_ACCOUNT_SECRET=tmcqtZzgu8Yca0LwEQH0A6qxOjdIc6Ij
+    networks:
+      - app_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: slt_aidata_frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    environment:
+      - VITE_BACKEND_URL=http://backend:5000
+      - VITE_API_BASE_URL=/api
+      - VITE_FRONTEND_KEYCLOAK_URL=https://idp.sltdigitallab.lk
+      - VITE_FRONTEND_KEYCLOAK_REALM=ai-data-pipeline
+      - VITE_FRONTEND_KEYCLOAK_CLIENT_ID=frontend-client
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge

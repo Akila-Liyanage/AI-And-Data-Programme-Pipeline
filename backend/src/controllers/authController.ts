@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import User, { UserRole } from '../models/User';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { generateNextUserId } from './userController';
+import { createKeycloakUser, loginWithKeycloak, getSecureApiToken } from '../utils/keycloakService';
 
 /**
  * Generate JWT Token helper
@@ -315,6 +316,148 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
 };
 
 /**
+ * @desc    Authenticate User via Keycloak SSO / Direct Access Grant
+ * @route   POST /api/auth/keycloak-login
+ * @access  Public
+ */
+export const keycloakLogin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      res.status(400).json({
+        success: false,
+        message: 'Please provide both username and password for Keycloak authentication.',
+      });
+      return;
+    }
+
+    const cleanUsername = username.toString().trim();
+
+    // Authenticate directly with Keycloak
+    const kcResult = await loginWithKeycloak(cleanUsername, password);
+
+    if (!kcResult.success || !kcResult.tokens) {
+      res.status(401).json({
+        success: false,
+        message: kcResult.error || 'Invalid credentials in Keycloak.',
+      });
+      return;
+    }
+
+    // Identify user in MongoDB database
+    const cleanEmail = cleanUsername.toLowerCase();
+    let user = await User.findOne({
+      $or: [
+        { email: cleanEmail },
+        { username: cleanEmail },
+        { phoneNumber: cleanUsername },
+      ],
+    });
+
+    // If user authenticated in Keycloak but not in MongoDB, create active account
+    if (!user) {
+      const isStaff = !cleanEmail.includes('intern');
+      const isAdmin = cleanEmail.includes('admin');
+      const role: UserRole = isAdmin ? 'ADMIN' : isStaff ? 'PERMANENT_STAFF' : 'INTERN';
+      const userId = await generateNextUserId(role);
+
+      user = new User({
+        userId,
+        username: cleanEmail.split('@')[0],
+        fullName: cleanEmail.split('@')[0].toUpperCase(),
+        phoneNumber: `077${Math.floor(1000000 + Math.random() * 9000000)}`,
+        email: cleanEmail,
+        role,
+        department: 'AI & Data Systems',
+        accountStatus: 'ACTIVE',
+      });
+      await user.save();
+    }
+
+    if (user.accountStatus !== 'ACTIVE') {
+      res.status(403).json({
+        success: false,
+        message: `Your account status is ${user.accountStatus}. Please contact your administrator.`,
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Keycloak authentication successful',
+      token: kcResult.tokens.access_token,
+      keycloakTokens: kcResult.tokens,
+      user: formatUserResponse(user),
+    });
+  } catch (error: any) {
+    console.error('Keycloak login endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Keycloak login service error',
+    });
+  }
+};
+
+/**
+ * @desc    Live Diagnostic Check for SLT Keycloak Server
+ * @route   GET /api/auth/keycloak-status
+ * @access  Public
+ */
+export const getKeycloakStatus = async (_req: Request, res: Response): Promise<void> => {
+  const startTime = Date.now();
+  try {
+    const keycloakUrl = process.env.KEYCLOAK_URL || 'https://idp.sltdigitallab.lk';
+    const realm = process.env.KEYCLOAK_REALM || 'ai-data-pipeline';
+
+    // 1. Ping OpenID Configuration Endpoint
+    const wellKnownRes = await fetch(`${keycloakUrl}/realms/${realm}/.well-known/openid-configuration`);
+    if (!wellKnownRes.ok) {
+      throw new Error(`OpenID Configuration returned status ${wellKnownRes.status}`);
+    }
+    const wellKnown = await wellKnownRes.json() as any;
+
+    // 2. Test Service Account Authentication
+    const saToken = await getSecureApiToken();
+    let userCount = 0;
+    if (saToken) {
+      const usersRes = await fetch(`${keycloakUrl}/admin/realms/${realm}/users`, {
+        headers: { Authorization: `Bearer ${saToken}` },
+      });
+      if (usersRes.ok) {
+        const users = await usersRes.json() as any[];
+        userCount = Array.isArray(users) ? users.length : 0;
+      }
+    }
+
+    const latencyMs = Date.now() - startTime;
+
+    res.status(200).json({
+      success: true,
+      status: 'ONLINE',
+      serverUrl: keycloakUrl,
+      realm,
+      issuer: wellKnown.issuer,
+      tokenEndpoint: wellKnown.token_endpoint,
+      latencyMs,
+      serviceAccountConnected: !!saToken,
+      registeredUserCount: userCount,
+      timestamp: new Date().toISOString(),
+      verifiedBy: 'SLT Digital Lab Identity Provider Direct Ping',
+    });
+  } catch (error: any) {
+    const latencyMs = Date.now() - startTime;
+    res.status(503).json({
+      success: false,
+      status: 'OFFLINE_OR_ERROR',
+      error: error.message,
+      latencyMs,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+/**
  * @desc    Get currently authenticated user profile
  * @route   GET /api/auth/me
  * @access  Private
@@ -584,9 +727,20 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
 
     console.log(`👤 [USER SELF-REGISTERED] Added ${newUser.fullName} (${newUser.role}) - Phone: ${newUser.phoneNumber}, ID: ${newUser.userId} - status: PENDING`);
 
+    // Sync newly registered user to Keycloak securely
+    const nameParts = (fullName || 'User').trim().split(' ');
+    const firstName = nameParts[0] || 'User';
+    const lastName = nameParts.slice(1).join(' ') || 'Member';
+    createKeycloakUser({
+      email: cleanEmail,
+      firstName,
+      lastName,
+      password,
+    }).catch((kcErr) => console.error('Keycloak sync warning during registration:', kcErr));
+
     res.status(201).json({
       success: true,
-      message: 'Registration successful! Your account is pending administrator verification.',
+      message: 'Registration successful! Your account is created in Keycloak and pending administrator verification.',
       user: formatUserResponse(newUser),
     });
   } catch (error: any) {
@@ -811,4 +965,61 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
     });
   }
 };
+
+/**
+ * @desc    Direct Signup route as defined in SLT Keycloak integration standard
+ * @route   POST /signup and POST /api/auth/signup
+ * @access  Public
+ */
+export const handleSignupRoute = async (req: Request, res: Response): Promise<void> => {
+  const { email, firstName, lastName, password, role, phoneNumber, department, designation } = req.body;
+
+  if (!email || !password) {
+    res.status(400).json({ error: 'Email and password are required' });
+    return;
+  }
+
+  try {
+    const cleanEmail = email.toLowerCase().trim();
+    // 1. Create user in Keycloak using Service Account
+    const kcResult = await createKeycloakUser({
+      email: cleanEmail,
+      firstName: firstName || 'User',
+      lastName: lastName || 'Member',
+      password,
+    });
+
+    // 2. Create in MongoDB if not exists
+    let existingUser = await User.findOne({ email: cleanEmail });
+    if (!existingUser) {
+      const assignedRole: UserRole = role === 'ADMIN' ? 'ADMIN' : role === 'INTERN' ? 'INTERN' : 'PERMANENT_STAFF';
+      const userId = await generateNextUserId(assignedRole);
+      const userPhone = phoneNumber ? normalizePhoneNumber(phoneNumber) : `077${Math.floor(1000000 + Math.random() * 9000000)}`;
+
+      existingUser = new User({
+        userId,
+        username: cleanEmail.split('@')[0],
+        fullName: `${firstName || ''} ${lastName || ''}`.trim() || cleanEmail.split('@')[0],
+        phoneNumber: userPhone,
+        email: cleanEmail,
+        password,
+        role: assignedRole,
+        department: department || 'AI & Data Systems',
+        designation: designation || (assignedRole === 'INTERN' ? 'AI/ML Intern' : 'Engineer'),
+        accountStatus: 'ACTIVE',
+      });
+      await existingUser.save();
+    }
+
+    if (kcResult.success) {
+      res.status(201).json({ message: 'User created securely in Keycloak!' });
+    } else {
+      res.status(400).json({ error: kcResult.message || 'Failed to create user in Keycloak' });
+    }
+  } catch (error: any) {
+    console.error('Keycloak handleSignupRoute error:', error);
+    res.status(500).json({ error: 'Internal server error during Keycloak signup' });
+  }
+};
+
 

@@ -13,6 +13,7 @@
  */
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { API_BASE_URL } from '../../config/api';
 import {
   ArrowRight,
   User,
@@ -147,8 +148,6 @@ export default function RegistrationPage() {
     }
   };
 
-  /* API Base URL */
-  const API_BASE_URL = 'http://localhost:5000/api';
 
   /* Client-Side Submit handler */
   const handleSubmit = async (e: React.FormEvent) => {

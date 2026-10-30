@@ -3,6 +3,9 @@ import {
   sendOtp,
   verifyOtp,
   loginUser,
+  keycloakLogin,
+  getKeycloakStatus,
+  handleSignupRoute,
   getMe,
   registerUser,
   updateProfile,
@@ -13,7 +16,12 @@ import { protect } from '../middleware/authMiddleware';
 
 const router = Router();
 
-// Phone Number + OTP Authentication routes
+// Keycloak Authentication & Direct Access Grant routes
+router.get('/keycloak-status', getKeycloakStatus);
+router.post('/keycloak-login', keycloakLogin);
+router.post('/signup', handleSignupRoute);
+
+// Phone Number + OTP Authentication routes (legacy / alternative)
 router.post('/send-otp', sendOtp);
 router.post('/verify-otp', verifyOtp);
 
