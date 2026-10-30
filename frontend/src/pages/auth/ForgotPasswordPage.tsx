@@ -691,7 +691,7 @@ export default function ForgotPasswordPage() {
             to="/login"
             className="font-bold text-[var(--color-brand-blue)] hover:text-blue-700 hover:underline inline-flex items-center gap-1 transition-colors"
           >
-            <span>Sign In with Phone OTP</span>
+            <span>Sign In with Keycloak</span>
             <ArrowRight className="w-3 h-3" />
           </Link>
         </div>

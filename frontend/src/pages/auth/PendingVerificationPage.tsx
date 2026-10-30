@@ -69,7 +69,7 @@ function PendingBrandPanel() {
             <div>
               <p className="text-xs sm:text-sm font-bold text-white">Pending Administrative Approval</p>
               <p className="text-[11px] text-slate-300 leading-snug mt-0.5">
-                Verification status is tracked securely. Once approved, you can sign in with your registered phone number via OTP.
+                Verification status is tracked securely. Once approved, you can sign in with your authorized Keycloak credentials.
               </p>
             </div>
           </div>
