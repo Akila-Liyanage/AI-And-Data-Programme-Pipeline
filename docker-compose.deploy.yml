@@ -1,0 +1,33 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aidata-deploy-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      PORT: 5000
+      NODE_ENV: production
+    networks:
+      - aidata-deploy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.deploy
+      args:
+        VITE_API_BASE_URL: /api
+    container_name: aidata-deploy-frontend
+    restart: unless-stopped
+    ports:
+      - "5174:80"
+    depends_on:
+      - backend
+    networks:
+      - aidata-deploy
+
+networks:
+  aidata-deploy:
+    driver: bridge
